@@ -550,6 +550,36 @@
       </div>
     </div>
 
+    <!-- NIEUW WACHTWOORD INSTELLEN -->
+    <div class="auth-card" id="newPasswordForm" style="display:none;">
+      <h1>Nieuw <em>wachtwoord</em></h1>
+      <p class="auth-subtitle">Kies een nieuw wachtwoord voor je CourtPass account.</p>
+
+      <div class="msg error" id="newPasswordError"></div>
+      <div class="msg success" id="newPasswordSuccess"></div>
+
+      <div class="form-group">
+        <label>Nieuw wachtwoord</label>
+        <div class="input-wrap">
+          <input type="password" id="newPw1" placeholder="Minimaal 8 tekens" />
+          <button class="toggle-pw" onclick="togglePassword('newPw1', this)" type="button">toon</button>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Bevestig wachtwoord</label>
+        <div class="input-wrap">
+          <input type="password" id="newPw2" placeholder="Herhaal wachtwoord" />
+          <button class="toggle-pw" onclick="togglePassword('newPw2', this)" type="button">toon</button>
+        </div>
+      </div>
+
+      <button class="btn-submit" id="newPwBtn" onclick="handleNewPassword()">
+        <span class="spinner" id="newPwSpinner"></span>
+        <span id="newPwBtnText">Wachtwoord opslaan</span>
+      </button>
+    </div>
+
   </div>
 
   <!-- DASHBOARD (na inloggen) -->
@@ -601,12 +631,51 @@
 
   // Check session on load
   window.addEventListener('load', async () => {
+    // Detecteer wachtwoord reset token in URL hash
+    const hash = window.location.hash;
+    if (hash && hash.includes('type=recovery')) {
+      // Verberg alles, toon nieuw wachtwoord formulier
+      document.getElementById('authContainer').querySelectorAll('.auth-card, .tabs').forEach(el => el.style.display = 'none');
+      document.getElementById('newPasswordForm').style.display = 'block';
+      return;
+    }
+
     const { data: { session } } = await sb.auth.getSession();
     if (session) {
       window.location.href = 'dashboard.html';
       return;
     }
   });
+
+  // ── NIEUW WACHTWOORD INSTELLEN ──
+  async function handleNewPassword() {
+    clearMessages();
+    const pw1 = document.getElementById('newPw1').value;
+    const pw2 = document.getElementById('newPw2').value;
+
+    if (pw1.length < 8) {
+      showMsg('newPasswordError', 'Wachtwoord moet minimaal 8 tekens bevatten.');
+      return;
+    }
+    if (pw1 !== pw2) {
+      showMsg('newPasswordError', 'Wachtwoorden komen niet overeen.');
+      return;
+    }
+
+    setLoading('newPwBtn', 'newPwSpinner', 'newPwBtnText', true, 'Opslaan...');
+
+    const { error } = await sb.auth.updateUser({ password: pw1 });
+
+    setLoading('newPwBtn', 'newPwSpinner', 'newPwBtnText', false, 'Wachtwoord opslaan');
+
+    if (error) {
+      showMsg('newPasswordError', 'Er ging iets mis. Probeer opnieuw.');
+      return;
+    }
+
+    showMsg('newPasswordSuccess', '✓ Wachtwoord gewijzigd! Je wordt doorgestuurd...');
+    setTimeout(() => { window.location.href = 'dashboard.html'; }, 2000);
+  }
 
   // ── TAB SWITCHING ──
   function switchTab(tab) {
