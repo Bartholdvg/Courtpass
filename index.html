@@ -1002,17 +1002,18 @@
     /* ── SCROLL ANIMATIONS ── */
     .fade-up {
       opacity: 0;
-      transform: translateY(24px);
-      transition: opacity 0.65s ease, transform 0.65s ease;
-      animation: fadeUpFallback 0.65s ease 1.5s forwards;
-    }
-    @keyframes fadeUpFallback {
-      to { opacity: 1; transform: translateY(0); }
+      transform: translateY(20px);
+      transition: opacity 0.6s ease, transform 0.6s ease;
     }
     .fade-up.visible {
       opacity: 1;
       transform: translateY(0);
-      animation: none;
+    }
+    /* Hero altijd direct zichtbaar */
+    .hero, .hero *, nav, nav * {
+      opacity: 1 !important;
+      transform: none !important;
+      animation: none !important;
     }
 
     /* ── MOBILE MENU ── */
@@ -1620,17 +1621,23 @@
         observer.unobserve(e.target);
       }
     });
-  }, { threshold: 0.05, rootMargin: '0px 0px -40px 0px' });
+  }, { threshold: 0.05, rootMargin: '0px 0px -20px 0px' });
 
-  // Elementen die al in beeld zijn direct zichtbaar maken
-  document.querySelectorAll('.fade-up').forEach(el => {
-    const rect = el.getBoundingClientRect();
-    if (rect.top < window.innerHeight) {
-      el.classList.add('visible');
-    } else {
-      observer.observe(el);
-    }
-  });
+  function initAnimations() {
+    document.querySelectorAll('.fade-up').forEach(el => {
+      const rect = el.getBoundingClientRect();
+      if (rect.top < window.innerHeight + 100) {
+        el.classList.add('visible');
+      } else {
+        observer.observe(el);
+      }
+    });
+  }
+
+  // Direct uitvoeren én na volledig laden
+  initAnimations();
+  window.addEventListener('load', initAnimations);
+  window.addEventListener('scroll', () => {}, { passive: true });
 
   // Smooth scroll for all anchor links
   document.querySelectorAll('a[href^="#"]').forEach(a => {
