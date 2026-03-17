@@ -508,7 +508,12 @@
   </div>
 </footer>
 
-<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+<script>
+  // Als Supabase reset token op homepage terechtkomt → doorsturen naar login.html
+  if (window.location.hash && window.location.hash.includes('type=recovery')) {
+    window.location.href = 'login.html' + window.location.hash;
+  }
+
   // Mobile menu
   function toggleMenu() {
     const menu = document.getElementById('mobileMenu');
