@@ -1,0 +1,961 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CourtPass — Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --lime: #BFEF45;
+      --dark: #0D1A0F;
+      --surface: #132015;
+      --surface2: #0F1C12;
+      --border: #1E3022;
+      --muted: #3A5040;
+      --text: #E8F0E9;
+      --text2: #8BAA8F;
+      --text3: #4A6650;
+      --error: #f87171;
+      --success: #4ade80;
+    }
+
+    body {
+      background: var(--dark);
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      min-height: 100vh;
+    }
+
+    /* ── NAV ── */
+    nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1.1rem 2.5rem;
+      border-bottom: 0.5px solid var(--border);
+      background: rgba(13,26,15,0.95);
+      backdrop-filter: blur(12px);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .logo {
+      font-family: 'Playfair Display', serif;
+      font-weight: 700;
+      font-size: 1.3rem;
+      color: var(--text);
+      text-decoration: none;
+      letter-spacing: -0.02em;
+    }
+    .logo span { color: var(--lime); }
+
+    .nav-right {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .nav-user {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.85rem;
+      color: var(--text2);
+    }
+
+    .user-avatar {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: #1A2E1D;
+      border: 0.5px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: var(--lime);
+    }
+
+    .btn-logout {
+      background: transparent;
+      color: var(--text3);
+      border: 0.5px solid var(--border);
+      padding: 0.45rem 1rem;
+      border-radius: 100px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: border-color 0.2s, color 0.2s;
+    }
+    .btn-logout:hover { border-color: var(--muted); color: var(--text2); }
+
+    /* ── LAYOUT ── */
+    .dashboard-wrap {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 2.5rem 2rem;
+      display: grid;
+      grid-template-columns: 220px 1fr;
+      gap: 2rem;
+    }
+
+    /* ── SIDEBAR ── */
+    .sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .sidebar-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 0.7rem 1rem;
+      border-radius: 10px;
+      font-size: 0.875rem;
+      color: var(--text2);
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+      border: none;
+      background: none;
+      font-family: 'DM Sans', sans-serif;
+      text-align: left;
+      width: 100%;
+    }
+    .sidebar-item:hover { background: var(--surface); color: var(--text); }
+    .sidebar-item.active { background: var(--surface); color: var(--text); font-weight: 500; }
+    .sidebar-item.active .sidebar-icon { color: var(--lime); }
+    .sidebar-icon { font-size: 1rem; width: 20px; text-align: center; }
+
+    .sidebar-divider {
+      height: 0.5px;
+      background: var(--border);
+      margin: 0.5rem 0;
+    }
+
+    /* ── MAIN CONTENT ── */
+    .main-content { min-width: 0; }
+
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* ── SECTION HEADER ── */
+    .section-header {
+      margin-bottom: 1.75rem;
+    }
+    .section-header h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.6rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 0.25rem;
+    }
+    .section-header p {
+      font-size: 0.85rem;
+      color: var(--text2);
+      font-weight: 300;
+    }
+
+    /* ── CARDS ── */
+    .card {
+      background: var(--surface);
+      border: 0.5px solid var(--border);
+      border-radius: 16px;
+      padding: 1.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .card-title {
+      font-size: 0.72rem;
+      color: var(--text3);
+      text-transform: uppercase;
+      letter-spacing: 0.09em;
+      font-weight: 500;
+      margin-bottom: 1.25rem;
+    }
+
+    /* ── STATS ROW ── */
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+
+    .stat-card {
+      background: var(--surface);
+      border: 0.5px solid var(--border);
+      border-radius: 14px;
+      padding: 1.25rem;
+    }
+
+    .stat-card-label {
+      font-size: 0.68rem;
+      color: var(--text3);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 0.5rem;
+    }
+
+    .stat-card-value {
+      font-family: 'Playfair Display', serif;
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--lime);
+      line-height: 1;
+    }
+
+    .stat-card-sub {
+      font-size: 0.75rem;
+      color: var(--text2);
+      margin-top: 4px;
+      font-weight: 300;
+    }
+
+    /* ── FORM ── */
+    .form-group {
+      margin-bottom: 1.1rem;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 0.78rem;
+      color: var(--text2);
+      margin-bottom: 0.45rem;
+    }
+
+    .form-group input {
+      width: 100%;
+      background: #0D1A0F;
+      border: 0.5px solid var(--border);
+      border-radius: 10px;
+      padding: 0.75rem 1rem;
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.875rem;
+      font-weight: 300;
+      transition: border-color 0.2s;
+      outline: none;
+    }
+    .form-group input:focus { border-color: var(--lime); }
+    .form-group input:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+
+    .btn-save {
+      background: var(--lime);
+      color: var(--dark);
+      border: none;
+      padding: 0.75rem 1.75rem;
+      border-radius: 100px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.875rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.15s;
+    }
+    .btn-save:hover { opacity: 0.88; transform: translateY(-1px); }
+    .btn-save:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+    .msg {
+      border-radius: 10px;
+      padding: 0.75rem 1rem;
+      font-size: 0.82rem;
+      margin-bottom: 1rem;
+      display: none;
+    }
+    .msg.success { background: rgba(74,222,128,0.1); border: 0.5px solid rgba(74,222,128,0.3); color: var(--success); display: block; }
+    .msg.error { background: rgba(248,113,113,0.1); border: 0.5px solid rgba(248,113,113,0.3); color: var(--error); display: block; }
+
+    /* ── ABONNEMENT ── */
+    .plan-cards {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
+    }
+
+    .plan-card {
+      background: var(--surface2);
+      border: 0.5px solid var(--border);
+      border-radius: 14px;
+      padding: 1.25rem;
+      cursor: pointer;
+      transition: border-color 0.2s;
+      position: relative;
+    }
+    .plan-card:hover { border-color: var(--muted); }
+    .plan-card.current { border-color: rgba(191,239,69,0.5); background: #0F2014; }
+
+    .plan-badge {
+      position: absolute;
+      top: -10px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--lime);
+      color: var(--dark);
+      font-size: 0.6rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      padding: 0.2rem 0.75rem;
+      border-radius: 100px;
+      white-space: nowrap;
+    }
+
+    .plan-name { font-size: 0.7rem; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.5rem; }
+    .plan-price { font-family: 'Playfair Display', serif; font-size: 1.75rem; font-weight: 700; color: var(--text); line-height: 1; margin-bottom: 0.25rem; }
+    .plan-price sub { font-family: 'DM Sans', sans-serif; font-size: 0.8rem; color: var(--text2); font-weight: 300; }
+    .plan-sessions { font-size: 0.78rem; color: var(--lime); font-weight: 500; }
+
+    /* ── CREDITS ── */
+    .credits-bar-wrap {
+      margin: 1rem 0;
+    }
+    .credits-bar-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.78rem;
+      color: var(--text2);
+      margin-bottom: 0.5rem;
+    }
+    .credits-bar-track {
+      height: 8px;
+      background: #1A2E1D;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .credits-bar-fill {
+      height: 100%;
+      background: var(--lime);
+      border-radius: 4px;
+      transition: width 0.6s ease;
+    }
+
+    /* ── BOEKINGEN ── */
+    .booking-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+
+    .booking-item {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: 1rem 0;
+      border-bottom: 0.5px solid var(--border);
+    }
+    .booking-item:last-child { border-bottom: none; }
+
+    .booking-icon {
+      width: 40px;
+      height: 40px;
+      background: #1A2E1D;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+      flex-shrink: 0;
+    }
+
+    .booking-info { flex: 1; }
+    .booking-club { font-size: 0.875rem; font-weight: 500; color: var(--text); }
+    .booking-date { font-size: 0.78rem; color: var(--text2); font-weight: 300; margin-top: 2px; }
+
+    .booking-status {
+      font-size: 0.7rem;
+      font-weight: 500;
+      padding: 0.25rem 0.75rem;
+      border-radius: 100px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    .booking-status.gepland { background: rgba(191,239,69,0.1); color: var(--lime); }
+    .booking-status.gespeeld { background: rgba(138,170,143,0.1); color: var(--text2); }
+
+    .empty-state {
+      text-align: center;
+      padding: 3rem 1rem;
+      color: var(--text3);
+    }
+    .empty-state .empty-icon { font-size: 2rem; margin-bottom: 0.75rem; }
+    .empty-state p { font-size: 0.875rem; font-weight: 300; }
+
+    /* ── NOTIFICATIES ── */
+    .notif-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+
+    .notif-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1rem 0;
+      border-bottom: 0.5px solid var(--border);
+      gap: 1rem;
+    }
+    .notif-item:last-child { border-bottom: none; }
+
+    .notif-info h4 { font-size: 0.875rem; font-weight: 500; color: var(--text); margin-bottom: 3px; }
+    .notif-info p { font-size: 0.78rem; color: var(--text2); font-weight: 300; }
+
+    .toggle-switch {
+      position: relative;
+      width: 44px;
+      height: 24px;
+      flex-shrink: 0;
+    }
+    .toggle-switch input { opacity: 0; width: 0; height: 0; }
+    .toggle-slider {
+      position: absolute;
+      inset: 0;
+      background: var(--muted);
+      border-radius: 12px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .toggle-slider::before {
+      content: '';
+      position: absolute;
+      width: 18px;
+      height: 18px;
+      left: 3px;
+      top: 3px;
+      background: white;
+      border-radius: 50%;
+      transition: transform 0.2s;
+    }
+    .toggle-switch input:checked + .toggle-slider { background: var(--lime); }
+    .toggle-switch input:checked + .toggle-slider::before { transform: translateX(20px); }
+
+    /* ── LOADING ── */
+    .loading-screen {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 60vh;
+      flex-direction: column;
+      gap: 1rem;
+      color: var(--text2);
+      font-size: 0.875rem;
+    }
+    .spinner {
+      width: 28px; height: 28px;
+      border: 2px solid var(--border);
+      border-top-color: var(--lime);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── MOBILE ── */
+    @media (max-width: 768px) {
+      .dashboard-wrap { grid-template-columns: 1fr; padding: 1.5rem 1.25rem; }
+      .sidebar { flex-direction: row; flex-wrap: wrap; gap: 4px; margin-bottom: 0.5rem; }
+      .sidebar-item { flex: 1; min-width: 80px; justify-content: center; flex-direction: column; padding: 0.6rem 0.5rem; font-size: 0.75rem; text-align: center; gap: 4px; }
+      .sidebar-divider { display: none; }
+      .stats-row { grid-template-columns: 1fr 1fr; }
+      .plan-cards { grid-template-columns: 1fr; }
+      .form-row { grid-template-columns: 1fr; }
+      nav { padding: 1rem 1.25rem; }
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a href="index.html" class="logo">Court<span>Pass</span></a>
+  <div class="nav-right">
+    <div class="nav-user">
+      <div class="user-avatar" id="navAvatar">??</div>
+      <span id="navName">Laden...</span>
+    </div>
+    <button class="btn-logout" onclick="handleLogout()">🚪 Uitloggen</button>
+  </div>
+</nav>
+
+<!-- Loading -->
+<div class="loading-screen" id="loadingScreen">
+  <div class="spinner"></div>
+  <span>Laden...</span>
+</div>
+
+<!-- Dashboard -->
+<div class="dashboard-wrap" id="dashboardWrap" style="display:none;">
+
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <button class="sidebar-item active" onclick="showTab('overzicht', this)">
+      <span class="sidebar-icon">🏠</span> Overzicht
+    </button>
+    <button class="sidebar-item" onclick="showTab('profiel', this)">
+      <span class="sidebar-icon">👤</span> Profiel
+    </button>
+    <button class="sidebar-item" onclick="showTab('abonnement', this)">
+      <span class="sidebar-icon">🎾</span> Abonnement
+    </button>
+    <button class="sidebar-item" onclick="showTab('credits', this)">
+      <span class="sidebar-icon">💳</span> Credits
+    </button>
+    <button class="sidebar-item" onclick="showTab('boekingen', this)">
+      <span class="sidebar-icon">📅</span> Boekingen
+    </button>
+    <div class="sidebar-divider"></div>
+    <button class="sidebar-item" onclick="showTab('notificaties', this)">
+      <span class="sidebar-icon">🔔</span> Notificaties
+    </button>
+  </div>
+
+  <!-- Main -->
+  <div class="main-content">
+
+    <!-- OVERZICHT -->
+    <div class="tab-panel active" id="tab-overzicht">
+      <div class="section-header">
+        <h1>Goedemiddag, <span id="greetName" style="font-style:italic;color:var(--lime);">speler</span> 👋</h1>
+        <p id="greetEmail">Ingelogd als ...</p>
+      </div>
+
+      <div class="stats-row">
+        <div class="stat-card">
+          <div class="stat-card-label">Abonnement</div>
+          <div class="stat-card-value" style="font-size:1.4rem;" id="overviewPlan">—</div>
+          <div class="stat-card-sub">Huidig pakket</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card-label">Credits over</div>
+          <div class="stat-card-value" id="overviewCredits">0</div>
+          <div class="stat-card-sub">Deze maand</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card-label">Gespeeld</div>
+          <div class="stat-card-value" id="overviewPlayed">0</div>
+          <div class="stat-card-sub">Totaal sessies</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Volgende boeking</div>
+        <div class="empty-state">
+          <div class="empty-icon">📍</div>
+          <p>Nog geen boekingen gepland</p>
+          <br>
+          <a href="index.html#clubs" style="color:var(--lime);font-size:0.85rem;text-decoration:none;">Bekijk clubs →</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- PROFIEL -->
+    <div class="tab-panel" id="tab-profiel">
+      <div class="section-header">
+        <h1>Mijn profiel</h1>
+        <p>Beheer je persoonlijke gegevens</p>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Persoonlijke gegevens</div>
+        <div id="profileMsg"></div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Voornaam</label>
+            <input type="text" id="firstName" placeholder="Voornaam" />
+          </div>
+          <div class="form-group">
+            <label>Achternaam</label>
+            <input type="text" id="lastName" placeholder="Achternaam" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label>E-mailadres</label>
+          <input type="email" id="profileEmail" disabled />
+        </div>
+        <div class="form-group">
+          <label>Telefoonnummer</label>
+          <input type="tel" id="phoneNumber" placeholder="+31 6 12345678" />
+        </div>
+        <button class="btn-save" onclick="saveProfile()">💾 Opslaan</button>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Wachtwoord wijzigen</div>
+        <div id="passwordMsg"></div>
+        <div class="form-group">
+          <label>Nieuw wachtwoord</label>
+          <input type="password" id="newPassword" placeholder="Minimaal 8 tekens" />
+        </div>
+        <div class="form-group">
+          <label>Bevestig wachtwoord</label>
+          <input type="password" id="confirmPassword" placeholder="Herhaal wachtwoord" />
+        </div>
+        <button class="btn-save" onclick="savePassword()">🔑 Wachtwoord wijzigen</button>
+      </div>
+    </div>
+
+    <!-- ABONNEMENT -->
+    <div class="tab-panel" id="tab-abonnement">
+      <div class="section-header">
+        <h1>Mijn abonnement</h1>
+        <p>Bekijk en wijzig je huidige pakket</p>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Huidig pakket</div>
+        <div class="plan-cards">
+          <div class="plan-card" id="plan-starter" onclick="selectPlan('Starter')">
+            <div class="plan-name">Starter</div>
+            <div class="plan-price">€49<sub>/maand</sub></div>
+            <div class="plan-sessions">4 speelbeurten</div>
+          </div>
+          <div class="plan-card" id="plan-popular" onclick="selectPlan('Popular')">
+            <div class="plan-badge">Meest gekozen</div>
+            <div class="plan-name">Popular</div>
+            <div class="plan-price">€79<sub>/maand</sub></div>
+            <div class="plan-sessions">8 speelbeurten</div>
+          </div>
+          <div class="plan-card" id="plan-pro" onclick="selectPlan('Pro')">
+            <div class="plan-name">Pro</div>
+            <div class="plan-price">€119<sub>/maand</sub></div>
+            <div class="plan-sessions">Onbeperkt</div>
+          </div>
+        </div>
+        <p style="font-size:0.78rem;color:var(--text3);margin-top:1.25rem;">💡 Betalingen worden geactiveerd in een volgende update.</p>
+      </div>
+    </div>
+
+    <!-- CREDITS -->
+    <div class="tab-panel" id="tab-credits">
+      <div class="section-header">
+        <h1>Credits</h1>
+        <p>Overzicht van je credits deze maand</p>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Deze maand</div>
+        <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:1rem;">
+          <span style="font-family:'Playfair Display',serif;font-size:3rem;font-weight:700;color:var(--lime);" id="creditsLeft">0</span>
+          <span style="color:var(--text2);font-size:0.875rem;" id="creditsTotal">/ 0 credits</span>
+        </div>
+        <div class="credits-bar-wrap">
+          <div class="credits-bar-labels">
+            <span>Verbruikt</span>
+            <span id="creditsUsedLabel">0 gebruikt</span>
+          </div>
+          <div class="credits-bar-track">
+            <div class="credits-bar-fill" id="creditsBarFill" style="width:0%"></div>
+          </div>
+        </div>
+        <p style="font-size:0.78rem;color:var(--text3);margin-top:1rem;">🔄 Credits worden elke maand vernieuwd op de startdatum van je abonnement.</p>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Hoe werken credits?</div>
+        <div style="display:flex;flex-direction:column;gap:0.75rem;">
+          <div style="display:flex;gap:12px;align-items:flex-start;">
+            <span style="font-size:1rem;">🌙</span>
+            <div>
+              <div style="font-size:0.875rem;font-weight:500;margin-bottom:2px;">Daluren (ma-vr voor 17:00)</div>
+              <div style="font-size:0.78rem;color:var(--text2);font-weight:300;">1 credit per sessie</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:12px;align-items:flex-start;">
+            <span style="font-size:1rem;">☀️</span>
+            <div>
+              <div style="font-size:0.875rem;font-weight:500;margin-bottom:2px;">Avond & weekend</div>
+              <div style="font-size:0.78rem;color:var(--text2);font-weight:300;">2 credits per sessie</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:12px;align-items:flex-start;">
+            <span style="font-size:1rem;">⭐</span>
+            <div>
+              <div style="font-size:0.875rem;font-weight:500;margin-bottom:2px;">Premium clubs</div>
+              <div style="font-size:0.78rem;color:var(--text2);font-weight:300;">3 credits per sessie</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- BOEKINGEN -->
+    <div class="tab-panel" id="tab-boekingen">
+      <div class="section-header">
+        <h1>Boekingen</h1>
+        <p>Jouw speelgeschiedenis en geplande sessies</p>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Aankomend</div>
+        <div class="booking-list" id="upcomingBookings">
+          <div class="empty-state">
+            <div class="empty-icon">🎾</div>
+            <p>Geen geplande boekingen</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Geschiedenis</div>
+        <div class="booking-list" id="pastBookings">
+          <div class="empty-state">
+            <div class="empty-icon">📋</div>
+            <p>Nog geen speelhistorie</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- NOTIFICATIES -->
+    <div class="tab-panel" id="tab-notificaties">
+      <div class="section-header">
+        <h1>Notificaties</h1>
+        <p>Kies welke meldingen je wilt ontvangen</p>
+      </div>
+
+      <div class="card">
+        <div class="card-title">E-mail notificaties</div>
+        <div class="notif-list">
+          <div class="notif-item">
+            <div class="notif-info">
+              <h4>Boekingsbevestiging</h4>
+              <p>Ontvang een bevestiging bij elke boeking</p>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="notif-booking" checked onchange="saveNotif()">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          <div class="notif-item">
+            <div class="notif-info">
+              <h4>Herinnering voor je sessie</h4>
+              <p>Ontvang 2 uur van tevoren een herinnering</p>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="notif-reminder" checked onchange="saveNotif()">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          <div class="notif-item">
+            <div class="notif-info">
+              <h4>Credits bijna op</h4>
+              <p>Melding als je nog 1 credit over hebt</p>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="notif-credits" checked onchange="saveNotif()">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          <div class="notif-item">
+            <div class="notif-info">
+              <h4>Nieuwe clubs beschikbaar</h4>
+              <p>Melding als er clubs bij komen in jouw stad</p>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="notif-clubs" onchange="saveNotif()">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          <div class="notif-item">
+            <div class="notif-info">
+              <h4>Nieuwsbrief & aanbiedingen</h4>
+              <p>Ontvang updates en speciale acties</p>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="notif-news" onchange="saveNotif()">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  // ── SUPABASE ──
+  const SUPABASE_URL = 'https://aplxpnqkkamolmqzuuon.supabase.co';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFwbHhwbnFra2Ftb2xtcXp1dW9uIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM3NjM5NTAsImV4cCI6MjA4OTMzOTk1MH0.o9Z4lYNgA_Ym36x0S48OzaK6oD63kdZikD3j4uC_zHY';
+  const { createClient } = supabase;
+  const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  let currentUser = null;
+  let userProfile = {};
+
+  // ── INIT ──
+  window.addEventListener('load', async () => {
+    const { data: { session } } = await sb.auth.getSession();
+    if (!session) {
+      window.location.href = 'login.html';
+      return;
+    }
+    currentUser = session.user;
+    loadDashboard(currentUser);
+  });
+
+  function loadDashboard(user) {
+    const name = user.user_metadata?.full_name || user.email.split('@')[0];
+    const initials = name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0,2);
+    const hour = new Date().getHours();
+    const greeting = hour < 12 ? 'Goedemorgen' : hour < 18 ? 'Goedemiddag' : 'Goedenavond';
+
+    // Nav
+    document.getElementById('navAvatar').textContent = initials;
+    document.getElementById('navName').textContent = name;
+
+    // Overzicht
+    document.querySelector('#tab-overzicht h1').innerHTML = `${greeting}, <span style="font-style:italic;color:var(--lime);">${name.split(' ')[0]}</span> 👋`;
+    document.getElementById('greetEmail').textContent = `Ingelogd als ${user.email}`;
+
+    // Profiel velden
+    const nameParts = name.split(' ');
+    document.getElementById('firstName').value = nameParts[0] || '';
+    document.getElementById('lastName').value = nameParts.slice(1).join(' ') || '';
+    document.getElementById('profileEmail').value = user.email;
+
+    // Plan & credits
+    const plan = user.user_metadata?.plan || 'Geen abonnement';
+    const credits = user.user_metadata?.credits || 0;
+    const totalCredits = plan === 'Starter' ? 4 : plan === 'Popular' ? 8 : plan === 'Pro' ? 999 : 0;
+
+    document.getElementById('overviewPlan').textContent = plan;
+    document.getElementById('overviewCredits').textContent = credits;
+    document.getElementById('creditsLeft').textContent = credits;
+    document.getElementById('creditsTotal').textContent = `/ ${totalCredits === 999 ? '∞' : totalCredits} credits`;
+    document.getElementById('creditsUsedLabel').textContent = `${totalCredits - credits} gebruikt`;
+
+    const pct = totalCredits > 0 && totalCredits !== 999 ? ((totalCredits - credits) / totalCredits * 100) : 0;
+    document.getElementById('creditsBarFill').style.width = pct + '%';
+
+    // Huidige plan markeren
+    ['starter','popular','pro'].forEach(p => {
+      document.getElementById(`plan-${p}`).classList.remove('current');
+    });
+    if (plan !== 'Geen abonnement') {
+      const el = document.getElementById(`plan-${plan.toLowerCase()}`);
+      if (el) el.classList.add('current');
+    }
+
+    // Verberg loading, toon dashboard
+    document.getElementById('loadingScreen').style.display = 'none';
+    document.getElementById('dashboardWrap').style.display = 'grid';
+  }
+
+  // ── TABS ──
+  function showTab(name, btn) {
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.sidebar-item').forEach(b => b.classList.remove('active'));
+    document.getElementById(`tab-${name}`).classList.add('active');
+    btn.classList.add('active');
+  }
+
+  // ── PROFIEL OPSLAAN ──
+  async function saveProfile() {
+    const firstName = document.getElementById('firstName').value.trim();
+    const lastName = document.getElementById('lastName').value.trim();
+    const phone = document.getElementById('phoneNumber').value.trim();
+    const msgEl = document.getElementById('profileMsg');
+    msgEl.className = 'msg';
+    msgEl.style.display = 'none';
+
+    if (!firstName) {
+      msgEl.textContent = 'Vul je voornaam in.';
+      msgEl.className = 'msg error';
+      return;
+    }
+
+    const { error } = await sb.auth.updateUser({
+      data: { full_name: `${firstName} ${lastName}`.trim(), phone }
+    });
+
+    if (error) {
+      msgEl.textContent = 'Er ging iets mis. Probeer opnieuw.';
+      msgEl.className = 'msg error';
+    } else {
+      msgEl.textContent = '✓ Profiel opgeslagen!';
+      msgEl.className = 'msg success';
+      document.getElementById('navName').textContent = `${firstName} ${lastName}`.trim();
+      setTimeout(() => { msgEl.style.display = 'none'; }, 3000);
+    }
+  }
+
+  // ── WACHTWOORD WIJZIGEN ──
+  async function savePassword() {
+    const pw = document.getElementById('newPassword').value;
+    const confirm = document.getElementById('confirmPassword').value;
+    const msgEl = document.getElementById('passwordMsg');
+    msgEl.className = 'msg';
+    msgEl.style.display = 'none';
+
+    if (pw.length < 8) {
+      msgEl.textContent = 'Wachtwoord moet minimaal 8 tekens zijn.';
+      msgEl.className = 'msg error';
+      return;
+    }
+    if (pw !== confirm) {
+      msgEl.textContent = 'Wachtwoorden komen niet overeen.';
+      msgEl.className = 'msg error';
+      return;
+    }
+
+    const { error } = await sb.auth.updateUser({ password: pw });
+
+    if (error) {
+      msgEl.textContent = 'Er ging iets mis. Probeer opnieuw.';
+      msgEl.className = 'msg error';
+    } else {
+      msgEl.textContent = '✓ Wachtwoord gewijzigd!';
+      msgEl.className = 'msg success';
+      document.getElementById('newPassword').value = '';
+      document.getElementById('confirmPassword').value = '';
+      setTimeout(() => { msgEl.style.display = 'none'; }, 3000);
+    }
+  }
+
+  // ── PLAN KIEZEN ──
+  function selectPlan(plan) {
+    ['starter','popular','pro'].forEach(p => {
+      document.getElementById(`plan-${p}`).classList.remove('current');
+    });
+    document.getElementById(`plan-${plan.toLowerCase()}`).classList.add('current');
+    document.getElementById('overviewPlan').textContent = plan;
+  }
+
+  // ── NOTIFICATIES ──
+  function saveNotif() {
+    const settings = {
+      booking: document.getElementById('notif-booking').checked,
+      reminder: document.getElementById('notif-reminder').checked,
+      credits: document.getElementById('notif-credits').checked,
+      clubs: document.getElementById('notif-clubs').checked,
+      news: document.getElementById('notif-news').checked,
+    };
+    localStorage.setItem('courtpass_notif', JSON.stringify(settings));
+  }
+
+  // Laad opgeslagen notificatie instellingen
+  const savedNotif = JSON.parse(localStorage.getItem('courtpass_notif') || '{}');
+  if (Object.keys(savedNotif).length) {
+    Object.keys(savedNotif).forEach(key => {
+      const el = document.getElementById(`notif-${key}`);
+      if (el) el.checked = savedNotif[key];
+    });
+  }
+
+  // ── UITLOGGEN ──
+  async function handleLogout() {
+    await sb.auth.signOut();
+    window.location.href = 'login.html';
+  }
+</script>
+</body>
+</html>
