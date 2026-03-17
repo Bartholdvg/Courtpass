@@ -602,7 +602,10 @@
   // Check session on load
   window.addEventListener('load', async () => {
     const { data: { session } } = await sb.auth.getSession();
-    if (session) showDashboard(session.user);
+    if (session) {
+      window.location.href = 'dashboard.html';
+      return;
+    }
   });
 
   // ── TAB SWITCHING ──
@@ -690,7 +693,7 @@
       return;
     }
 
-    showDashboard(data.user);
+    window.location.href = 'dashboard.html';
   }
 
   // ── REGISTER ──
@@ -733,7 +736,7 @@
       document.getElementById('registerEmail').value = '';
       document.getElementById('registerPassword').value = '';
     } else if (data.session) {
-      showDashboard(data.user);
+      window.location.href = 'dashboard.html';
     }
   }
 
