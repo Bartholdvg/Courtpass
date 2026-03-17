@@ -6,13 +6,12 @@
   <title>CourtPass — Tennis zonder binding</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet" />
   <style>
     *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
     :root {
       --lime: #BFEF45;
-      --lime-dark: #A3D62E;
       --dark: #0D1A0F;
       --surface: #132015;
       --surface2: #0F1C12;
@@ -21,1048 +20,258 @@
       --text: #E8F0E9;
       --text2: #8BAA8F;
       --text3: #4A6650;
+
+      /* Fluid typography — schaalt vloeiend op elk scherm */
+      --step--1: clamp(0.75rem, 0.7rem + 0.25vw, 0.875rem);
+      --step-0:  clamp(0.875rem, 0.8rem + 0.375vw, 1.05rem);
+      --step-1:  clamp(1rem, 0.9rem + 0.5vw, 1.25rem);
+      --step-2:  clamp(1.4rem, 1.1rem + 1.5vw, 2.2rem);
+      --step-3:  clamp(1.9rem, 1.4rem + 2.5vw, 3.25rem);
+      --step-4:  clamp(2.4rem, 1.6rem + 4vw, 4.5rem);
     }
 
     html { scroll-behavior: smooth; }
-
-    body {
-      background: var(--dark);
-      color: var(--text);
-      font-family: 'DM Sans', sans-serif;
-      font-weight: 400;
-      line-height: 1.6;
-      overflow-x: hidden;
-    }
+    body { background: var(--dark); color: var(--text); font-family: 'DM Sans', sans-serif; font-weight: 400; line-height: 1.6; overflow-x: hidden; }
 
     /* ── NAV ── */
     nav {
-      position: sticky;
-      top: 0;
-      z-index: 100;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 1.1rem 2.5rem;
-      background: rgba(13, 26, 15, 0.92);
-      backdrop-filter: blur(12px);
-      border-bottom: 0.5px solid var(--border);
+      position: fixed; top: 0; left: 0; right: 0; z-index: 200;
+      display: flex; justify-content: space-between; align-items: center;
+      padding: clamp(0.875rem, 2vw, 1.25rem) clamp(1.25rem, 4vw, 2.5rem);
+      background: rgba(13,26,15,0.88);
+      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+      border-bottom: 0.5px solid rgba(30,48,34,0.8);
     }
-
-    .logo {
-      font-family: 'Playfair Display', serif;
-      font-weight: 700;
-      font-size: 1.3rem;
-      color: var(--text);
-      letter-spacing: -0.02em;
-      text-decoration: none;
-    }
+    .logo { font-family: 'Playfair Display', serif; font-weight: 700; font-size: clamp(1.1rem, 1.8vw, 1.35rem); color: var(--text); letter-spacing: -0.02em; text-decoration: none; }
     .logo span { color: var(--lime); }
-
-    .nav-links {
-      display: flex;
-      gap: 2rem;
-      list-style: none;
-      align-items: center;
-    }
-    .nav-links a {
-      color: var(--text2);
-      text-decoration: none;
-      font-size: 0.875rem;
-      transition: color 0.2s;
-    }
+    .nav-links { display: flex; gap: clamp(0.875rem, 1.8vw, 2rem); list-style: none; align-items: center; }
+    .nav-links a { color: var(--text2); text-decoration: none; font-size: var(--step--1); transition: color 0.2s; white-space: nowrap; }
     .nav-links a:hover { color: var(--text); }
-
-    .btn-nav-ghost {
-      border: 0.5px solid var(--muted) !important;
-      color: var(--text2) !important;
-      padding: 0.5rem 1.1rem !important;
-      border-radius: 100px !important;
-      font-size: 0.875rem !important;
-      transition: border-color 0.2s, color 0.2s !important;
-    }
+    .btn-nav-ghost { border: 0.5px solid var(--muted) !important; color: var(--text2) !important; padding: 0.45rem 1rem !important; border-radius: 100px !important; transition: border-color 0.2s, color 0.2s !important; }
     .btn-nav-ghost:hover { border-color: var(--text) !important; color: var(--text) !important; }
+    .btn-nav { background: var(--lime) !important; color: var(--dark) !important; padding: 0.45rem 1.1rem !important; border-radius: 100px !important; font-weight: 500 !important; transition: opacity 0.2s !important; white-space: nowrap; }
+    .btn-nav:hover { opacity: 0.85 !important; }
 
-    .btn-nav {
-      background: var(--lime);
-      color: var(--dark) !important;
-      padding: 0.5rem 1.25rem !important;
-      border-radius: 100px;
-      font-weight: 500 !important;
-      font-size: 0.875rem !important;
-      transition: opacity 0.2s, transform 0.15s !important;
+    .hamburger { display: none; flex-direction: column; gap: 5px; cursor: pointer; padding: 6px; background: none; border: none; }
+    .hamburger span { display: block; width: 22px; height: 2px; background: var(--text2); border-radius: 2px; transition: transform 0.3s ease, opacity 0.3s ease; }
+    .hamburger.open span:nth-child(1) { transform: rotate(45deg) translate(5px, 6px); }
+    .hamburger.open span:nth-child(2) { opacity: 0; transform: scaleX(0); }
+    .hamburger.open span:nth-child(3) { transform: rotate(-45deg) translate(5px, -6px); }
+
+    .mobile-menu {
+      display: none; position: fixed; inset: 0; z-index: 199;
+      background: rgba(9,18,10,0.98);
+      flex-direction: column; justify-content: center; align-items: center;
+      padding: 2rem;
     }
-    .btn-nav:hover { opacity: 0.88 !important; transform: translateY(-1px) !important; }
-
-    .hamburger { display: none; flex-direction: column; gap: 5px; cursor: pointer; padding: 4px; }
-    .hamburger span { display: block; width: 22px; height: 2px; background: var(--text2); border-radius: 2px; transition: all 0.3s; }
+    .mobile-menu.open { display: flex; }
+    .mobile-menu a { color: var(--text2); text-decoration: none; font-size: clamp(1.6rem, 6vw, 2.2rem); font-family: 'Playfair Display', serif; font-weight: 700; padding: 0.8rem 0; text-align: center; transition: color 0.2s; width: 100%; border-bottom: 0.5px solid var(--border); }
+    .mobile-menu a:last-child { border-bottom: none; }
+    .mobile-menu a:hover { color: var(--lime); }
+    .mobile-menu a.cta { color: var(--lime); margin-top: 1rem; border: none; }
 
     /* ── HERO ── */
     .hero {
-      min-height: 92vh;
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 4rem;
-      align-items: center;
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 6rem 2.5rem 5rem;
+      min-height: 100svh; display: flex; flex-direction: column; justify-content: center;
+      max-width: 1200px; margin: 0 auto;
+      padding: clamp(6rem, 12vw, 10rem) clamp(1.25rem, 4vw, 2.5rem) clamp(3rem, 6vw, 5rem);
     }
-
-    .hero-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      background: #1A2E1D;
-      border: 0.5px solid #2E4A32;
-      border-radius: 100px;
-      padding: 0.375rem 0.875rem;
-      font-size: 0.7rem;
-      color: var(--lime);
-      font-weight: 500;
-      margin-bottom: 1.5rem;
-      letter-spacing: 0.07em;
-      text-transform: uppercase;
-    }
-
-    .pulse {
-      width: 7px; height: 7px;
-      background: var(--lime);
-      border-radius: 50%;
-      display: inline-block;
-      animation: pulse 2s ease-in-out infinite;
-    }
+    .hero-badge { display: inline-flex; align-items: center; gap: 8px; background: #1A2E1D; border: 0.5px solid #2E4A32; border-radius: 100px; padding: 0.4rem 1rem; font-size: var(--step--1); color: var(--lime); font-weight: 500; margin-bottom: clamp(1.5rem, 3vw, 2rem); letter-spacing: 0.06em; text-transform: uppercase; width: fit-content; }
+    .pulse { width: 7px; height: 7px; background: var(--lime); border-radius: 50%; display: inline-block; flex-shrink: 0; animation: pulse 2s ease-in-out infinite; }
     @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.4;transform:scale(.85)} }
 
-    .hero h1 {
-      font-family: 'Playfair Display', serif;
-      font-size: clamp(2.6rem, 4.5vw, 4rem);
-      font-weight: 900;
-      line-height: 1.05;
-      letter-spacing: -0.03em;
-      margin-bottom: 1.25rem;
-    }
+    .hero-layout { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(2rem, 5vw, 5rem); align-items: center; }
+    .hero h1 { font-family: 'Playfair Display', serif; font-size: var(--step-4); font-weight: 900; line-height: 1.03; letter-spacing: -0.03em; margin-bottom: clamp(1rem, 2vw, 1.5rem); }
     .hero h1 em { font-style: italic; color: var(--lime); }
+    .hero-sub { font-size: var(--step-0); color: var(--text2); line-height: 1.7; margin-bottom: clamp(1.5rem, 3vw, 2.25rem); font-weight: 300; max-width: 46ch; }
+    .hero-actions { display: flex; gap: clamp(0.625rem, 1.5vw, 1rem); align-items: center; flex-wrap: wrap; margin-bottom: clamp(1.5rem, 3vw, 2.5rem); }
 
-    .hero-sub {
-      font-size: 1.05rem;
-      color: var(--text2);
-      line-height: 1.7;
-      margin-bottom: 2.25rem;
-      font-weight: 300;
-      max-width: 480px;
-    }
-
-    .hero-actions {
-      display: flex;
-      gap: 0.875rem;
-      align-items: center;
-      flex-wrap: wrap;
-      margin-bottom: 2.5rem;
-    }
-
-    .btn-primary {
-      background: var(--lime);
-      color: var(--dark);
-      border: none;
-      padding: 0.8rem 1.875rem;
-      border-radius: 100px;
-      font-family: 'DM Sans', sans-serif;
-      font-size: 0.9rem;
-      font-weight: 500;
-      cursor: pointer;
-      text-decoration: none;
-      display: inline-block;
-      transition: opacity 0.2s, transform 0.15s;
-    }
-    .btn-primary:hover { opacity: 0.88; transform: translateY(-1px); }
-
-    .btn-ghost {
-      background: transparent;
-      color: var(--text2);
-      border: 0.5px solid var(--muted);
-      padding: 0.8rem 1.5rem;
-      border-radius: 100px;
-      font-family: 'DM Sans', sans-serif;
-      font-size: 0.9rem;
-      font-weight: 400;
-      cursor: pointer;
-      text-decoration: none;
-      display: inline-block;
-      transition: border-color 0.2s, color 0.2s;
-    }
+    .btn-primary { background: var(--lime); color: var(--dark); border: none; padding: clamp(0.7rem, 1.5vw, 0.875rem) clamp(1.25rem, 3vw, 2rem); border-radius: 100px; font-family: 'DM Sans', sans-serif; font-size: var(--step-0); font-weight: 500; cursor: pointer; text-decoration: none; display: inline-block; transition: opacity 0.2s, transform 0.2s; white-space: nowrap; }
+    .btn-primary:hover { opacity: 0.88; transform: translateY(-2px); }
+    .btn-ghost { background: transparent; color: var(--text2); border: 0.5px solid var(--muted); padding: clamp(0.7rem, 1.5vw, 0.875rem) clamp(1rem, 2.5vw, 1.5rem); border-radius: 100px; font-family: 'DM Sans', sans-serif; font-size: var(--step-0); font-weight: 400; cursor: pointer; text-decoration: none; display: inline-block; transition: border-color 0.2s, color 0.2s; white-space: nowrap; }
     .btn-ghost:hover { border-color: var(--text2); color: var(--text); }
 
-    .hero-trust {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      font-size: 0.8rem;
-      color: var(--text3);
-    }
+    .hero-trust { display: flex; align-items: center; gap: 12px; font-size: var(--step--1); color: var(--text3); }
     .hero-trust-avatars { display: flex; }
-    .avatar {
-      width: 30px; height: 30px;
-      border-radius: 50%;
-      border: 2px solid var(--dark);
-      background: var(--surface);
-      display: flex; align-items: center; justify-content: center;
-      font-size: 0.65rem;
-      font-weight: 500;
-      color: var(--text2);
-      margin-left: -8px;
-    }
+    .avatar { width: 28px; height: 28px; border-radius: 50%; border: 2px solid var(--dark); background: var(--surface); display: flex; align-items: center; justify-content: center; font-size: 0.6rem; font-weight: 500; color: var(--text2); margin-left: -7px; }
     .avatar:first-child { margin-left: 0; }
 
-    /* Hero right — court card */
-    .hero-card {
-      background: var(--surface);
-      border: 0.5px solid var(--border);
-      border-radius: 24px;
-      padding: 2rem;
-      position: relative;
-    }
-
-    .court-svg-wrap {
-      background: #091A0B;
-      border-radius: 14px;
-      padding: 1.5rem;
-      margin-bottom: 1.5rem;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      aspect-ratio: 16/10;
-    }
-
-    .court-svg {
-      width: 100%;
-      max-width: 340px;
-    }
-
-    .hero-stats {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 0;
-      border-top: 0.5px solid var(--border);
-      padding-top: 1.25rem;
-    }
-    .hero-stat { text-align: center; border-right: 0.5px solid var(--border); padding: 0 1rem; }
+    .hero-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: clamp(16px, 2vw, 24px); padding: clamp(1.25rem, 2.5vw, 2rem); position: relative; }
+    .booking-pill { position: absolute; top: -13px; right: clamp(1rem, 2vw, 1.5rem); background: var(--lime); color: var(--dark); font-size: 0.7rem; font-weight: 500; padding: 0.3rem 0.875rem; border-radius: 100px; display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+    .pill-dot { width: 5px; height: 5px; background: var(--dark); border-radius: 50%; opacity: 0.5; }
+    .court-svg-wrap { background: #091A0B; border-radius: clamp(10px, 1.5vw, 14px); padding: clamp(1rem, 2vw, 1.5rem); margin-bottom: clamp(1rem, 2vw, 1.5rem); aspect-ratio: 16/10; display: flex; align-items: center; justify-content: center; }
+    .court-svg { width: 100%; max-width: 340px; }
+    .hero-stats { display: grid; grid-template-columns: repeat(3, 1fr); border-top: 0.5px solid var(--border); padding-top: clamp(0.875rem, 1.5vw, 1.25rem); }
+    .hero-stat { text-align: center; border-right: 0.5px solid var(--border); padding: 0 0.5rem; }
     .hero-stat:last-child { border-right: none; }
-    .stat-num {
-      font-family: 'Playfair Display', serif;
-      font-size: 1.9rem;
-      font-weight: 700;
-      color: var(--lime);
-      line-height: 1;
-      display: block;
-    }
-    .stat-lbl {
-      font-size: 0.68rem;
-      color: var(--text3);
-      text-transform: uppercase;
-      letter-spacing: 0.07em;
-      margin-top: 4px;
-      display: block;
-    }
-
-    /* Floating booking pill on card */
-    .booking-pill {
-      position: absolute;
-      top: -14px;
-      right: 1.5rem;
-      background: var(--lime);
-      color: var(--dark);
-      font-size: 0.72rem;
-      font-weight: 500;
-      padding: 0.35rem 0.875rem;
-      border-radius: 100px;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      white-space: nowrap;
-    }
-    .pill-dot { width: 6px; height: 6px; background: var(--dark); border-radius: 50%; opacity: 0.6; }
+    .stat-num { font-family: 'Playfair Display', serif; font-size: clamp(1.4rem, 3vw, 2rem); font-weight: 700; color: var(--lime); line-height: 1; display: block; }
+    .stat-lbl { font-size: clamp(0.58rem, 1vw, 0.68rem); color: var(--text3); text-transform: uppercase; letter-spacing: 0.07em; margin-top: 3px; display: block; }
 
     /* ── CLUBS BAR ── */
-    .clubs-bar {
-      background: #091A0B;
-      border-top: 0.5px solid var(--border);
-      border-bottom: 0.5px solid var(--border);
-      padding: 1.25rem 2.5rem;
-      display: flex;
-      align-items: center;
-      gap: 2.5rem;
-      overflow: hidden;
-    }
-    .clubs-bar-label {
-      font-size: 0.68rem;
-      color: var(--text3);
-      text-transform: uppercase;
-      letter-spacing: 0.09em;
-      white-space: nowrap;
-      flex-shrink: 0;
-    }
-    .clubs-scroll {
-      display: flex;
-      gap: 2.5rem;
-      overflow-x: auto;
-      scrollbar-width: none;
-    }
+    .clubs-bar { background: #091A0B; border-top: 0.5px solid var(--border); border-bottom: 0.5px solid var(--border); padding: clamp(1rem, 2vw, 1.5rem) clamp(1.25rem, 4vw, 2.5rem); display: flex; align-items: center; gap: clamp(1rem, 3vw, 2.5rem); overflow: hidden; }
+    .clubs-bar-label { font-size: 0.65rem; color: var(--text3); text-transform: uppercase; letter-spacing: 0.1em; white-space: nowrap; flex-shrink: 0; }
+    .clubs-scroll { display: flex; gap: clamp(1.5rem, 3vw, 2.5rem); overflow-x: auto; scrollbar-width: none; }
     .clubs-scroll::-webkit-scrollbar { display: none; }
-    .club-tag {
-      font-size: 0.875rem;
-      font-weight: 500;
-      color: var(--muted);
-      white-space: nowrap;
-      letter-spacing: 0.03em;
-    }
+    .club-tag { font-size: var(--step--1); font-weight: 500; color: var(--muted); white-space: nowrap; }
 
     /* ── SECTIONS ── */
-    .section {
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 6rem 2.5rem;
-    }
+    .section { max-width: 1200px; margin: 0 auto; padding: clamp(4rem, 8vw, 7rem) clamp(1.25rem, 4vw, 2.5rem); }
+    .section-tag { font-size: 0.65rem; color: var(--lime); text-transform: uppercase; letter-spacing: 0.1em; font-weight: 500; margin-bottom: 0.75rem; display: block; }
+    .section h2 { font-family: 'Playfair Display', serif; font-size: var(--step-3); font-weight: 700; line-height: 1.1; letter-spacing: -0.025em; margin-bottom: clamp(2rem, 4vw, 3.5rem); }
+    .section-intro { font-size: var(--step-0); color: var(--text2); line-height: 1.7; max-width: 50ch; font-weight: 300; margin-top: -1.5rem; margin-bottom: clamp(2rem, 4vw, 3.5rem); }
 
-    .section-tag {
-      font-size: 0.68rem;
-      color: var(--lime);
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      font-weight: 500;
-      margin-bottom: 0.75rem;
-      display: block;
-    }
-
-    .section h2 {
-      font-family: 'Playfair Display', serif;
-      font-size: clamp(1.9rem, 3vw, 2.75rem);
-      font-weight: 700;
-      line-height: 1.12;
-      letter-spacing: -0.025em;
-      margin-bottom: 3.5rem;
-    }
-
-    .section-intro {
-      font-size: 1rem;
-      color: var(--text2);
-      line-height: 1.7;
-      max-width: 520px;
-      font-weight: 300;
-      margin-top: -2.5rem;
-      margin-bottom: 3.5rem;
-    }
-
-    /* ── HOW IT WORKS ── */
-    .steps {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      border-top: 0.5px solid var(--border);
-    }
-
-    .step {
-      padding: 2rem 1.75rem;
-      border-right: 0.5px solid var(--border);
-      position: relative;
-      transition: background 0.2s;
-    }
+    /* ── STEPS ── */
+    .steps { display: grid; grid-template-columns: repeat(4, 1fr); border-top: 0.5px solid var(--border); }
+    .step { padding: clamp(1.25rem, 2.5vw, 2rem) clamp(1rem, 2vw, 1.75rem); border-right: 0.5px solid var(--border); transition: background 0.2s; }
     .step:hover { background: var(--surface2); }
     .step:last-child { border-right: none; }
-
-    .step-num {
-      font-family: 'Playfair Display', serif;
-      font-size: 3.5rem;
-      font-weight: 900;
-      color: #162A19;
-      line-height: 1;
-      margin-bottom: 1rem;
-      display: block;
-    }
-
-    .step-icon {
-      width: 36px; height: 36px;
-      background: #1A2E1D;
-      border-radius: 8px;
-      display: flex; align-items: center; justify-content: center;
-      margin-bottom: 1rem;
-      font-size: 1rem;
-    }
-
-    .step h3 {
-      font-size: 1rem;
-      font-weight: 500;
-      color: var(--text);
-      margin-bottom: 0.5rem;
-      line-height: 1.3;
-    }
-
-    .step p {
-      font-size: 0.82rem;
-      color: var(--text2);
-      line-height: 1.65;
-      font-weight: 300;
-    }
+    .step-num { font-family: 'Playfair Display', serif; font-size: clamp(2rem, 4vw, 3.5rem); font-weight: 900; color: #162A19; line-height: 1; margin-bottom: 0.875rem; display: block; }
+    .step-icon { width: 34px; height: 34px; background: #1A2E1D; border-radius: 8px; display: flex; align-items: center; justify-content: center; margin-bottom: 0.875rem; font-size: 0.9rem; }
+    .step h3 { font-size: var(--step-0); font-weight: 500; color: var(--text); margin-bottom: 0.5rem; line-height: 1.3; }
+    .step p { font-size: var(--step--1); color: var(--text2); line-height: 1.65; font-weight: 300; }
 
     /* ── WHY ── */
-    .why-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 2rem;
-    }
-
-    .why-card {
-      background: var(--surface);
-      border: 0.5px solid var(--border);
-      border-radius: 18px;
-      padding: 2rem;
-      transition: border-color 0.2s;
-    }
+    .why-grid { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(1rem, 2vw, 2rem); }
+    .why-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: clamp(12px, 2vw, 18px); padding: clamp(1.25rem, 2.5vw, 2rem); transition: border-color 0.2s; }
     .why-card:hover { border-color: var(--muted); }
-
-    .why-card.accent {
-      background: #0F2014;
-      border-color: rgba(191,239,69,0.25);
-      grid-column: span 2;
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 2rem;
-      align-items: center;
-    }
-
-    .why-num {
-      font-family: 'Playfair Display', serif;
-      font-size: 3rem;
-      font-weight: 700;
-      color: var(--lime);
-      line-height: 1;
-      margin-bottom: 0.5rem;
-    }
-
-    .why-label {
-      font-size: 1rem;
-      font-weight: 500;
-      color: var(--text);
-      margin-bottom: 0.5rem;
-    }
-
-    .why-desc {
-      font-size: 0.82rem;
-      color: var(--text2);
-      line-height: 1.65;
-      font-weight: 300;
-    }
-
-    .why-accent-text h3 {
-      font-family: 'Playfair Display', serif;
-      font-size: 1.75rem;
-      font-weight: 700;
-      color: var(--text);
-      letter-spacing: -0.02em;
-      margin-bottom: 0.875rem;
-    }
-    .why-accent-text p {
-      font-size: 0.9rem;
-      color: var(--text2);
-      line-height: 1.7;
-      font-weight: 300;
-    }
-
-    .why-accent-visual {
-      display: flex;
-      flex-direction: column;
-      gap: 0.75rem;
-    }
-
-    .bar-row {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      font-size: 0.78rem;
-      color: var(--text2);
-    }
-    .bar-label { width: 90px; flex-shrink: 0; }
-    .bar-track {
-      flex: 1;
-      height: 6px;
-      background: #1A2E1D;
-      border-radius: 3px;
-      overflow: hidden;
-    }
+    .why-card.accent { background: #0F2014; border-color: rgba(191,239,69,0.2); grid-column: span 2; display: grid; grid-template-columns: 1fr 1fr; gap: clamp(1.5rem, 3vw, 2.5rem); align-items: center; }
+    .why-num { font-family: 'Playfair Display', serif; font-size: var(--step-3); font-weight: 700; color: var(--lime); line-height: 1; margin-bottom: 0.5rem; }
+    .why-label { font-size: var(--step-0); font-weight: 500; color: var(--text); margin-bottom: 0.5rem; }
+    .why-desc { font-size: var(--step--1); color: var(--text2); line-height: 1.65; font-weight: 300; }
+    .why-accent-text h3 { font-family: 'Playfair Display', serif; font-size: var(--step-2); font-weight: 700; color: var(--text); letter-spacing: -0.02em; margin-bottom: 0.875rem; }
+    .why-accent-text p { font-size: var(--step-0); color: var(--text2); line-height: 1.7; font-weight: 300; }
+    .why-accent-visual { display: flex; flex-direction: column; gap: 0.75rem; }
+    .bar-row { display: flex; align-items: center; gap: 12px; font-size: var(--step--1); color: var(--text2); }
+    .bar-label { width: 80px; flex-shrink: 0; }
+    .bar-track { flex: 1; height: 5px; background: #1A2E1D; border-radius: 3px; overflow: hidden; }
     .bar-fill { height: 100%; background: var(--lime); border-radius: 3px; }
-    .bar-val { width: 40px; text-align: right; flex-shrink: 0; color: var(--lime); font-weight: 500; }
+    .bar-val { width: 36px; text-align: right; flex-shrink: 0; color: var(--lime); font-weight: 500; }
 
     /* ── PRICING ── */
-    .pricing-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 1.25rem;
-    }
-
-    .plan {
-      background: var(--surface);
-      border: 0.5px solid var(--border);
-      border-radius: 20px;
-      padding: 2rem 1.75rem;
-      position: relative;
-      transition: border-color 0.2s, transform 0.2s;
-      display: flex;
-      flex-direction: column;
-    }
+    .pricing-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: clamp(0.875rem, 1.5vw, 1.25rem); }
+    .plan { background: var(--surface); border: 0.5px solid var(--border); border-radius: clamp(14px, 2vw, 20px); padding: clamp(1.5rem, 2.5vw, 2rem) clamp(1.25rem, 2vw, 1.75rem); position: relative; transition: border-color 0.2s, transform 0.2s; display: flex; flex-direction: column; }
     .plan:hover { transform: translateY(-3px); }
-
-    .plan.popular {
-      border-color: rgba(191,239,69,0.5);
-      background: #0F2014;
-    }
-
-    .popular-badge {
-      position: absolute;
-      top: -12px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: var(--lime);
-      color: var(--dark);
-      font-size: 0.62rem;
-      font-weight: 500;
-      text-transform: uppercase;
-      letter-spacing: 0.09em;
-      padding: 0.22rem 0.875rem;
-      border-radius: 100px;
-      white-space: nowrap;
-    }
-
-    .plan-name {
-      font-size: 0.7rem;
-      color: var(--text3);
-      text-transform: uppercase;
-      letter-spacing: 0.09em;
-      font-weight: 500;
-      margin-bottom: 1.25rem;
-    }
-
-    .plan-price-wrap { margin-bottom: 0.35rem; }
-
-    .plan-price {
-      font-family: 'Playfair Display', serif;
-      font-size: 3rem;
-      font-weight: 700;
-      color: var(--text);
-      line-height: 1;
-    }
-    .plan-price sub {
-      font-family: 'DM Sans', sans-serif;
-      font-size: 1rem;
-      color: var(--text2);
-      font-weight: 300;
-      vertical-align: baseline;
-    }
-
-    .plan-sessions {
-      font-size: 0.875rem;
-      color: var(--lime);
-      font-weight: 500;
-      margin-bottom: 1.75rem;
-    }
-
-    .plan-features {
-      list-style: none;
-      margin-bottom: 2rem;
-      flex: 1;
-    }
-    .plan-features li {
-      font-size: 0.82rem;
-      color: var(--text2);
-      padding: 0.45rem 0;
-      display: flex;
-      align-items: flex-start;
-      gap: 9px;
-      border-bottom: 0.5px solid var(--border);
-      font-weight: 300;
-      line-height: 1.4;
-    }
+    .plan.popular { border-color: rgba(191,239,69,0.5); background: #0F2014; }
+    .popular-badge { position: absolute; top: -11px; left: 50%; transform: translateX(-50%); background: var(--lime); color: var(--dark); font-size: 0.6rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.09em; padding: 0.2rem 0.875rem; border-radius: 100px; white-space: nowrap; }
+    .plan-name { font-size: 0.68rem; color: var(--text3); text-transform: uppercase; letter-spacing: 0.09em; font-weight: 500; margin-bottom: 1rem; }
+    .plan-price { font-family: 'Playfair Display', serif; font-size: clamp(2rem, 3.5vw, 3rem); font-weight: 700; color: var(--text); line-height: 1; }
+    .plan-price sub { font-family: 'DM Sans', sans-serif; font-size: 0.9rem; color: var(--text2); font-weight: 300; vertical-align: baseline; }
+    .plan-sessions { font-size: var(--step--1); color: var(--lime); font-weight: 500; margin: 0.35rem 0 1.5rem; }
+    .plan-features { list-style: none; margin-bottom: 1.75rem; flex: 1; }
+    .plan-features li { font-size: var(--step--1); color: var(--text2); padding: 0.4rem 0; display: flex; align-items: flex-start; gap: 8px; border-bottom: 0.5px solid var(--border); font-weight: 300; line-height: 1.4; }
     .plan-features li:last-child { border-bottom: none; }
-    .check { color: var(--lime); font-size: 0.8rem; flex-shrink: 0; margin-top: 1px; }
-
-    .plan-cta {
-      display: block;
-      text-align: center;
-      padding: 0.8rem;
-      border-radius: 12px;
-      font-family: 'DM Sans', sans-serif;
-      font-size: 0.875rem;
-      font-weight: 500;
-      cursor: pointer;
-      text-decoration: none;
-      transition: all 0.2s;
-    }
-    .plan-cta-ghost {
-      border: 0.5px solid var(--muted);
-      color: var(--text2);
-      background: transparent;
-    }
+    .check { color: var(--lime); font-size: 0.75rem; flex-shrink: 0; margin-top: 2px; }
+    .plan-cta { display: block; text-align: center; padding: 0.75rem; border-radius: 10px; font-family: 'DM Sans', sans-serif; font-size: var(--step--1); font-weight: 500; cursor: pointer; text-decoration: none; transition: all 0.2s; }
+    .plan-cta-ghost { border: 0.5px solid var(--muted); color: var(--text2); background: transparent; }
     .plan-cta-ghost:hover { border-color: var(--text2); color: var(--text); }
-    .plan-cta-solid {
-      background: var(--lime);
-      color: var(--dark);
-      border: none;
-    }
+    .plan-cta-solid { background: var(--lime); color: var(--dark); border: none; }
     .plan-cta-solid:hover { opacity: 0.88; }
+    .pricing-note { text-align: center; font-size: var(--step--1); color: var(--text3); margin-top: 1.5rem; }
 
-    .pricing-note {
-      text-align: center;
-      font-size: 0.8rem;
-      color: var(--text3);
-      margin-top: 1.5rem;
-    }
-
-    /* ── FOR WHO ── */
-    .personas {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 1rem;
-    }
-
-    .persona {
-      background: var(--surface);
-      border: 0.5px solid var(--border);
-      border-radius: 16px;
-      padding: 1.75rem;
-      display: flex;
-      gap: 1.25rem;
-      align-items: flex-start;
-      transition: border-color 0.2s;
-    }
+    /* ── PERSONAS ── */
+    .personas { display: grid; grid-template-columns: repeat(2, 1fr); gap: clamp(0.75rem, 1.5vw, 1rem); }
+    .persona { background: var(--surface); border: 0.5px solid var(--border); border-radius: clamp(12px, 1.5vw, 16px); padding: clamp(1.25rem, 2.5vw, 1.75rem); display: flex; gap: clamp(0.875rem, 1.5vw, 1.25rem); align-items: flex-start; transition: border-color 0.2s; }
     .persona:hover { border-color: var(--muted); }
+    .persona-icon { font-size: 1.25rem; width: 44px; height: 44px; background: #1A2E1D; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .persona h3 { font-size: var(--step-0); font-weight: 500; margin-bottom: 0.3rem; color: var(--text); }
+    .persona p { font-size: var(--step--1); color: var(--text2); line-height: 1.6; font-weight: 300; }
 
-    .persona-icon {
-      font-size: 1.5rem;
-      width: 48px;
-      height: 48px;
-      background: #1A2E1D;
-      border-radius: 12px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
-    }
-
-    .persona h3 {
-      font-size: 0.95rem;
-      font-weight: 500;
-      margin-bottom: 0.35rem;
-      color: var(--text);
-    }
-
-    .persona p {
-      font-size: 0.8rem;
-      color: var(--text2);
-      line-height: 1.6;
-      font-weight: 300;
-    }
-
-    /* ── FOR CLUBS ── */
-    .clubs-split {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 4rem;
-      align-items: center;
-    }
-
-    .clubs-benefits {
-      list-style: none;
-      display: flex;
-      flex-direction: column;
-      gap: 1rem;
-    }
-
-    .benefit {
-      display: flex;
-      gap: 1rem;
-      align-items: flex-start;
-    }
-
-    .benefit-icon {
-      width: 40px;
-      height: 40px;
-      background: #1A2E1D;
-      border-radius: 10px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1rem;
-      flex-shrink: 0;
-    }
-
-    .benefit h4 {
-      font-size: 0.9rem;
-      font-weight: 500;
-      color: var(--text);
-      margin-bottom: 0.25rem;
-    }
-
-    .benefit p {
-      font-size: 0.8rem;
-      color: var(--text2);
-      line-height: 1.6;
-      font-weight: 300;
-    }
-
-    .clubs-cta-card {
-      background: var(--surface);
-      border: 0.5px solid var(--border);
-      border-radius: 20px;
-      padding: 2.5rem;
-    }
-
-    .clubs-cta-card h3 {
-      font-family: 'Playfair Display', serif;
-      font-size: 1.6rem;
-      font-weight: 700;
-      letter-spacing: -0.02em;
-      margin-bottom: 1rem;
-    }
-
-    .clubs-cta-card p {
-      font-size: 0.875rem;
-      color: var(--text2);
-      line-height: 1.7;
-      margin-bottom: 1.75rem;
-      font-weight: 300;
-    }
+    /* ── CLUBS SPLIT ── */
+    .clubs-split { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(2rem, 5vw, 4rem); align-items: center; }
+    .clubs-benefits { list-style: none; display: flex; flex-direction: column; gap: clamp(0.875rem, 1.5vw, 1rem); }
+    .benefit { display: flex; gap: clamp(0.75rem, 1.5vw, 1rem); align-items: flex-start; }
+    .benefit-icon { width: 38px; height: 38px; background: #1A2E1D; border-radius: 9px; display: flex; align-items: center; justify-content: center; font-size: 0.95rem; flex-shrink: 0; }
+    .benefit h4 { font-size: var(--step-0); font-weight: 500; color: var(--text); margin-bottom: 0.2rem; }
+    .benefit p { font-size: var(--step--1); color: var(--text2); line-height: 1.6; font-weight: 300; }
+    .clubs-cta-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: clamp(14px, 2vw, 20px); padding: clamp(1.75rem, 3vw, 2.5rem); }
+    .clubs-cta-card h3 { font-family: 'Playfair Display', serif; font-size: var(--step-2); font-weight: 700; letter-spacing: -0.02em; margin-bottom: 0.875rem; }
+    .clubs-cta-card p { font-size: var(--step-0); color: var(--text2); line-height: 1.7; margin-bottom: 1.75rem; font-weight: 300; }
 
     /* ── FAQ ── */
-    .faq-list {
-      display: flex;
-      flex-direction: column;
-      border-top: 0.5px solid var(--border);
-    }
-
-    .faq-item {
-      border-bottom: 0.5px solid var(--border);
-      overflow: hidden;
-    }
-
-    .faq-q {
-      width: 100%;
-      background: none;
-      border: none;
-      color: var(--text);
-      font-family: 'DM Sans', sans-serif;
-      font-size: 0.95rem;
-      font-weight: 400;
-      padding: 1.25rem 0;
-      text-align: left;
-      cursor: pointer;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 1rem;
-    }
+    .faq-list { display: flex; flex-direction: column; border-top: 0.5px solid var(--border); }
+    .faq-item { border-bottom: 0.5px solid var(--border); }
+    .faq-q { width: 100%; background: none; border: none; color: var(--text); font-family: 'DM Sans', sans-serif; font-size: var(--step-0); font-weight: 400; padding: clamp(1rem, 2vw, 1.25rem) 0; text-align: left; cursor: pointer; display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
     .faq-q:hover { color: var(--lime); }
+    .faq-arrow { width: 20px; height: 20px; border: 0.5px solid var(--muted); border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: transform 0.25s, border-color 0.2s; font-size: 0.7rem; color: var(--text2); }
+    .faq-item.open .faq-arrow { transform: rotate(180deg); border-color: var(--lime); color: var(--lime); }
+    .faq-a { font-size: var(--step-0); color: var(--text2); line-height: 1.7; font-weight: 300; max-height: 0; overflow: hidden; transition: max-height 0.35s ease, padding 0.25s ease; }
+    .faq-item.open .faq-a { max-height: 300px; padding: 0 0 1.25rem; }
 
-    .faq-arrow {
-      width: 20px;
-      height: 20px;
-      border: 0.5px solid var(--muted);
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
-      transition: transform 0.25s, border-color 0.2s;
-      font-size: 0.7rem;
-      color: var(--text2);
-    }
-
-    .faq-item.open .faq-arrow {
-      transform: rotate(180deg);
-      border-color: var(--lime);
-      color: var(--lime);
-    }
-
-    .faq-a {
-      font-size: 0.875rem;
-      color: var(--text2);
-      line-height: 1.7;
-      font-weight: 300;
-      max-height: 0;
-      overflow: hidden;
-      transition: max-height 0.35s ease, padding 0.25s ease;
-      padding: 0 0 0;
-    }
-
-    .faq-item.open .faq-a {
-      max-height: 300px;
-      padding: 0 0 1.25rem;
-    }
-
-    /* ── CTA BANNER ── */
-    .cta-banner {
-      background: var(--surface2);
-      border-top: 0.5px solid var(--border);
-      border-bottom: 0.5px solid var(--border);
-    }
-
-    .cta-inner {
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 6rem 2.5rem;
-      display: grid;
-      grid-template-columns: 1fr auto;
-      gap: 3rem;
-      align-items: center;
-    }
-
-    .cta-inner h2 {
-      font-family: 'Playfair Display', serif;
-      font-size: clamp(1.8rem, 3vw, 2.5rem);
-      font-weight: 700;
-      letter-spacing: -0.025em;
-      line-height: 1.15;
-      margin: 0;
-    }
+    /* ── CTA ── */
+    .cta-banner { background: var(--surface2); border-top: 0.5px solid var(--border); border-bottom: 0.5px solid var(--border); }
+    .cta-inner { max-width: 1200px; margin: 0 auto; padding: clamp(4rem, 8vw, 6rem) clamp(1.25rem, 4vw, 2.5rem); display: grid; grid-template-columns: 1fr auto; gap: clamp(2rem, 4vw, 3rem); align-items: center; }
+    .cta-inner h2 { font-family: 'Playfair Display', serif; font-size: var(--step-3); font-weight: 700; letter-spacing: -0.025em; line-height: 1.12; margin: 0; }
     .cta-inner h2 em { font-style: italic; color: var(--lime); }
+    .cta-actions { display: flex; flex-direction: column; gap: 0.75rem; align-items: flex-end; flex-shrink: 0; }
+    .cta-note { font-size: var(--step--1); color: var(--text3); text-align: right; }
 
-    .cta-actions {
-      display: flex;
-      flex-direction: column;
-      gap: 0.75rem;
-      align-items: flex-end;
-      flex-shrink: 0;
-    }
-
-    .cta-note { font-size: 0.75rem; color: var(--text3); text-align: right; }
+    /* ── CONTACT ── */
+    .contact-grid { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(2rem, 5vw, 4rem); align-items: start; }
+    .form-group { margin-bottom: 1.1rem; }
+    .form-group label { display: block; font-size: var(--step--1); color: var(--text2); margin-bottom: 0.45rem; }
+    .form-group input, .form-group textarea, .form-group select { width: 100%; background: var(--surface); border: 0.5px solid var(--border); border-radius: 10px; padding: 0.75rem 1rem; color: var(--text); font-family: 'DM Sans', sans-serif; font-size: var(--step--1); font-weight: 300; transition: border-color 0.2s; outline: none; }
+    .form-group input:focus, .form-group textarea:focus, .form-group select:focus { border-color: var(--lime); }
+    .form-group textarea { resize: vertical; min-height: 100px; }
+    .form-group select option { background: var(--dark); }
+    .form-success { display: none; background: #0F2014; border: 0.5px solid rgba(191,239,69,0.3); border-radius: 10px; padding: 1rem; font-size: var(--step--1); color: var(--lime); margin-top: 1rem; }
 
     /* ── FOOTER ── */
-    footer {
-      background: var(--dark);
-      padding: 3.5rem 2.5rem 2rem;
-      max-width: 1200px;
-      margin: 0 auto;
-    }
-
-    .footer-top {
-      display: grid;
-      grid-template-columns: 2fr 1fr 1fr 1fr;
-      gap: 3rem;
-      padding-bottom: 2.5rem;
-      border-bottom: 0.5px solid var(--border);
-      margin-bottom: 2rem;
-    }
-
+    footer { background: var(--dark); padding: clamp(2.5rem, 5vw, 4rem) clamp(1.25rem, 4vw, 2.5rem) clamp(1.5rem, 3vw, 2rem); max-width: 1200px; margin: 0 auto; }
+    .footer-top { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: clamp(1.5rem, 3vw, 3rem); padding-bottom: clamp(1.5rem, 3vw, 2.5rem); border-bottom: 0.5px solid var(--border); margin-bottom: clamp(1rem, 2vw, 2rem); }
     .footer-brand .logo { font-size: 1.1rem; display: block; margin-bottom: 0.875rem; }
-
-    .footer-desc {
-      font-size: 0.8rem;
-      color: var(--text3);
-      line-height: 1.65;
-      font-weight: 300;
-      margin-bottom: 1.25rem;
-    }
-
-    .footer-col h4 {
-      font-size: 0.72rem;
-      color: var(--text2);
-      text-transform: uppercase;
-      letter-spacing: 0.09em;
-      font-weight: 500;
-      margin-bottom: 1rem;
-    }
-
-    .footer-col ul {
-      list-style: none;
-      display: flex;
-      flex-direction: column;
-      gap: 0.6rem;
-    }
-
-    .footer-col a {
-      font-size: 0.82rem;
-      color: var(--text3);
-      text-decoration: none;
-      font-weight: 300;
-      transition: color 0.2s;
-    }
+    .footer-desc { font-size: var(--step--1); color: var(--text3); line-height: 1.65; font-weight: 300; margin-bottom: 1.25rem; }
+    .footer-col h4 { font-size: 0.68rem; color: var(--text2); text-transform: uppercase; letter-spacing: 0.09em; font-weight: 500; margin-bottom: 0.875rem; }
+    .footer-col ul { list-style: none; display: flex; flex-direction: column; gap: 0.5rem; }
+    .footer-col a { font-size: var(--step--1); color: var(--text3); text-decoration: none; font-weight: 300; transition: color 0.2s; }
     .footer-col a:hover { color: var(--text); }
+    .footer-bottom { display: flex; justify-content: space-between; align-items: center; font-size: var(--step--1); color: var(--text3); flex-wrap: wrap; gap: 0.5rem; }
 
-    .footer-bottom {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-size: 0.75rem;
-      color: var(--text3);
+    /* ── ANIMATIES ── */
+    .reveal {
+      opacity: 0;
+      transform: translateY(28px);
+      transition: opacity 0.75s cubic-bezier(0.16, 1, 0.3, 1), transform 0.75s cubic-bezier(0.16, 1, 0.3, 1);
     }
+    .reveal.in-view { opacity: 1; transform: translateY(0); }
+    .reveal-d1 { transition-delay: 0.12s; }
+    .reveal-d2 { transition-delay: 0.24s; }
+    .reveal-d3 { transition-delay: 0.36s; }
 
-    /* ── CONTACT FORM ── */
-    .contact-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 4rem;
-      align-items: start;
-    }
-
-    .form-group {
-      margin-bottom: 1.25rem;
-    }
-
-    .form-group label {
-      display: block;
-      font-size: 0.78rem;
-      color: var(--text2);
-      margin-bottom: 0.5rem;
-      font-weight: 400;
-    }
-
-    .form-group input,
-    .form-group textarea,
-    .form-group select {
-      width: 100%;
-      background: var(--surface);
-      border: 0.5px solid var(--border);
-      border-radius: 10px;
-      padding: 0.75rem 1rem;
-      color: var(--text);
-      font-family: 'DM Sans', sans-serif;
-      font-size: 0.875rem;
-      font-weight: 300;
-      transition: border-color 0.2s;
-      outline: none;
-    }
-
-    .form-group input:focus,
-    .form-group textarea:focus,
-    .form-group select:focus {
-      border-color: var(--lime);
-    }
-
-    .form-group textarea { resize: vertical; min-height: 100px; }
-
-    .form-group select option { background: var(--dark); }
-
-    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
-
-    .form-success {
-      display: none;
-      background: #0F2014;
-      border: 0.5px solid rgba(191,239,69,0.3);
-      border-radius: 10px;
-      padding: 1rem 1.25rem;
-      font-size: 0.875rem;
-      color: var(--lime);
-      margin-top: 1rem;
-    }
-
-    /* ── MOBILE ── */
+    /* ── RESPONSIVE ── */
     @media (max-width: 900px) {
-      .hero { grid-template-columns: 1fr; gap: 2.5rem; padding: 3.5rem 1.5rem; }
-      .hero-card { display: block; }
-  .court-svg-wrap { aspect-ratio: 16/7; padding: 1rem; }
-  .hero-stats { padding-top: 1rem; }
-  .stat-num { font-size: 1.4rem; }
-  .booking-pill { font-size: 0.65rem; padding: 0.25rem 0.75rem; right: 1rem; }
+      .hero-layout { grid-template-columns: 1fr; }
+      .hero-card { display: none; }
+      .hero { min-height: auto; padding-top: clamp(5rem, 10vw, 7rem); }
       .steps { grid-template-columns: 1fr 1fr; }
       .step:nth-child(2) { border-right: none; }
       .step:nth-child(3) { border-top: 0.5px solid var(--border); }
       .why-grid { grid-template-columns: 1fr; }
       .why-card.accent { grid-column: span 1; grid-template-columns: 1fr; }
-      .pricing-grid { grid-template-columns: 1fr; }
+      .pricing-grid { grid-template-columns: 1fr; max-width: 420px; margin: 0 auto; }
       .plan.popular { order: -1; }
       .personas { grid-template-columns: 1fr; }
-      .clubs-split { grid-template-columns: 1fr; gap: 2.5rem; }
-      .cta-inner { grid-template-columns: 1fr; gap: 2rem; }
+      .clubs-split { grid-template-columns: 1fr; }
+      .cta-inner { grid-template-columns: 1fr; }
       .cta-actions { align-items: flex-start; }
       .footer-top { grid-template-columns: 1fr 1fr; }
       .contact-grid { grid-template-columns: 1fr; }
-      nav { padding: 1rem 1.5rem; }
       .nav-desktop { display: none !important; }
       .hamburger { display: flex !important; }
-      .section { padding: 4rem 1.5rem; }
-      .clubs-bar { padding: 1.25rem 1.5rem; }
     }
 
-    @media (max-width: 600px) {
-      .steps { grid-template-columns: 1fr !important; }
-      .step { border-right: none !important; border-top: 0.5px solid var(--border); padding: 1.5rem 1.25rem; }
-      .step-num { font-size: 2rem; margin-bottom: 0.5rem; }
-      .step h3 { font-size: 1rem; margin-bottom: 0.4rem; }
-      .step p { font-size: 0.85rem; display: block !important; visibility: visible !important; }
+    @media (max-width: 580px) {
+      .steps { grid-template-columns: 1fr; }
+      .step { border-right: none; border-top: 0.5px solid var(--border); }
       .footer-top { grid-template-columns: 1fr; }
-      .form-row { grid-template-columns: 1fr; }
-      .hero-stats { grid-template-columns: repeat(3, 1fr); }
-      .section h2 { font-size: 1.75rem; }
-      .why-card.accent { grid-template-columns: 1fr !important; }
-      .personas { grid-template-columns: 1fr !important; }
-      .persona { padding: 1.25rem; }
-      .plan { padding: 1.5rem 1.25rem; }
-      .hero h1 { font-size: 2.2rem; }
-      .hero-sub { font-size: 0.9rem; }
-      .section { padding: 3rem 1.25rem; }
-      .cta-inner { padding: 3rem 1.25rem; }
-    }
-
-    /* ── SCROLL ANIMATIONS ── */
-    .fade-up {
-      opacity: 0;
-      transform: translateY(20px);
-      transition: opacity 0.6s ease, transform 0.6s ease;
-    }
-    .fade-up.visible {
-      opacity: 1;
-      transform: translateY(0);
-    }
-    /* Hero altijd direct zichtbaar */
-    .hero, .hero *, nav, nav * {
-      opacity: 1 !important;
-      transform: none !important;
-      animation: none !important;
-    }
-
-    /* ── MOBILE MENU ── */
-    .mobile-menu {
-      display: none;
-      flex-direction: column;
-      gap: 0;
-      background: #091A0B;
-      border-bottom: 0.5px solid var(--border);
-    }
-    .mobile-menu.open { display: flex; }
-    .mobile-menu a {
-      color: var(--text2);
-      text-decoration: none;
-      font-size: 1rem;
-      padding: 1rem 1.5rem;
-      border-bottom: 0.5px solid var(--border);
-      transition: color 0.2s;
-    }
-    .mobile-menu a:hover { color: var(--text); }
-    .mobile-menu a.cta { color: var(--lime); font-weight: 500; }
-
-    .hamburger span { transition: transform 0.3s ease, opacity 0.3s ease; }
-    .hamburger.open span:nth-child(1) { transform: rotate(45deg) translate(5px, 6px); }
-    .hamburger.open span:nth-child(2) { opacity: 0; transform: scaleX(0); }
-    .hamburger.open span:nth-child(3) { transform: rotate(-45deg) translate(5px, -6px); }
-
-    .mobile-menu { position: relative; z-index: 99; }
-    .mobile-menu a { font-size: 1.05rem !important; padding: 1.1rem 1.5rem !important; }
-
-    @media (max-width: 900px) {
-      .hero h1 { font-size: 2.6rem; }
-      .hero-sub { font-size: 0.95rem; }
-      .btn-primary, .btn-ghost { padding: 0.75rem 1.25rem; font-size: 0.875rem; }
-      .hero-trust { font-size: 0.75rem; }
-      .section { padding: 3.5rem 1.25rem; }
-      .section h2 { font-size: 1.9rem; margin-bottom: 2rem; }
-      .why-num { font-size: 2.25rem; }
-      .stat-num { font-size: 1.5rem; }
-      .cta-inner { padding: 4rem 1.25rem; }
-      footer { padding: 2.5rem 1.25rem 1.5rem; }
-      .footer-bottom { flex-direction: column; gap: 0.5rem; text-align: center; }
-      nav { padding: 1rem 1.25rem; }
+      .pricing-grid { max-width: 100%; }
+      .footer-bottom { flex-direction: column; text-align: center; }
+      .hero-actions { flex-direction: column; align-items: flex-start; }
+      .hero-actions a { width: 100%; text-align: center; }
     }
   </style>
 </head>
 <body>
 
-<!-- ── NAV ── -->
 <nav>
   <a href="#" class="logo">Court<span>Pass</span></a>
   <ul class="nav-links nav-desktop">
@@ -1074,9 +283,9 @@
     <li><a href="login.html" class="btn-nav-ghost">Inloggen</a></li>
     <li><a href="#abonnementen" class="btn-nav">Probeer gratis</a></li>
   </ul>
-  <div class="hamburger" id="hamburger" onclick="toggleMenu()">
+  <button class="hamburger" id="hamburger" onclick="toggleMenu()" aria-label="Menu">
     <span></span><span></span><span></span>
-  </div>
+  </button>
 </nav>
 
 <div class="mobile-menu" id="mobileMenu">
@@ -1089,80 +298,58 @@
   <a href="#abonnementen" class="cta" onclick="toggleMenu()">Probeer gratis →</a>
 </div>
 
-<!-- ── HERO ── -->
 <section>
   <div class="hero">
-    <div>
-      <div class="hero-badge"><span class="pulse"></span> Nu beschikbaar in Amsterdam</div>
-      <h1>Tennis op jouw<br><em>tempo.</em><br>Zonder binding.</h1>
-      <p class="hero-sub">Eén abonnement. Meerdere clubs. Speel wanneer en waar jij wilt — zonder vast lidmaatschap. Gewoon boeken, spelen, genieten.</p>
-      <div class="hero-actions">
-        <a href="#abonnementen" class="btn-primary">Start voor €49/maand</a>
-        <a href="#hoe-het-werkt" class="btn-ghost">Hoe het werkt →</a>
-      </div>
-      <div class="hero-trust">
-        <div class="hero-trust-avatars">
-          <div class="avatar">MK</div>
-          <div class="avatar">RB</div>
-          <div class="avatar">JV</div>
-          <div class="avatar">AL</div>
+    <div class="hero-badge"><span class="pulse"></span> Nu beschikbaar in Amsterdam</div>
+    <div class="hero-layout">
+      <div>
+        <h1>Tennis op jouw<br><em>tempo.</em><br>Zonder binding.</h1>
+        <p class="hero-sub">Eén abonnement. Meerdere clubs. Speel wanneer en waar jij wilt — zonder vast lidmaatschap.</p>
+        <div class="hero-actions">
+          <a href="#abonnementen" class="btn-primary">Start voor €49/maand</a>
+          <a href="#hoe-het-werkt" class="btn-ghost">Hoe het werkt →</a>
         </div>
-        <span>Al 200+ spelers gingen je voor</span>
-      </div>
-    </div>
-
-    <div class="hero-card">
-      <div class="booking-pill"><span class="pill-dot"></span> Zojuist geboekt — Tennisclub Oost</div>
-      <div class="court-svg-wrap">
-        <svg class="court-svg" viewBox="0 0 320 200" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <!-- Court outer -->
-          <rect x="10" y="10" width="300" height="180" rx="3" stroke="rgba(191,239,69,0.3)" stroke-width="1.5"/>
-          <!-- Net line -->
-          <line x1="160" y1="10" x2="160" y2="190" stroke="rgba(191,239,69,0.2)" stroke-width="1.5"/>
-          <!-- Service boxes top -->
-          <line x1="80" y1="10" x2="80" y2="100" stroke="rgba(191,239,69,0.18)" stroke-width="1"/>
-          <line x1="240" y1="10" x2="240" y2="100" stroke="rgba(191,239,69,0.18)" stroke-width="1"/>
-          <line x1="80" y1="100" x2="240" y2="100" stroke="rgba(191,239,69,0.18)" stroke-width="1"/>
-          <line x1="160" y1="10" x2="160" y2="100" stroke="rgba(191,239,69,0.18)" stroke-width="1"/>
-          <!-- Service boxes bottom -->
-          <line x1="80" y1="100" x2="80" y2="190" stroke="rgba(191,239,69,0.18)" stroke-width="1"/>
-          <line x1="240" y1="100" x2="240" y2="190" stroke="rgba(191,239,69,0.18)" stroke-width="1"/>
-          <line x1="80" y1="100" x2="240" y2="100" stroke="rgba(191,239,69,0.18)" stroke-width="1"/>
-          <line x1="160" y1="100" x2="160" y2="190" stroke="rgba(191,239,69,0.18)" stroke-width="1"/>
-          <!-- Baseline -->
-          <line x1="10" y1="100" x2="80" y2="100" stroke="rgba(191,239,69,0.18)" stroke-width="1"/>
-          <line x1="240" y1="100" x2="310" y2="100" stroke="rgba(191,239,69,0.18)" stroke-width="1"/>
-          <!-- Net posts -->
-          <circle cx="160" cy="10" r="3" fill="rgba(191,239,69,0.3)"/>
-          <circle cx="160" cy="190" r="3" fill="rgba(191,239,69,0.3)"/>
-          <!-- Tennis ball -->
-          <circle cx="115" cy="75" r="10" fill="#BFEF45" opacity="0.95"/>
-          <path d="M107 72 Q115 67 123 72" stroke="#0D1A0F" stroke-width="1.2" fill="none"/>
-          <path d="M107 78 Q115 83 123 78" stroke="#0D1A0F" stroke-width="1.2" fill="none"/>
-          <!-- Player hint -->
-          <circle cx="115" cy="155" r="6" fill="rgba(191,239,69,0.15)" stroke="rgba(191,239,69,0.3)" stroke-width="1"/>
-          <circle cx="205" cy="45" r="6" fill="rgba(191,239,69,0.15)" stroke="rgba(191,239,69,0.3)" stroke-width="1"/>
-        </svg>
-      </div>
-      <div class="hero-stats">
-        <div class="hero-stat">
-          <span class="stat-num">12+</span>
-          <span class="stat-lbl">Clubs</span>
+        <div class="hero-trust">
+          <div class="hero-trust-avatars">
+            <div class="avatar">MK</div><div class="avatar">RB</div><div class="avatar">JV</div><div class="avatar">AL</div>
+          </div>
+          <span>Al 200+ spelers gingen je voor</span>
         </div>
-        <div class="hero-stat">
-          <span class="stat-num">48u</span>
-          <span class="stat-lbl">Vooruit boeken</span>
+      </div>
+      <div class="hero-card">
+        <div class="booking-pill"><span class="pill-dot"></span> Zojuist geboekt — Tennisclub Oost</div>
+        <div class="court-svg-wrap">
+          <svg class="court-svg" viewBox="0 0 320 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="10" y="10" width="300" height="180" rx="3" stroke="rgba(191,239,69,0.3)" stroke-width="1.5"/>
+            <line x1="160" y1="10" x2="160" y2="190" stroke="rgba(191,239,69,0.2)" stroke-width="1.5"/>
+            <line x1="80" y1="10" x2="80" y2="100" stroke="rgba(191,239,69,0.18)" stroke-width="1"/>
+            <line x1="240" y1="10" x2="240" y2="100" stroke="rgba(191,239,69,0.18)" stroke-width="1"/>
+            <line x1="80" y1="100" x2="240" y2="100" stroke="rgba(191,239,69,0.18)" stroke-width="1"/>
+            <line x1="160" y1="10" x2="160" y2="100" stroke="rgba(191,239,69,0.18)" stroke-width="1"/>
+            <line x1="80" y1="100" x2="80" y2="190" stroke="rgba(191,239,69,0.18)" stroke-width="1"/>
+            <line x1="240" y1="100" x2="240" y2="190" stroke="rgba(191,239,69,0.18)" stroke-width="1"/>
+            <line x1="160" y1="100" x2="160" y2="190" stroke="rgba(191,239,69,0.18)" stroke-width="1"/>
+            <line x1="10" y1="100" x2="80" y2="100" stroke="rgba(191,239,69,0.18)" stroke-width="1"/>
+            <line x1="240" y1="100" x2="310" y2="100" stroke="rgba(191,239,69,0.18)" stroke-width="1"/>
+            <circle cx="160" cy="10" r="3" fill="rgba(191,239,69,0.3)"/>
+            <circle cx="160" cy="190" r="3" fill="rgba(191,239,69,0.3)"/>
+            <circle cx="115" cy="75" r="10" fill="#BFEF45" opacity="0.95"/>
+            <path d="M107 72 Q115 67 123 72" stroke="#0D1A0F" stroke-width="1.2" fill="none"/>
+            <path d="M107 78 Q115 83 123 78" stroke="#0D1A0F" stroke-width="1.2" fill="none"/>
+            <circle cx="115" cy="155" r="6" fill="rgba(191,239,69,0.15)" stroke="rgba(191,239,69,0.3)" stroke-width="1"/>
+            <circle cx="205" cy="45" r="6" fill="rgba(191,239,69,0.15)" stroke="rgba(191,239,69,0.3)" stroke-width="1"/>
+          </svg>
         </div>
-        <div class="hero-stat">
-          <span class="stat-num">€0</span>
-          <span class="stat-lbl">Inschrijfkosten</span>
+        <div class="hero-stats">
+          <div class="hero-stat"><span class="stat-num">12+</span><span class="stat-lbl">Clubs</span></div>
+          <div class="hero-stat"><span class="stat-num">48u</span><span class="stat-lbl">Vooruit</span></div>
+          <div class="hero-stat"><span class="stat-num">€0</span><span class="stat-lbl">Inschrijf</span></div>
         </div>
       </div>
     </div>
   </div>
 </section>
 
-<!-- ── CLUBS BAR ── -->
 <div class="clubs-bar">
   <span class="clubs-bar-label">Aangesloten clubs</span>
   <div class="clubs-scroll">
@@ -1177,390 +364,152 @@
   </div>
 </div>
 
-<!-- ── HOW IT WORKS ── -->
 <section id="hoe-het-werkt">
   <div class="section">
     <span class="section-tag">Hoe het werkt</span>
     <h2>In vier stappen op de baan</h2>
-    <div class="steps fade-up">
-      <div class="step">
-        <span class="step-num">01</span>
-        <div class="step-icon">🎾</div>
-        <h3>Kies een abonnement</h3>
-        <p>Starter, Popular of Pro — kies wat past bij jouw speelritme. Geen verborgen kosten, geen inschrijfgeld.</p>
-      </div>
-      <div class="step">
-        <span class="step-num">02</span>
-        <div class="step-icon">📍</div>
-        <h3>Ontdek aangesloten clubs</h3>
-        <p>Bekijk realtime beschikbaarheid bij alle clubs in jouw stad. Van binnenparken tot buitenbanen.</p>
-      </div>
-      <div class="step">
-        <span class="step-num">03</span>
-        <div class="step-icon">📲</div>
-        <h3>Boek een baan</h3>
-        <p>Reserveer in twee klikken via de app. Bevestiging volgt direct — inclusief routebeschrijving.</p>
-      </div>
-      <div class="step">
-        <span class="step-num">04</span>
-        <div class="step-icon">💳</div>
-        <h3>Speel met credits</h3>
-        <p>Prime time en premium clubs kosten iets meer credits. Daluren juist minder. Jij bepaalt de waarde.</p>
-      </div>
+    <div class="steps">
+      <div class="step reveal"><span class="step-num">01</span><div class="step-icon">🎾</div><h3>Kies een abonnement</h3><p>Starter, Popular of Pro — kies wat past bij jouw speelritme. Geen verborgen kosten.</p></div>
+      <div class="step reveal reveal-d1"><span class="step-num">02</span><div class="step-icon">📍</div><h3>Ontdek clubs</h3><p>Bekijk realtime beschikbaarheid bij alle clubs. Van binnenparken tot buitenbanen.</p></div>
+      <div class="step reveal reveal-d2"><span class="step-num">03</span><div class="step-icon">📲</div><h3>Boek een baan</h3><p>Reserveer in twee klikken. Bevestiging volgt direct inclusief routebeschrijving.</p></div>
+      <div class="step reveal reveal-d3"><span class="step-num">04</span><div class="step-icon">💳</div><h3>Speel met credits</h3><p>Prime time kost meer credits, daluren minder. Jij bepaalt hoe je speelt.</p></div>
     </div>
   </div>
 </section>
 
-<!-- ── WHY ── -->
 <section>
-  <div class="section" style="padding-top: 0;">
+  <div class="section" style="padding-top:0">
     <span class="section-tag">Waarom CourtPass</span>
     <h2>Tennis zonder drempel</h2>
-    <div class="why-grid fade-up">
-      <div class="why-card">
-        <div class="why-num">€600</div>
-        <div class="why-label">Gemiddeld lidmaatschap per jaar</div>
-        <p class="why-desc">Veel tennisclubs vragen €300–€800 per jaar. CourtPass kost vanaf €49 per maand — en je zit nooit vast.</p>
-      </div>
-      <div class="why-card">
-        <div class="why-num">40%</div>
-        <div class="why-label">Banen staat gemiddeld leeg</div>
-        <p class="why-desc">Overdag en in daluren liggen banen er bij. CourtPass vult die lege plekken op — goed voor clubs én voor jou.</p>
-      </div>
-      <div class="why-card accent">
-        <div class="why-accent-text">
-          <h3>Flexibiliteit is geen luxe meer</h3>
-          <p>Je speelt wanneer je wil, bij welke club je wil, zonder je ergens voor in te schrijven. Net als een sportschool, maar dan voor tennis — en dan beter.</p>
-        </div>
+    <div class="why-grid">
+      <div class="why-card reveal"><div class="why-num">€600</div><div class="why-label">Gemiddeld lidmaatschap per jaar</div><p class="why-desc">Veel clubs vragen €300–€800 per jaar. CourtPass kost vanaf €49/maand — en je zit nooit vast.</p></div>
+      <div class="why-card reveal reveal-d1"><div class="why-num">40%</div><div class="why-label">Banen staat gemiddeld leeg</div><p class="why-desc">Overdag en in daluren liggen banen er bij. CourtPass vult die lege plekken op.</p></div>
+      <div class="why-card accent reveal">
+        <div class="why-accent-text"><h3>Flexibiliteit is geen luxe meer</h3><p>Je speelt wanneer en waar je wil, zonder je ergens voor in te schrijven. Net als een sportschool, maar dan voor tennis.</p></div>
         <div class="why-accent-visual">
-          <div class="bar-row">
-            <span class="bar-label">Maandag</span>
-            <div class="bar-track"><div class="bar-fill" style="width:30%"></div></div>
-            <span class="bar-val">30%</span>
-          </div>
-          <div class="bar-row">
-            <span class="bar-label">Dinsdag</span>
-            <div class="bar-track"><div class="bar-fill" style="width:45%"></div></div>
-            <span class="bar-val">45%</span>
-          </div>
-          <div class="bar-row">
-            <span class="bar-label">Woensdag</span>
-            <div class="bar-track"><div class="bar-fill" style="width:20%"></div></div>
-            <span class="bar-val">20%</span>
-          </div>
-          <div class="bar-row">
-            <span class="bar-label">Donderdag</span>
-            <div class="bar-track"><div class="bar-fill" style="width:35%"></div></div>
-            <span class="bar-val">35%</span>
-          </div>
-          <div class="bar-row" style="margin-top: 4px; font-size: 0.7rem; color: var(--text3);">
-            <span class="bar-label" style="width: 90px;">Lege banen overdag — per dag</span>
-          </div>
+          <div class="bar-row"><span class="bar-label">Maandag</span><div class="bar-track"><div class="bar-fill" style="width:30%"></div></div><span class="bar-val">30%</span></div>
+          <div class="bar-row"><span class="bar-label">Dinsdag</span><div class="bar-track"><div class="bar-fill" style="width:45%"></div></div><span class="bar-val">45%</span></div>
+          <div class="bar-row"><span class="bar-label">Woensdag</span><div class="bar-track"><div class="bar-fill" style="width:20%"></div></div><span class="bar-val">20%</span></div>
+          <div class="bar-row"><span class="bar-label">Donderdag</span><div class="bar-track"><div class="bar-fill" style="width:35%"></div></div><span class="bar-val">35%</span></div>
+          <p style="font-size:0.65rem;color:var(--text3);margin-top:4px">Lege banen overdag per dag</p>
         </div>
       </div>
     </div>
   </div>
 </section>
 
-<!-- ── FOR WHO ── -->
 <section id="voor-wie">
-  <div class="section" style="padding-top: 0;">
+  <div class="section" style="padding-top:0">
     <span class="section-tag">Voor wie</span>
     <h2>Herken jij jezelf?</h2>
-    <div class="personas fade-up">
-      <div class="persona">
-        <div class="persona-icon">🏙️</div>
-        <div>
-          <h3>De stadsspeler</h3>
-          <p>Je woont in de stad, speelt 1–2 keer per week en wil niet vastzitten aan één club. Flexibiliteit is alles.</p>
-        </div>
-      </div>
-      <div class="persona">
-        <div class="persona-icon">✈️</div>
-        <div>
-          <h3>De expat</h3>
-          <p>Je bent tijdelijk in Nederland en wil gewoon spelen. Zonder een jaarcontract te tekenen of de taal te spreken.</p>
-        </div>
-      </div>
-      <div class="persona">
-        <div class="persona-icon">🎓</div>
-        <div>
-          <h3>De beginner</h3>
-          <p>Je wil verschillende clubs uitproberen voor je een beslissing maakt. CourtPass is jouw proefabonnement voor heel tennisland.</p>
-        </div>
-      </div>
-      <div class="persona">
-        <div class="persona-icon">📅</div>
-        <div>
-          <h3>De onregelmatige speler</h3>
-          <p>Druk leven? Je speelt soms elke week, soms een maand niet. CourtPass past zich aan — geen verspilling.</p>
-        </div>
-      </div>
+    <div class="personas">
+      <div class="persona reveal"><div class="persona-icon">🏙️</div><div><h3>De stadsspeler</h3><p>Je woont in de stad, speelt 1–2 keer per week en wil niet vastzitten aan één club.</p></div></div>
+      <div class="persona reveal reveal-d1"><div class="persona-icon">✈️</div><div><h3>De expat</h3><p>Tijdelijk in Nederland en wil gewoon spelen. Zonder jaarcontract of inschrijfgeld.</p></div></div>
+      <div class="persona reveal reveal-d2"><div class="persona-icon">🎓</div><div><h3>De beginner</h3><p>Verschillende clubs uitproberen voor je een beslissing maakt.</p></div></div>
+      <div class="persona reveal reveal-d3"><div class="persona-icon">📅</div><div><h3>De onregelmatige speler</h3><p>Soms elke week, soms een maand niet. CourtPass past zich aan.</p></div></div>
     </div>
   </div>
 </section>
 
-<!-- ── PRICING ── -->
-<section id="abonnementen" style="background: var(--surface2); border-top: 0.5px solid var(--border); border-bottom: 0.5px solid var(--border);">
+<section id="abonnementen" style="background:var(--surface2);border-top:0.5px solid var(--border);border-bottom:0.5px solid var(--border)">
   <div class="section">
     <span class="section-tag">Abonnementen</span>
     <h2>Kies jouw ritme</h2>
-    <p class="section-intro">Geen verborgen kosten. Eerste maand gratis. Je kunt altijd opzeggen — per direct.</p>
-    <div class="pricing-grid fade-up">
-      <div class="plan">
-        <div class="plan-name">Starter</div>
-        <div class="plan-price-wrap">
-          <span class="plan-price">€49<sub>/maand</sub></span>
-        </div>
-        <div class="plan-sessions">4 speelbeurten per maand</div>
-        <ul class="plan-features">
-          <li><span class="check">✓</span> Alle aangesloten clubs</li>
-          <li><span class="check">✓</span> Boeken tot 24u vooruit</li>
-          <li><span class="check">✓</span> Daluren &amp; avonden</li>
-          <li><span class="check">✓</span> App + web toegang</li>
-          <li><span class="check">✓</span> Eerste maand gratis</li>
-        </ul>
-        <a href="#contact" class="plan-cta plan-cta-ghost">Begin hier</a>
-      </div>
-
-      <div class="plan popular">
-        <div class="popular-badge">Meest gekozen</div>
-        <div class="plan-name">Popular</div>
-        <div class="plan-price-wrap">
-          <span class="plan-price">€79<sub>/maand</sub></span>
-        </div>
-        <div class="plan-sessions">8 speelbeurten per maand</div>
-        <ul class="plan-features">
-          <li><span class="check">✓</span> Alle clubs incl. premium</li>
-          <li><span class="check">✓</span> Boeken tot 48u vooruit</li>
-          <li><span class="check">✓</span> Alle tijdsloten</li>
-          <li><span class="check">✓</span> 1 vriend uitnodigen</li>
-          <li><span class="check">✓</span> Eerste maand gratis</li>
-        </ul>
-        <a href="#contact" class="plan-cta plan-cta-solid">Start Popular</a>
-      </div>
-
-      <div class="plan">
-        <div class="plan-name">Pro</div>
-        <div class="plan-price-wrap">
-          <span class="plan-price">€119<sub>/maand</sub></span>
-        </div>
-        <div class="plan-sessions">Onbeperkt spelen</div>
-        <ul class="plan-features">
-          <li><span class="check">✓</span> Alle clubs incl. privébanen</li>
-          <li><span class="check">✓</span> Prioriteit bij reserveren</li>
-          <li><span class="check">✓</span> Gratis gastcredits (2x/m)</li>
-          <li><span class="check">✓</span> 20% korting op coaching</li>
-          <li><span class="check">✓</span> Eerste maand gratis</li>
-        </ul>
-        <a href="#contact" class="plan-cta plan-cta-ghost">Kies Pro</a>
-      </div>
+    <p class="section-intro">Geen verborgen kosten. Eerste maand gratis. Altijd opzegbaar.</p>
+    <div class="pricing-grid">
+      <div class="plan reveal"><div class="plan-name">Starter</div><div class="plan-price">€49<sub>/maand</sub></div><div class="plan-sessions">4 speelbeurten per maand</div><ul class="plan-features"><li><span class="check">✓</span> Alle aangesloten clubs</li><li><span class="check">✓</span> Boeken tot 24u vooruit</li><li><span class="check">✓</span> Daluren & avonden</li><li><span class="check">✓</span> App + web toegang</li><li><span class="check">✓</span> Eerste maand gratis</li></ul><a href="#contact" class="plan-cta plan-cta-ghost">Begin hier</a></div>
+      <div class="plan popular reveal reveal-d1"><div class="popular-badge">Meest gekozen</div><div class="plan-name">Popular</div><div class="plan-price">€79<sub>/maand</sub></div><div class="plan-sessions">8 speelbeurten per maand</div><ul class="plan-features"><li><span class="check">✓</span> Alle clubs incl. premium</li><li><span class="check">✓</span> Boeken tot 48u vooruit</li><li><span class="check">✓</span> Alle tijdsloten</li><li><span class="check">✓</span> 1 vriend uitnodigen</li><li><span class="check">✓</span> Eerste maand gratis</li></ul><a href="#contact" class="plan-cta plan-cta-solid">Start Popular</a></div>
+      <div class="plan reveal reveal-d2"><div class="plan-name">Pro</div><div class="plan-price">€119<sub>/maand</sub></div><div class="plan-sessions">Onbeperkt spelen</div><ul class="plan-features"><li><span class="check">✓</span> Alle clubs incl. privébanen</li><li><span class="check">✓</span> Prioriteit bij reserveren</li><li><span class="check">✓</span> Gratis gastcredits (2x/m)</li><li><span class="check">✓</span> 20% korting op coaching</li><li><span class="check">✓</span> Eerste maand gratis</li></ul><a href="#contact" class="plan-cta plan-cta-ghost">Kies Pro</a></div>
     </div>
-    <p class="pricing-note">Alle prijzen zijn inclusief BTW · Maandelijks opzegbaar · Geen inschrijfgeld</p>
+    <p class="pricing-note">Alle prijzen inclusief BTW · Maandelijks opzegbaar · Geen inschrijfgeld</p>
   </div>
 </section>
 
-<!-- ── FOR CLUBS ── -->
 <section id="clubs">
   <div class="section">
     <div class="clubs-split">
       <div>
         <span class="section-tag">Voor tennisclubs</span>
-        <h2 style="margin-bottom: 2rem;">Vul lege banen.<br>Bereik nieuwe spelers.</h2>
-        <ul class="clubs-benefits fade-up">
-          <li class="benefit">
-            <div class="benefit-icon">💰</div>
-            <div>
-              <h4>Extra inkomsten uit lege uren</h4>
-              <p>Jouw banen die overdag leegstaan worden gevuld door CourtPass-spelers. Geen investering nodig.</p>
-            </div>
-          </li>
-          <li class="benefit">
-            <div class="benefit-icon">👥</div>
-            <div>
-              <h4>Nieuwe doelgroep bereiken</h4>
-              <p>Jongere, stedelijke spelers die geen vast lidmaatschap willen — maar wel willen spelen bij jou.</p>
-            </div>
-          </li>
-          <li class="benefit">
-            <div class="benefit-icon">🔄</div>
-            <div>
-              <h4>Doorstroom naar lidmaatschap</h4>
-              <p>Spelers die via CourtPass jouw club leren kennen, worden vaak later toch lid. Perfecte kennismaking.</p>
-            </div>
-          </li>
-          <li class="benefit">
-            <div class="benefit-icon">⚙️</div>
-            <div>
-              <h4>Jij bepaalt de voorwaarden</h4>
-              <p>Welke uren je beschikbaar stelt, hoeveel credits een baan kost — jij hebt de controle.</p>
-            </div>
-          </li>
+        <h2 style="margin-bottom:clamp(1.5rem,3vw,2rem)">Vul lege banen.<br>Bereik nieuwe spelers.</h2>
+        <ul class="clubs-benefits">
+          <li class="benefit reveal"><div class="benefit-icon">💰</div><div><h4>Extra inkomsten</h4><p>Lege banen overdag worden gevuld. Geen investering nodig.</p></div></li>
+          <li class="benefit reveal reveal-d1"><div class="benefit-icon">👥</div><div><h4>Nieuwe doelgroep</h4><p>Jongere spelers die geen vast lidmaatschap willen maar wel willen spelen.</p></div></li>
+          <li class="benefit reveal reveal-d2"><div class="benefit-icon">🔄</div><div><h4>Doorstroom naar lidmaatschap</h4><p>Spelers die je club leren kennen worden vaak later toch lid.</p></div></li>
+          <li class="benefit reveal reveal-d3"><div class="benefit-icon">⚙️</div><div><h4>Jij bepaalt de voorwaarden</h4><p>Welke uren en hoeveel credits — jij hebt de controle.</p></div></li>
         </ul>
       </div>
-      <div class="clubs-cta-card fade-up">
+      <div class="clubs-cta-card reveal reveal-d1">
         <h3>Sluit jouw club aan</h3>
-        <p>Meld je club aan en ga binnen een week live op het platform. Wij regelen de techniek — jij levert de banen.</p>
-        <a href="#contact" class="btn-primary" style="display:block; text-align:center; margin-bottom: 0.875rem;">Club aanmelden</a>
-        <a href="#contact" class="btn-ghost" style="display:block; text-align:center;">Meer informatie →</a>
+        <p>Meld je club aan en ga binnen een week live. Wij regelen de techniek — jij levert de banen.</p>
+        <a href="#contact" class="btn-primary" style="display:block;text-align:center;margin-bottom:0.875rem">Club aanmelden</a>
+        <a href="#contact" class="btn-ghost" style="display:block;text-align:center">Meer informatie →</a>
       </div>
     </div>
   </div>
 </section>
 
-<!-- ── FAQ ── -->
-<section style="background: var(--surface2); border-top: 0.5px solid var(--border);">
+<section style="background:var(--surface2);border-top:0.5px solid var(--border)">
   <div class="section">
     <span class="section-tag">Veelgestelde vragen</span>
     <h2>Alles wat je wilt weten</h2>
-    <div class="faq-list fade-up">
-      <div class="faq-item">
-        <button class="faq-q" onclick="toggleFaq(this)">
-          Kan ik mijn abonnement tussentijds opzeggen?
-          <span class="faq-arrow">↓</span>
-        </button>
-        <div class="faq-a">Ja, je kunt maandelijks opzeggen. Er is geen minimale looptijd en geen opzegkosten. Na opzegging blijf je de rest van de lopende maand toegang houden.</div>
-      </div>
-      <div class="faq-item">
-        <button class="faq-q" onclick="toggleFaq(this)">
-          Kan ik mijn ongebruikte credits doorschuiven naar de volgende maand?
-          <span class="faq-arrow">↓</span>
-        </button>
-        <div class="faq-a">Credits zijn geldig voor de maand waarvoor ze zijn uitgedeeld. Bij het Popular en Pro-abonnement kun je één rollover per kwartaal gebruiken.</div>
-      </div>
-      <div class="faq-item">
-        <button class="faq-q" onclick="toggleFaq(this)">
-          Hoe werkt het boeken van een baan precies?
-          <span class="faq-arrow">↓</span>
-        </button>
-        <div class="faq-a">Via de app zie je realtime beschikbaarheid bij alle aangesloten clubs. Kies een club, kies een tijdslot en bevestig. Je ontvangt direct een bevestigingsmail met alle details. Annuleren kan tot 4 uur voor aanvang.</div>
-      </div>
-      <div class="faq-item">
-        <button class="faq-q" onclick="toggleFaq(this)">
-          Wat als ik meer wil spelen dan mijn abonnement toelaat?
-          <span class="faq-arrow">↓</span>
-        </button>
-        <div class="faq-a">Je kunt losse extra speelbeurten bijkopen via de app voor een vast tarief van €12 per sessie, ongeacht club of tijdstip.</div>
-      </div>
-      <div class="faq-item">
-        <button class="faq-q" onclick="toggleFaq(this)">
-          Moet ik eigen tennisracket meenemen?
-          <span class="faq-arrow">↓</span>
-        </button>
-        <div class="faq-a">Ja, je speelt met je eigen materiaal. Sommige clubs bieden racketverhuur aan — dit staat vermeld op de clubpagina in de app.</div>
-      </div>
-      <div class="faq-item">
-        <button class="faq-q" onclick="toggleFaq(this)">
-          Is CourtPass ook beschikbaar buiten Amsterdam?
-          <span class="faq-arrow">↓</span>
-        </button>
-        <div class="faq-a">We starten in Amsterdam en breiden snel uit naar Rotterdam, Utrecht en Den Haag. Schrijf je in via de wachtlijst en wij laten je weten zodra jouw stad live gaat.</div>
-      </div>
+    <div class="faq-list">
+      <div class="faq-item"><button class="faq-q" onclick="toggleFaq(this)">Kan ik mijn abonnement tussentijds opzeggen?<span class="faq-arrow">↓</span></button><div class="faq-a">Ja, je kunt maandelijks opzeggen. Geen minimale looptijd, geen opzegkosten.</div></div>
+      <div class="faq-item"><button class="faq-q" onclick="toggleFaq(this)">Kan ik ongebruikte credits doorschuiven?<span class="faq-arrow">↓</span></button><div class="faq-a">Credits zijn geldig voor de betreffende maand. Bij Popular en Pro kun je één rollover per kwartaal gebruiken.</div></div>
+      <div class="faq-item"><button class="faq-q" onclick="toggleFaq(this)">Hoe werkt het boeken van een baan?<span class="faq-arrow">↓</span></button><div class="faq-a">Via de app zie je realtime beschikbaarheid. Kies club, kies tijdslot, bevestig. Annuleren kan tot 4 uur voor aanvang.</div></div>
+      <div class="faq-item"><button class="faq-q" onclick="toggleFaq(this)">Wat als ik meer wil spelen dan mijn abonnement toelaat?<span class="faq-arrow">↓</span></button><div class="faq-a">Losse extra speelbeurten bijkopen voor €12 per sessie.</div></div>
+      <div class="faq-item"><button class="faq-q" onclick="toggleFaq(this)">Is CourtPass ook buiten Amsterdam beschikbaar?<span class="faq-arrow">↓</span></button><div class="faq-a">We starten in Amsterdam en breiden snel uit naar Rotterdam, Utrecht en Den Haag.</div></div>
     </div>
   </div>
 </section>
 
-<!-- ── CTA BANNER ── -->
 <div class="cta-banner">
   <div class="cta-inner">
     <h2>Klaar om te spelen<br>op jouw <em>eigen voorwaarden?</em></h2>
     <div class="cta-actions">
-      <a href="#abonnementen" class="btn-primary" style="font-size: 1rem; padding: 0.9rem 2rem;">Start gratis proefmaand</a>
-      <span class="cta-note">Geen creditcard vereist · Direct opzegbaar</span>
+      <a href="#abonnementen" class="btn-primary" style="font-size:var(--step-0);padding:0.9rem 2rem">Start gratis proefmaand</a>
+      <span class="cta-note">Geen creditcard · Direct opzegbaar</span>
     </div>
   </div>
 </div>
 
-<!-- ── CONTACT ── -->
 <section id="contact">
   <div class="section">
     <div class="contact-grid">
-      <div>
+      <div class="reveal">
         <span class="section-tag">Contact</span>
-        <h2 style="margin-bottom: 1rem;">Vragen?<br>Neem contact op.</h2>
-        <p style="font-size: 0.9rem; color: var(--text2); line-height: 1.7; font-weight: 300; margin-bottom: 2rem;">Wil je meer weten over CourtPass, je club aanmelden, of heb je een samenwerking in gedachten? Stuur ons een bericht — we reageren binnen 24 uur.</p>
-        <div style="display: flex; flex-direction: column; gap: 1rem;">
-          <div style="display: flex; align-items: center; gap: 12px; font-size: 0.875rem; color: var(--text2);">
-            <span style="font-size: 1.1rem;">📧</span>
-            <span><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="c7afa6ababa887a4a8b2b5b3b7a6b4b4e9a9ab">[email&#160;protected]</a></span>
-          </div>
-          <div style="display: flex; align-items: center; gap: 12px; font-size: 0.875rem; color: var(--text2);">
-            <span style="font-size: 1.1rem;">📍</span>
-            <span>Amsterdam, Nederland</span>
-          </div>
-          <div style="display: flex; align-items: center; gap: 12px; font-size: 0.875rem; color: var(--text2);">
-            <span style="font-size: 1.1rem;">⏰</span>
-            <span>Reactie binnen 24 uur op werkdagen</span>
-          </div>
+        <h2 style="margin-bottom:1rem">Vragen?<br>Neem contact op.</h2>
+        <p style="font-size:var(--step-0);color:var(--text2);line-height:1.7;font-weight:300;margin-bottom:2rem">Wil je meer weten, je club aanmelden, of een samenwerking bespreken? We reageren binnen 24 uur.</p>
+        <div style="display:flex;flex-direction:column;gap:1rem">
+          <div style="display:flex;align-items:center;gap:12px;font-size:var(--step-0);color:var(--text2)"><span>📧</span><span>hallo@courtpass.nl</span></div>
+          <div style="display:flex;align-items:center;gap:12px;font-size:var(--step-0);color:var(--text2)"><span>📍</span><span>Amsterdam, Nederland</span></div>
+          <div style="display:flex;align-items:center;gap:12px;font-size:var(--step-0);color:var(--text2)"><span>⏰</span><span>Reactie binnen 24 uur op werkdagen</span></div>
         </div>
       </div>
-      <div>
-        <div class="form-group">
-          <label>Naam</label>
-          <input type="text" id="f-name" placeholder="Jouw naam" />
-        </div>
-        <div class="form-group">
-          <label>E-mailadres</label>
-          <input type="email" id="f-email" placeholder="naam@voorbeeld.nl" />
-        </div>
-        <div class="form-group">
-          <label>Onderwerp</label>
-          <select id="f-subject">
-            <option value="">Kies een onderwerp</option>
-            <option>Ik wil lid worden</option>
-            <option>Mijn club aanmelden</option>
-            <option>Samenwerking</option>
-            <option>Overig</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>Bericht</label>
-          <textarea id="f-message" placeholder="Jouw bericht..."></textarea>
-        </div>
-        <button class="btn-primary" style="width: 100%; font-size: 0.9rem; border-radius: 12px;" onclick="submitForm()">Verstuur bericht</button>
-        <div class="form-success" id="formSuccess">✓ Bericht verstuurd! We nemen snel contact met je op.</div>
+      <div class="reveal reveal-d1">
+        <div class="form-group"><label>Naam</label><input type="text" id="f-name" placeholder="Jouw naam"/></div>
+        <div class="form-group"><label>E-mailadres</label><input type="email" id="f-email" placeholder="naam@voorbeeld.nl"/></div>
+        <div class="form-group"><label>Onderwerp</label><select id="f-subject"><option value="">Kies een onderwerp</option><option>Ik wil lid worden</option><option>Mijn club aanmelden</option><option>Samenwerking</option><option>Overig</option></select></div>
+        <div class="form-group"><label>Bericht</label><textarea id="f-message" placeholder="Jouw bericht..."></textarea></div>
+        <button class="btn-primary" style="width:100%;border-radius:12px" onclick="submitForm()">Verstuur bericht</button>
+        <div class="form-success" id="formSuccess">✓ Bericht verstuurd! We nemen snel contact op.</div>
       </div>
     </div>
   </div>
 </section>
 
-<!-- ── FOOTER ── -->
 <footer>
   <div class="footer-top">
     <div class="footer-brand">
       <a href="#" class="logo">Court<span>Pass</span></a>
-      <p class="footer-desc">Flexibel tennissen bij meerdere clubs met één abonnement. Geen lidmaatschap, geen binding. Gewoon spelen.</p>
-      <div style="display: flex; gap: 0.875rem;">
-        <a href="#" style="color: var(--text3); text-decoration: none; font-size: 0.8rem; border: 0.5px solid var(--border); padding: 0.35rem 0.875rem; border-radius: 100px; transition: color 0.2s, border-color 0.2s;">Instagram</a>
-        <a href="#" style="color: var(--text3); text-decoration: none; font-size: 0.8rem; border: 0.5px solid var(--border); padding: 0.35rem 0.875rem; border-radius: 100px; transition: color 0.2s, border-color 0.2s;">LinkedIn</a>
+      <p class="footer-desc">Flexibel tennissen bij meerdere clubs met één abonnement. Geen lidmaatschap, geen binding.</p>
+      <div style="display:flex;gap:0.875rem">
+        <a href="#" style="color:var(--text3);text-decoration:none;font-size:0.8rem;border:0.5px solid var(--border);padding:0.35rem 0.875rem;border-radius:100px">Instagram</a>
+        <a href="#" style="color:var(--text3);text-decoration:none;font-size:0.8rem;border:0.5px solid var(--border);padding:0.35rem 0.875rem;border-radius:100px">LinkedIn</a>
       </div>
     </div>
-    <div class="footer-col">
-      <h4>Product</h4>
-      <ul>
-        <li><a href="#hoe-het-werkt">Hoe het werkt</a></li>
-        <li><a href="#abonnementen">Abonnementen</a></li>
-        <li><a href="#voor-wie">Voor wie</a></li>
-        <li><a href="#clubs">Voor clubs</a></li>
-      </ul>
-    </div>
-    <div class="footer-col">
-      <h4>Bedrijf</h4>
-      <ul>
-        <li><a href="#">Over ons</a></li>
-        <li><a href="#">Blog</a></li>
-        <li><a href="#contact">Contact</a></li>
-        <li><a href="#">Pers</a></li>
-      </ul>
-    </div>
-    <div class="footer-col">
-      <h4>Juridisch</h4>
-      <ul>
-        <li><a href="#">Privacybeleid</a></li>
-        <li><a href="#">Algemene voorwaarden</a></li>
-        <li><a href="#">Cookiebeleid</a></li>
-      </ul>
-    </div>
+    <div class="footer-col"><h4>Product</h4><ul><li><a href="#hoe-het-werkt">Hoe het werkt</a></li><li><a href="#abonnementen">Abonnementen</a></li><li><a href="#voor-wie">Voor wie</a></li><li><a href="#clubs">Voor clubs</a></li></ul></div>
+    <div class="footer-col"><h4>Bedrijf</h4><ul><li><a href="#">Over ons</a></li><li><a href="#">Blog</a></li><li><a href="#contact">Contact</a></li><li><a href="#">Pers</a></li></ul></div>
+    <div class="footer-col"><h4>Juridisch</h4><ul><li><a href="#">Privacybeleid</a></li><li><a href="#">Voorwaarden</a></li><li><a href="#">Cookiebeleid</a></li></ul></div>
   </div>
   <div class="footer-bottom">
     <span>© 2025 CourtPass B.V. — Amsterdam</span>
@@ -1568,28 +517,17 @@
   </div>
 </footer>
 
-<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+<script>
   // Mobile menu
   function toggleMenu() {
     const menu = document.getElementById('mobileMenu');
     const ham = document.getElementById('hamburger');
-    const isOpen = menu.classList.contains('open');
     menu.classList.toggle('open');
     ham.classList.toggle('open');
-    document.body.style.overflow = isOpen ? '' : '';
+    document.body.style.overflow = menu.classList.contains('open') ? 'hidden' : '';
   }
 
-  // Close menu when clicking a link or outside
-  document.addEventListener('click', function(e) {
-    const menu = document.getElementById('mobileMenu');
-    const ham = document.getElementById('hamburger');
-    if (menu && ham && !menu.contains(e.target) && !ham.contains(e.target)) {
-      menu.classList.remove('open');
-      ham.classList.remove('open');
-    }
-  });
-
-  // FAQ accordion
+  // FAQ
   function toggleFaq(btn) {
     const item = btn.closest('.faq-item');
     const isOpen = item.classList.contains('open');
@@ -1597,49 +535,59 @@
     if (!isOpen) item.classList.add('open');
   }
 
-  // Contact form (demo)
+  // Contactformulier
   function submitForm() {
     const name = document.getElementById('f-name').value.trim();
     const email = document.getElementById('f-email').value.trim();
     const msg = document.getElementById('f-message').value.trim();
-    if (!name || !email || !msg) {
-      alert('Vul alsjeblieft je naam, e-mail en bericht in.');
-      return;
-    }
+    if (!name || !email || !msg) { alert('Vul je naam, e-mail en bericht in.'); return; }
     document.getElementById('formSuccess').style.display = 'block';
     document.getElementById('f-name').value = '';
     document.getElementById('f-email').value = '';
     document.getElementById('f-message').value = '';
-    document.getElementById('f-subject').value = '';
   }
 
-  // Scroll fade-in — werkt op mobiel en desktop
-  const observer = new IntersectionObserver((entries) => {
-    entries.forEach(e => {
-      if (e.isIntersecting) {
-        e.target.classList.add('visible');
-        observer.unobserve(e.target);
-      }
-    });
-  }, { threshold: 0.05, rootMargin: '0px 0px -20px 0px' });
+  // Scroll animaties — betrouwbaar op elk apparaat
+  function setupReveal() {
+    const els = document.querySelectorAll('.reveal');
+    if (!els.length) return;
 
-  function initAnimations() {
-    document.querySelectorAll('.fade-up').forEach(el => {
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('in-view');
+          observer.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0, rootMargin: '0px 0px -50px 0px' });
+
+    els.forEach(el => {
+      // Direct zichtbaar als al in beeld bij laden
       const rect = el.getBoundingClientRect();
-      if (rect.top < window.innerHeight + 100) {
-        el.classList.add('visible');
+      if (rect.top < window.innerHeight) {
+        el.classList.add('in-view');
       } else {
         observer.observe(el);
       }
     });
   }
 
-  // Direct uitvoeren én na volledig laden
-  initAnimations();
-  window.addEventListener('load', initAnimations);
-  window.addEventListener('scroll', () => {}, { passive: true });
+  // Start zodra DOM klaar is
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', setupReveal);
+  } else {
+    setupReveal();
+  }
 
-  // Smooth scroll for all anchor links
+  // Smooth scroll
   document.querySelectorAll('a[href^="#"]').forEach(a => {
     a.addEventListener('click', e => {
-      c
+      const href = a.getAttribute('href');
+      if (href === '#') return;
+      const target = document.querySelector(href);
+      if (target) { e.preventDefault(); target.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+    });
+  });
+</script>
+</body>
+</html>
