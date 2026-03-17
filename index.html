@@ -72,6 +72,16 @@
     }
     .nav-links a:hover { color: var(--text); }
 
+    .btn-nav-ghost {
+      border: 0.5px solid var(--muted) !important;
+      color: var(--text2) !important;
+      padding: 0.5rem 1.1rem !important;
+      border-radius: 100px !important;
+      font-size: 0.875rem !important;
+      transition: border-color 0.2s, color 0.2s !important;
+    }
+    .btn-nav-ghost:hover { border-color: var(--text) !important; color: var(--text) !important; }
+
     .btn-nav {
       background: var(--lime);
       color: var(--dark) !important;
@@ -1015,6 +1025,7 @@
     <li><a href="#abonnementen">Abonnementen</a></li>
     <li><a href="#clubs">Voor clubs</a></li>
     <li><a href="#contact">Contact</a></li>
+    <li><a href="login.html" class="btn-nav-ghost">Inloggen</a></li>
     <li><a href="#abonnementen" class="btn-nav">Probeer gratis</a></li>
   </ul>
   <div class="hamburger" id="hamburger" onclick="toggleMenu()">
@@ -1028,6 +1039,7 @@
   <a href="#abonnementen" onclick="toggleMenu()">Abonnementen</a>
   <a href="#clubs" onclick="toggleMenu()">Voor clubs</a>
   <a href="#contact" onclick="toggleMenu()">Contact</a>
+  <a href="login.html" onclick="toggleMenu()">Inloggen</a>
   <a href="#abonnementen" class="cta" onclick="toggleMenu()">Probeer gratis →</a>
 </div>
 
@@ -1424,7 +1436,7 @@
         <div style="display: flex; flex-direction: column; gap: 1rem;">
           <div style="display: flex; align-items: center; gap: 12px; font-size: 0.875rem; color: var(--text2);">
             <span style="font-size: 1.1rem;">📧</span>
-            <span>hallo@courtpass.nl</span>
+            <span><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="c7afa6ababa887a4a8b2b5b3b7a6b4b4e9a9ab">[email&#160;protected]</a></span>
           </div>
           <div style="display: flex; align-items: center; gap: 12px; font-size: 0.875rem; color: var(--text2);">
             <span style="font-size: 1.1rem;">📍</span>
@@ -1510,7 +1522,7 @@
   </div>
 </footer>
 
-<script>
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
   // Mobile menu
   function toggleMenu() {
     document.getElementById('mobileMenu').classList.toggle('open');
@@ -1555,13 +1567,4 @@
   // Smooth scroll for all anchor links
   document.querySelectorAll('a[href^="#"]').forEach(a => {
     a.addEventListener('click', e => {
-      const target = document.querySelector(a.getAttribute('href'));
-      if (target) {
-        e.preventDefault();
-        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }
-    });
-  });
-</script>
-</body>
-</html>
+      c
