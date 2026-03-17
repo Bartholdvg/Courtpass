@@ -228,16 +228,18 @@
 
     /* ── ANIMATIES ── */
     .reveal {
-      opacity: 0;
-      transform: translateY(16px);
+      opacity: 1;
+      transform: translateY(0);
       transition: opacity 0.6s ease, transform 0.6s ease;
+    }
+    .reveal.will-animate {
+      opacity: 0;
+      transform: translateY(20px);
     }
     .reveal.in-view {
       opacity: 1;
       transform: translateY(0);
     }
-    /* Fallback: altijd zichtbaar als JS niet werkt */
-    .no-js .reveal { opacity: 1; transform: none; }
     .reveal-d1 { transition-delay: 0.08s; }
     .reveal-d2 { transition-delay: 0.16s; }
     .reveal-d3 { transition-delay: 0.24s; }
@@ -552,39 +554,33 @@
     document.getElementById('f-message').value = '';
   }
 
-  // Scroll animaties — bulletproof versie
+  // Scroll animaties — elementen altijd zichtbaar, animatie als bonus
   function setupReveal() {
+    if (!('IntersectionObserver' in window)) return;
+
     const els = document.querySelectorAll('.reveal');
-    
-    // Als geen IntersectionObserver beschikbaar → alles direct zichtbaar
-    if (!('IntersectionObserver' in window)) {
-      els.forEach(el => el.classList.add('in-view'));
-      return;
-    }
 
     const observer = new IntersectionObserver((entries) => {
       entries.forEach(entry => {
         if (entry.isIntersecting) {
+          entry.target.classList.remove('will-animate');
           entry.target.classList.add('in-view');
           observer.unobserve(entry.target);
         }
       });
-    }, { threshold: 0, rootMargin: '0px 0px -30px 0px' });
+    }, { threshold: 0, rootMargin: '0px 0px -20px 0px' });
 
     els.forEach(el => {
       const rect = el.getBoundingClientRect();
-      // Al in beeld bij laden → direct zichtbaar
-      if (rect.top < window.innerHeight + 50) {
+      if (rect.top < window.innerHeight + 100) {
+        // Al in beeld — direct zichtbaar, geen animatie
         el.classList.add('in-view');
       } else {
+        // Buiten beeld — verberg en animeer bij scrollen
+        el.classList.add('will-animate');
         observer.observe(el);
       }
     });
-
-    // Extra zekerheid: na 1 seconde alles zichtbaar maken
-    setTimeout(() => {
-      els.forEach(el => el.classList.add('in-view'));
-    }, 1000);
   }
 
   document.addEventListener('DOMContentLoaded', setupReveal);
