@@ -226,16 +226,7 @@
     .footer-col a:hover { color: var(--text); }
     .footer-bottom { display: flex; justify-content: space-between; align-items: center; font-size: var(--step--1); color: var(--text3); flex-wrap: wrap; gap: 0.5rem; }
 
-    /* ── ANIMATIES ── */
-    .reveal {
-      opacity: 0;
-      transform: translateY(28px);
-      transition: opacity 0.75s cubic-bezier(0.16, 1, 0.3, 1), transform 0.75s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-    .reveal.in-view { opacity: 1; transform: translateY(0); }
-    .reveal-d1 { transition-delay: 0.12s; }
-    .reveal-d2 { transition-delay: 0.24s; }
-    .reveal-d3 { transition-delay: 0.36s; }
+    /* ── ANIMATIES — uitgeschakeld voor stabiliteit ── */
 
     /* ── RESPONSIVE ── */
     @media (max-width: 900px) {
@@ -369,10 +360,10 @@
     <span class="section-tag">Hoe het werkt</span>
     <h2>In vier stappen op de baan</h2>
     <div class="steps">
-      <div class="step reveal"><span class="step-num">01</span><div class="step-icon">🎾</div><h3>Kies een abonnement</h3><p>Starter, Popular of Pro — kies wat past bij jouw speelritme. Geen verborgen kosten.</p></div>
-      <div class="step reveal reveal-d1"><span class="step-num">02</span><div class="step-icon">📍</div><h3>Ontdek clubs</h3><p>Bekijk realtime beschikbaarheid bij alle clubs. Van binnenparken tot buitenbanen.</p></div>
-      <div class="step reveal reveal-d2"><span class="step-num">03</span><div class="step-icon">📲</div><h3>Boek een baan</h3><p>Reserveer in twee klikken. Bevestiging volgt direct inclusief routebeschrijving.</p></div>
-      <div class="step reveal reveal-d3"><span class="step-num">04</span><div class="step-icon">💳</div><h3>Speel met credits</h3><p>Prime time kost meer credits, daluren minder. Jij bepaalt hoe je speelt.</p></div>
+      <div class="step"><span class="step-num">01</span><div class="step-icon">🎾</div><h3>Kies een abonnement</h3><p>Starter, Popular of Pro — kies wat past bij jouw speelritme. Geen verborgen kosten.</p></div>
+      <div class="step"><span class="step-num">02</span><div class="step-icon">📍</div><h3>Ontdek clubs</h3><p>Bekijk realtime beschikbaarheid bij alle clubs. Van binnenparken tot buitenbanen.</p></div>
+      <div class="step"><span class="step-num">03</span><div class="step-icon">📲</div><h3>Boek een baan</h3><p>Reserveer in twee klikken. Bevestiging volgt direct inclusief routebeschrijving.</p></div>
+      <div class="step"><span class="step-num">04</span><div class="step-icon">💳</div><h3>Speel met credits</h3><p>Prime time kost meer credits, daluren minder. Jij bepaalt hoe je speelt.</p></div>
     </div>
   </div>
 </section>
@@ -382,9 +373,9 @@
     <span class="section-tag">Waarom CourtPass</span>
     <h2>Tennis zonder drempel</h2>
     <div class="why-grid">
-      <div class="why-card reveal"><div class="why-num">€600</div><div class="why-label">Gemiddeld lidmaatschap per jaar</div><p class="why-desc">Veel clubs vragen €300–€800 per jaar. CourtPass kost vanaf €49/maand — en je zit nooit vast.</p></div>
-      <div class="why-card reveal reveal-d1"><div class="why-num">40%</div><div class="why-label">Banen staat gemiddeld leeg</div><p class="why-desc">Overdag en in daluren liggen banen er bij. CourtPass vult die lege plekken op.</p></div>
-      <div class="why-card accent reveal">
+      <div class="why-card"><div class="why-num">€600</div><div class="why-label">Gemiddeld lidmaatschap per jaar</div><p class="why-desc">Veel clubs vragen €300–€800 per jaar. CourtPass kost vanaf €49/maand — en je zit nooit vast.</p></div>
+      <div class="why-card"><div class="why-num">40%</div><div class="why-label">Banen staat gemiddeld leeg</div><p class="why-desc">Overdag en in daluren liggen banen er bij. CourtPass vult die lege plekken op.</p></div>
+      <div class="why-card accent">
         <div class="why-accent-text"><h3>Flexibiliteit is geen luxe meer</h3><p>Je speelt wanneer en waar je wil, zonder je ergens voor in te schrijven. Net als een sportschool, maar dan voor tennis.</p></div>
         <div class="why-accent-visual">
           <div class="bar-row"><span class="bar-label">Maandag</span><div class="bar-track"><div class="bar-fill" style="width:30%"></div></div><span class="bar-val">30%</span></div>
@@ -403,10 +394,10 @@
     <span class="section-tag">Voor wie</span>
     <h2>Herken jij jezelf?</h2>
     <div class="personas">
-      <div class="persona reveal"><div class="persona-icon">🏙️</div><div><h3>De stadsspeler</h3><p>Je woont in de stad, speelt 1–2 keer per week en wil niet vastzitten aan één club.</p></div></div>
-      <div class="persona reveal reveal-d1"><div class="persona-icon">✈️</div><div><h3>De expat</h3><p>Tijdelijk in Nederland en wil gewoon spelen. Zonder jaarcontract of inschrijfgeld.</p></div></div>
-      <div class="persona reveal reveal-d2"><div class="persona-icon">🎓</div><div><h3>De beginner</h3><p>Verschillende clubs uitproberen voor je een beslissing maakt.</p></div></div>
-      <div class="persona reveal reveal-d3"><div class="persona-icon">📅</div><div><h3>De onregelmatige speler</h3><p>Soms elke week, soms een maand niet. CourtPass past zich aan.</p></div></div>
+      <div class="persona"><div class="persona-icon">🏙️</div><div><h3>De stadsspeler</h3><p>Je woont in de stad, speelt 1–2 keer per week en wil niet vastzitten aan één club.</p></div></div>
+      <div class="persona"><div class="persona-icon">✈️</div><div><h3>De expat</h3><p>Tijdelijk in Nederland en wil gewoon spelen. Zonder jaarcontract of inschrijfgeld.</p></div></div>
+      <div class="persona"><div class="persona-icon">🎓</div><div><h3>De beginner</h3><p>Verschillende clubs uitproberen voor je een beslissing maakt.</p></div></div>
+      <div class="persona"><div class="persona-icon">📅</div><div><h3>De onregelmatige speler</h3><p>Soms elke week, soms een maand niet. CourtPass past zich aan.</p></div></div>
     </div>
   </div>
 </section>
@@ -417,9 +408,9 @@
     <h2>Kies jouw ritme</h2>
     <p class="section-intro">Geen verborgen kosten. Eerste maand gratis. Altijd opzegbaar.</p>
     <div class="pricing-grid">
-      <div class="plan reveal"><div class="plan-name">Starter</div><div class="plan-price">€49<sub>/maand</sub></div><div class="plan-sessions">4 speelbeurten per maand</div><ul class="plan-features"><li><span class="check">✓</span> Alle aangesloten clubs</li><li><span class="check">✓</span> Boeken tot 24u vooruit</li><li><span class="check">✓</span> Daluren & avonden</li><li><span class="check">✓</span> App + web toegang</li><li><span class="check">✓</span> Eerste maand gratis</li></ul><a href="#contact" class="plan-cta plan-cta-ghost">Begin hier</a></div>
-      <div class="plan popular reveal reveal-d1"><div class="popular-badge">Meest gekozen</div><div class="plan-name">Popular</div><div class="plan-price">€79<sub>/maand</sub></div><div class="plan-sessions">8 speelbeurten per maand</div><ul class="plan-features"><li><span class="check">✓</span> Alle clubs incl. premium</li><li><span class="check">✓</span> Boeken tot 48u vooruit</li><li><span class="check">✓</span> Alle tijdsloten</li><li><span class="check">✓</span> 1 vriend uitnodigen</li><li><span class="check">✓</span> Eerste maand gratis</li></ul><a href="#contact" class="plan-cta plan-cta-solid">Start Popular</a></div>
-      <div class="plan reveal reveal-d2"><div class="plan-name">Pro</div><div class="plan-price">€119<sub>/maand</sub></div><div class="plan-sessions">Onbeperkt spelen</div><ul class="plan-features"><li><span class="check">✓</span> Alle clubs incl. privébanen</li><li><span class="check">✓</span> Prioriteit bij reserveren</li><li><span class="check">✓</span> Gratis gastcredits (2x/m)</li><li><span class="check">✓</span> 20% korting op coaching</li><li><span class="check">✓</span> Eerste maand gratis</li></ul><a href="#contact" class="plan-cta plan-cta-ghost">Kies Pro</a></div>
+      <div class="plan"><div class="plan-name">Starter</div><div class="plan-price">€49<sub>/maand</sub></div><div class="plan-sessions">4 speelbeurten per maand</div><ul class="plan-features"><li><span class="check">✓</span> Alle aangesloten clubs</li><li><span class="check">✓</span> Boeken tot 24u vooruit</li><li><span class="check">✓</span> Daluren & avonden</li><li><span class="check">✓</span> App + web toegang</li><li><span class="check">✓</span> Eerste maand gratis</li></ul><a href="#contact" class="plan-cta plan-cta-ghost">Begin hier</a></div>
+      <div class="plan popular"><div class="popular-badge">Meest gekozen</div><div class="plan-name">Popular</div><div class="plan-price">€79<sub>/maand</sub></div><div class="plan-sessions">8 speelbeurten per maand</div><ul class="plan-features"><li><span class="check">✓</span> Alle clubs incl. premium</li><li><span class="check">✓</span> Boeken tot 48u vooruit</li><li><span class="check">✓</span> Alle tijdsloten</li><li><span class="check">✓</span> 1 vriend uitnodigen</li><li><span class="check">✓</span> Eerste maand gratis</li></ul><a href="#contact" class="plan-cta plan-cta-solid">Start Popular</a></div>
+      <div class="plan"><div class="plan-name">Pro</div><div class="plan-price">€119<sub>/maand</sub></div><div class="plan-sessions">Onbeperkt spelen</div><ul class="plan-features"><li><span class="check">✓</span> Alle clubs incl. privébanen</li><li><span class="check">✓</span> Prioriteit bij reserveren</li><li><span class="check">✓</span> Gratis gastcredits (2x/m)</li><li><span class="check">✓</span> 20% korting op coaching</li><li><span class="check">✓</span> Eerste maand gratis</li></ul><a href="#contact" class="plan-cta plan-cta-ghost">Kies Pro</a></div>
     </div>
     <p class="pricing-note">Alle prijzen inclusief BTW · Maandelijks opzegbaar · Geen inschrijfgeld</p>
   </div>
@@ -432,13 +423,13 @@
         <span class="section-tag">Voor tennisclubs</span>
         <h2 style="margin-bottom:clamp(1.5rem,3vw,2rem)">Vul lege banen.<br>Bereik nieuwe spelers.</h2>
         <ul class="clubs-benefits">
-          <li class="benefit reveal"><div class="benefit-icon">💰</div><div><h4>Extra inkomsten</h4><p>Lege banen overdag worden gevuld. Geen investering nodig.</p></div></li>
-          <li class="benefit reveal reveal-d1"><div class="benefit-icon">👥</div><div><h4>Nieuwe doelgroep</h4><p>Jongere spelers die geen vast lidmaatschap willen maar wel willen spelen.</p></div></li>
-          <li class="benefit reveal reveal-d2"><div class="benefit-icon">🔄</div><div><h4>Doorstroom naar lidmaatschap</h4><p>Spelers die je club leren kennen worden vaak later toch lid.</p></div></li>
-          <li class="benefit reveal reveal-d3"><div class="benefit-icon">⚙️</div><div><h4>Jij bepaalt de voorwaarden</h4><p>Welke uren en hoeveel credits — jij hebt de controle.</p></div></li>
+          <li class="benefit"><div class="benefit-icon">💰</div><div><h4>Extra inkomsten</h4><p>Lege banen overdag worden gevuld. Geen investering nodig.</p></div></li>
+          <li class="benefit"><div class="benefit-icon">👥</div><div><h4>Nieuwe doelgroep</h4><p>Jongere spelers die geen vast lidmaatschap willen maar wel willen spelen.</p></div></li>
+          <li class="benefit"><div class="benefit-icon">🔄</div><div><h4>Doorstroom naar lidmaatschap</h4><p>Spelers die je club leren kennen worden vaak later toch lid.</p></div></li>
+          <li class="benefit"><div class="benefit-icon">⚙️</div><div><h4>Jij bepaalt de voorwaarden</h4><p>Welke uren en hoeveel credits — jij hebt de controle.</p></div></li>
         </ul>
       </div>
-      <div class="clubs-cta-card reveal reveal-d1">
+      <div class="clubs-cta-card">
         <h3>Sluit jouw club aan</h3>
         <p>Meld je club aan en ga binnen een week live. Wij regelen de techniek — jij levert de banen.</p>
         <a href="#contact" class="btn-primary" style="display:block;text-align:center;margin-bottom:0.875rem">Club aanmelden</a>
@@ -475,17 +466,17 @@
 <section id="contact">
   <div class="section">
     <div class="contact-grid">
-      <div class="reveal">
+      <div class="">
         <span class="section-tag">Contact</span>
         <h2 style="margin-bottom:1rem">Vragen?<br>Neem contact op.</h2>
         <p style="font-size:var(--step-0);color:var(--text2);line-height:1.7;font-weight:300;margin-bottom:2rem">Wil je meer weten, je club aanmelden, of een samenwerking bespreken? We reageren binnen 24 uur.</p>
         <div style="display:flex;flex-direction:column;gap:1rem">
-          <div style="display:flex;align-items:center;gap:12px;font-size:var(--step-0);color:var(--text2)"><span>📧</span><span>hallo@courtpass.nl</span></div>
+          <div style="display:flex;align-items:center;gap:12px;font-size:var(--step-0);color:var(--text2)"><span>📧</span><span><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="a3cbc2cfcfcce3c0ccd6d1d7d3c2d0d08dcdcf">[email&#160;protected]</a></span></div>
           <div style="display:flex;align-items:center;gap:12px;font-size:var(--step-0);color:var(--text2)"><span>📍</span><span>Amsterdam, Nederland</span></div>
           <div style="display:flex;align-items:center;gap:12px;font-size:var(--step-0);color:var(--text2)"><span>⏰</span><span>Reactie binnen 24 uur op werkdagen</span></div>
         </div>
       </div>
-      <div class="reveal reveal-d1">
+      <div class="">
         <div class="form-group"><label>Naam</label><input type="text" id="f-name" placeholder="Jouw naam"/></div>
         <div class="form-group"><label>E-mailadres</label><input type="email" id="f-email" placeholder="naam@voorbeeld.nl"/></div>
         <div class="form-group"><label>Onderwerp</label><select id="f-subject"><option value="">Kies een onderwerp</option><option>Ik wil lid worden</option><option>Mijn club aanmelden</option><option>Samenwerking</option><option>Overig</option></select></div>
@@ -517,7 +508,7 @@
   </div>
 </footer>
 
-<script>
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
   // Mobile menu
   function toggleMenu() {
     const menu = document.getElementById('mobileMenu');
@@ -547,47 +538,9 @@
     document.getElementById('f-message').value = '';
   }
 
-  // Scroll animaties — betrouwbaar op elk apparaat
-  function setupReveal() {
-    const els = document.querySelectorAll('.reveal');
-    if (!els.length) return;
-
-    const observer = new IntersectionObserver((entries) => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          entry.target.classList.add('in-view');
-          observer.unobserve(entry.target);
-        }
-      });
-    }, { threshold: 0, rootMargin: '0px 0px -50px 0px' });
-
-    els.forEach(el => {
-      // Direct zichtbaar als al in beeld bij laden
-      const rect = el.getBoundingClientRect();
-      if (rect.top < window.innerHeight) {
-        el.classList.add('in-view');
-      } else {
-        observer.observe(el);
-      }
-    });
-  }
-
-  // Start zodra DOM klaar is
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', setupReveal);
-  } else {
-    setupReveal();
-  }
+  // Animaties tijdelijk uitgeschakeld
 
   // Smooth scroll
   document.querySelectorAll('a[href^="#"]').forEach(a => {
     a.addEventListener('click', e => {
       const href = a.getAttribute('href');
-      if (href === '#') return;
-      const target = document.querySelector(href);
-      if (target) { e.preventDefault(); target.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
-    });
-  });
-</script>
-</body>
-</html>
