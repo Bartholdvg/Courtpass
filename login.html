@@ -593,7 +593,13 @@
   const { createClient } = supabase;
   const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-  // ── CHECK SESSION ON LOAD ──
+  // Auto open register tab als ?tab=register in URL staat
+  const urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.get('tab') === 'register') {
+    switchTab('register');
+  }
+
+  // Check session on load
   window.addEventListener('load', async () => {
     const { data: { session } } = await sb.auth.getSession();
     if (session) showDashboard(session.user);
