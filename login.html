@@ -510,6 +510,14 @@
         </div>
       </div>
 
+      <div class="form-group">
+        <label>Bevestig wachtwoord</label>
+        <div class="input-wrap">
+          <input type="password" id="registerPassword2" placeholder="Herhaal wachtwoord" />
+          <button class="toggle-pw" onclick="togglePassword('registerPassword2', this)" type="button">toon</button>
+        </div>
+      </div>
+
       <button class="btn-submit" id="registerBtn" onclick="handleRegister()">
         <span class="spinner" id="registerSpinner"></span>
         <span id="registerBtnText">Account aanmaken</span>
@@ -798,6 +806,12 @@
     }
     if (password.length < 8) {
       showMsg('registerError', 'Wachtwoord moet minimaal 8 tekens bevatten.');
+      return;
+    }
+
+    const password2 = document.getElementById('registerPassword2').value;
+    if (password !== password2) {
+      showMsg('registerError', 'Wachtwoorden komen niet overeen.');
       return;
     }
 
