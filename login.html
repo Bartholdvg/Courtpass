@@ -631,9 +631,24 @@
 
   // Check session on load
   window.addEventListener('load', async () => {
-    // Detecteer wachtwoord reset token in URL hash
+    // Detecteer wachtwoord reset via URL hash (Supabase implicit flow)
     const hash = window.location.hash;
-    if (hash && hash.includes('type=recovery')) {
+    const params = new URLSearchParams(window.location.search);
+    const isRecovery = (hash && hash.includes('type=recovery')) || params.get('type') === 'recovery';
+
+    if (isRecovery) {
+      // Als token in query string staat → verwissel naar sessie
+      const tokenHash = params.get('token');
+      if (tokenHash) {
+        const { error } = await sb.auth.verifyOtp({ token_hash: tokenHash, type: 'recovery' });
+        if (error) {
+          document.getElementById('authContainer').querySelectorAll('.auth-card, .tabs').forEach(el => el.style.display = 'none');
+          document.getElementById('newPasswordForm').style.display = 'block';
+          document.getElementById('newPasswordError').textContent = 'Link is verlopen. Vraag een nieuwe reset aan.';
+          document.getElementById('newPasswordError').style.display = 'block';
+          return;
+        }
+      }
       // Verberg alles, toon nieuw wachtwoord formulier
       document.getElementById('authContainer').querySelectorAll('.auth-card, .tabs').forEach(el => el.style.display = 'none');
       document.getElementById('newPasswordForm').style.display = 'block';
@@ -822,7 +837,7 @@
     setLoading('forgotBtn', 'forgotSpinner', 'forgotBtnText', true, 'Versturen...');
 
     const { error } = await sb.auth.resetPasswordForEmail(email, {
-      redirectTo: window.location.origin + '/login.html'
+      redirectTo: 'https://bartholdvg.github.io/Courtpass/login.html'
     });
 
     setLoading('forgotBtn', 'forgotSpinner', 'forgotBtnText', false, 'Stuur reset link');
