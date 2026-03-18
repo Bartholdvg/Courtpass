@@ -631,25 +631,30 @@
 
   // Check session on load
   window.addEventListener('load', async () => {
-    // Detecteer wachtwoord reset via URL hash (Supabase implicit flow)
     const hash = window.location.hash;
     const params = new URLSearchParams(window.location.search);
-    const isRecovery = (hash && hash.includes('type=recovery')) || params.get('type') === 'recovery';
+    const tokenHash = params.get('token_hash');
+    const type = params.get('type');
 
-    if (isRecovery) {
-      // Als token in query string staat → verwissel naar sessie
-      const tokenHash = params.get('token');
-      if (tokenHash) {
-        const { error } = await sb.auth.verifyOtp({ token_hash: tokenHash, type: 'recovery' });
-        if (error) {
-          document.getElementById('authContainer').querySelectorAll('.auth-card, .tabs').forEach(el => el.style.display = 'none');
-          document.getElementById('newPasswordForm').style.display = 'block';
-          document.getElementById('newPasswordError').textContent = 'Link is verlopen. Vraag een nieuwe reset aan.';
-          document.getElementById('newPasswordError').style.display = 'block';
-          return;
-        }
+    // ── E-mail bevestiging ──
+    if (tokenHash && type === 'signup') {
+      const { error } = await sb.auth.verifyOtp({ token_hash: tokenHash, type: 'signup' });
+      if (error) {
+        showMsg('loginError', 'Bevestigingslink is verlopen. Registreer opnieuw.');
+        document.getElementById('loginError').classList.add('show');
+      } else {
+        window.location.href = 'dashboard.html';
       }
-      // Verberg alles, toon nieuw wachtwoord formulier
+      return;
+    }
+
+    // ── Wachtwoord reset ──
+    const isRecovery = (hash && hash.includes('type=recovery')) || type === 'recovery';
+    if (isRecovery) {
+      const recoveryToken = params.get('token') || tokenHash;
+      if (recoveryToken) {
+        await sb.auth.verifyOtp({ token_hash: recoveryToken, type: 'recovery' });
+      }
       document.getElementById('authContainer').querySelectorAll('.auth-card, .tabs').forEach(el => el.style.display = 'none');
       document.getElementById('newPasswordForm').style.display = 'block';
       return;
