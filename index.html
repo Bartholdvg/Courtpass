@@ -267,27 +267,24 @@
   <a href="#" class="logo">Court<span>Pass</span></a>
   <ul class="nav-links nav-desktop">
     <li><a href="#hoe-het-werkt">Hoe het werkt</a></li>
-    <li><a href="clubs.html">Clubs</a></li>
-    <li><a href="#voor-wie">Voor wie</a></li>
+    <li><a href="clubs.html">🎾 Clubs</a></li>
     <li><a href="#abonnementen">Abonnementen</a></li>
-    <li><a href="#clubs">Voor clubs</a></li>
     <li><a href="#contact">Contact</a></li>
     <li><a href="login.html" class="btn-nav-ghost">Inloggen</a></li>
     <li><a href="login.html?tab=register" class="btn-nav">Probeer gratis</a></li>
   </ul>
-  <button class="hamburger" id="hamburger" onclick="toggleMenu()" aria-label="Menu">
+  <button class="hamburger" id="hamburger" aria-label="Menu">
     <span></span><span></span><span></span>
   </button>
 </nav>
 
 <div class="mobile-menu" id="mobileMenu">
-  <a href="#hoe-het-werkt" onclick="toggleMenu()">Hoe het werkt</a>
-  <a href="#voor-wie" onclick="toggleMenu()">Voor wie</a>
-  <a href="#abonnementen" onclick="toggleMenu()">Abonnementen</a>
-  <a href="#clubs" onclick="toggleMenu()">Voor clubs</a>
-  <a href="#contact" onclick="toggleMenu()">Contact</a>
-  <a href="login.html" onclick="toggleMenu()">Inloggen</a>
-  <a href="login.html?tab=register" class="cta" onclick="toggleMenu()">Probeer gratis →</a>
+  <a href="#hoe-het-werkt">Hoe het werkt</a>
+  <a href="clubs.html">🎾 Clubs</a>
+  <a href="#abonnementen">Abonnementen</a>
+  <a href="#contact">Contact</a>
+  <a href="login.html">Inloggen</a>
+  <a href="login.html?tab=register" class="cta">Probeer gratis →</a>
 </div>
 
 <section>
@@ -299,7 +296,7 @@
         <p class="hero-sub">Eén abonnement. Meerdere clubs. Speel wanneer en waar jij wilt — zonder vast lidmaatschap.</p>
         <div class="hero-actions">
           <a href="login.html?tab=register" class="btn-primary">Start voor €49/maand</a>
-          <a href="#hoe-het-werkt" class="btn-ghost">Hoe het werkt →</a>
+          <a href="clubs.html" class="btn-ghost">Bekijk clubs →</a>
         </div>
         <div class="hero-trust">
           <div class="hero-trust-avatars">
@@ -521,8 +518,31 @@
     const ham = document.getElementById('hamburger');
     menu.classList.toggle('open');
     ham.classList.toggle('open');
-    document.body.style.overflow = menu.classList.contains('open') ? 'hidden' : '';
   }
+
+  // Hamburger click
+  document.getElementById('hamburger').addEventListener('click', function(e) {
+    e.stopPropagation();
+    toggleMenu();
+  });
+
+  // Sluit bij klik op link in menu
+  document.getElementById('mobileMenu').querySelectorAll('a').forEach(a => {
+    a.addEventListener('click', () => {
+      document.getElementById('mobileMenu').classList.remove('open');
+      document.getElementById('hamburger').classList.remove('open');
+    });
+  });
+
+  // Sluit bij klik buiten menu
+  document.addEventListener('click', function(e) {
+    const menu = document.getElementById('mobileMenu');
+    const ham = document.getElementById('hamburger');
+    if (!menu.contains(e.target) && !ham.contains(e.target)) {
+      menu.classList.remove('open');
+      ham.classList.remove('open');
+    }
+  });
 
   // FAQ
   function toggleFaq(btn) {
