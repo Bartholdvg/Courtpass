@@ -1,0 +1,1164 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CourtPass — Club Admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --lime: #BFEF45;
+      --dark: #0D1A0F;
+      --surface: #132015;
+      --surface2: #0F1C12;
+      --border: #1E3022;
+      --muted: #3A5040;
+      --text: #E8F0E9;
+      --text2: #8BAA8F;
+      --text3: #4A6650;
+      --error: #f87171;
+      --success: #4ade80;
+      --warning: #F59E0B;
+    }
+
+    body {
+      background: var(--dark);
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      min-height: 100vh;
+    }
+
+    /* ── LOGIN SCREEN ── */
+    .login-screen {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+    }
+
+    .login-box {
+      width: 100%;
+      max-width: 400px;
+    }
+
+    .login-logo {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--text);
+      text-align: center;
+      margin-bottom: 0.5rem;
+    }
+    .login-logo span { color: var(--lime); }
+
+    .login-subtitle {
+      text-align: center;
+      font-size: 0.82rem;
+      color: var(--text3);
+      margin-bottom: 2rem;
+    }
+
+    .login-card {
+      background: var(--surface);
+      border: 0.5px solid var(--border);
+      border-radius: 20px;
+      padding: 2rem;
+    }
+
+    .login-card h2 {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.4rem;
+      font-weight: 700;
+      margin-bottom: 0.25rem;
+    }
+    .login-card h2 em { font-style: italic; color: var(--lime); }
+
+    .login-card p {
+      font-size: 0.82rem;
+      color: var(--text2);
+      font-weight: 300;
+      margin-bottom: 1.5rem;
+    }
+
+    .form-group { margin-bottom: 1rem; }
+    .form-group label {
+      display: block;
+      font-size: 0.75rem;
+      color: var(--text2);
+      margin-bottom: 0.4rem;
+    }
+    .form-group input, .form-group select {
+      width: 100%;
+      background: #0D1A0F;
+      border: 0.5px solid var(--border);
+      border-radius: 10px;
+      padding: 0.75rem 1rem;
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.875rem;
+      font-weight: 300;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .form-group input:focus, .form-group select:focus { border-color: var(--lime); }
+    .form-group select option { background: var(--dark); }
+
+    .btn-primary {
+      width: 100%;
+      background: var(--lime);
+      color: var(--dark);
+      border: none;
+      padding: 0.875rem;
+      border-radius: 12px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.9rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: opacity 0.2s;
+      margin-top: 0.5rem;
+    }
+    .btn-primary:hover { opacity: 0.88; }
+
+    .btn-secondary {
+      background: transparent;
+      color: var(--text2);
+      border: 0.5px solid var(--border);
+      padding: 0.7rem 1.25rem;
+      border-radius: 10px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.875rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-secondary:hover { border-color: var(--muted); color: var(--text); }
+
+    .msg {
+      border-radius: 10px;
+      padding: 0.75rem 1rem;
+      font-size: 0.82rem;
+      margin-bottom: 1rem;
+      display: none;
+    }
+    .msg.error { background: rgba(248,113,113,0.1); border: 0.5px solid rgba(248,113,113,0.3); color: var(--error); display: block; }
+    .msg.success { background: rgba(74,222,128,0.1); border: 0.5px solid rgba(74,222,128,0.3); color: var(--success); display: block; }
+
+    /* ── ADMIN LAYOUT ── */
+    .admin-wrap { display: none; min-height: 100vh; }
+
+    /* TOP NAV */
+    .top-nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem 2rem;
+      background: var(--surface2);
+      border-bottom: 0.5px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .top-nav-left {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .admin-logo {
+      font-family: 'Playfair Display', serif;
+      font-weight: 700;
+      font-size: 1.1rem;
+      color: var(--text);
+      text-decoration: none;
+    }
+    .admin-logo span { color: var(--lime); }
+
+    .admin-badge {
+      font-size: 0.65rem;
+      background: rgba(191,239,69,0.15);
+      color: var(--lime);
+      padding: 3px 10px;
+      border-radius: 100px;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .top-nav-right {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .club-name-tag {
+      font-size: 0.82rem;
+      color: var(--text2);
+    }
+    .club-name-tag strong { color: var(--text); }
+
+    .btn-logout-sm {
+      background: transparent;
+      border: 0.5px solid var(--border);
+      color: var(--text3);
+      padding: 0.4rem 0.875rem;
+      border-radius: 100px;
+      font-size: 0.75rem;
+      cursor: pointer;
+      font-family: 'DM Sans', sans-serif;
+      transition: all 0.2s;
+    }
+    .btn-logout-sm:hover { border-color: var(--muted); color: var(--text2); }
+
+    /* MAIN LAYOUT */
+    .admin-body {
+      display: grid;
+      grid-template-columns: 200px 1fr;
+      min-height: calc(100vh - 56px);
+    }
+
+    /* SIDEBAR */
+    .admin-sidebar {
+      background: var(--surface2);
+      border-right: 0.5px solid var(--border);
+      padding: 1.5rem 0;
+    }
+
+    .sidebar-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 0.7rem 1.25rem;
+      font-size: 0.875rem;
+      color: var(--text2);
+      cursor: pointer;
+      transition: all 0.15s;
+      border: none;
+      background: none;
+      font-family: 'DM Sans', sans-serif;
+      width: 100%;
+      text-align: left;
+      text-decoration: none;
+    }
+    .sidebar-item:hover { background: rgba(255,255,255,0.03); color: var(--text); }
+    .sidebar-item.active { background: rgba(191,239,69,0.08); color: var(--lime); font-weight: 500; border-right: 2px solid var(--lime); }
+    .sidebar-divider { height: 0.5px; background: var(--border); margin: 0.75rem 0; }
+
+    /* CONTENT */
+    .admin-content {
+      padding: 2rem;
+      max-width: 1000px;
+    }
+
+    .page-header {
+      margin-bottom: 2rem;
+    }
+    .page-header h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.6rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 0.25rem;
+    }
+    .page-header p { font-size: 0.85rem; color: var(--text2); font-weight: 300; }
+
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* CARDS */
+    .card {
+      background: var(--surface);
+      border: 0.5px solid var(--border);
+      border-radius: 16px;
+      padding: 1.5rem;
+      margin-bottom: 1.25rem;
+    }
+    .card-title {
+      font-size: 0.7rem;
+      color: var(--text3);
+      text-transform: uppercase;
+      letter-spacing: 0.09em;
+      font-weight: 500;
+      margin-bottom: 1.25rem;
+    }
+
+    /* STATS */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .stat-card {
+      background: var(--surface);
+      border: 0.5px solid var(--border);
+      border-radius: 14px;
+      padding: 1.25rem;
+    }
+    .stat-label { font-size: 0.68rem; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.5rem; }
+    .stat-value { font-family: 'Playfair Display', serif; font-size: 2rem; font-weight: 700; color: var(--lime); line-height: 1; }
+    .stat-sub { font-size: 0.72rem; color: var(--text2); margin-top: 4px; font-weight: 300; }
+
+    /* BOOKING TABLE */
+    .booking-table { width: 100%; border-collapse: collapse; }
+    .booking-table th {
+      font-size: 0.68rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text3);
+      font-weight: 500;
+      padding: 0 0 0.75rem;
+      text-align: left;
+      border-bottom: 0.5px solid var(--border);
+    }
+    .booking-table td {
+      padding: 0.875rem 0;
+      font-size: 0.82rem;
+      border-bottom: 0.5px solid var(--border);
+      color: var(--text2);
+    }
+    .booking-table td:first-child { color: var(--text); font-weight: 500; }
+    .booking-table tr:last-child td { border-bottom: none; }
+
+    .status-badge {
+      font-size: 0.65rem;
+      padding: 3px 10px;
+      border-radius: 100px;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .status-bevestigd { background: rgba(74,222,128,0.1); color: var(--success); }
+    .status-afwachting { background: rgba(245,158,11,0.1); color: var(--warning); }
+    .status-geannuleerd { background: rgba(248,113,113,0.1); color: var(--error); }
+
+    /* AVAILABILITY GRID */
+    .avail-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.25rem;
+    }
+
+    .week-nav {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      font-size: 0.875rem;
+      color: var(--text);
+    }
+
+    .week-btn {
+      background: var(--surface);
+      border: 0.5px solid var(--border);
+      color: var(--text2);
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.875rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+    }
+    .week-btn:hover { border-color: var(--muted); color: var(--text); }
+
+    .avail-grid {
+      display: grid;
+      grid-template-columns: 80px repeat(7, 1fr);
+      gap: 4px;
+      font-size: 0.72rem;
+    }
+
+    .avail-day-header {
+      text-align: center;
+      padding: 0.5rem 0;
+      color: var(--text2);
+      font-weight: 500;
+    }
+    .avail-day-header.today { color: var(--lime); }
+
+    .avail-time-label {
+      color: var(--text3);
+      padding: 0.4rem 0;
+      font-size: 0.68rem;
+      display: flex;
+      align-items: center;
+    }
+
+    .avail-slot {
+      background: var(--surface2);
+      border: 0.5px solid var(--border);
+      border-radius: 6px;
+      padding: 0.4rem;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.15s;
+      color: var(--text3);
+      font-size: 0.65rem;
+      min-height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .avail-slot:hover { border-color: var(--muted); }
+    .avail-slot.open { background: rgba(74,222,128,0.1); border-color: rgba(74,222,128,0.3); color: var(--success); }
+    .avail-slot.beperkt { background: rgba(245,158,11,0.1); border-color: rgba(245,158,11,0.3); color: var(--warning); }
+    .avail-slot.gesloten { background: rgba(248,113,113,0.08); border-color: rgba(248,113,113,0.2); color: var(--error); }
+
+    .avail-legend {
+      display: flex;
+      gap: 1.25rem;
+      margin-top: 1rem;
+      font-size: 0.72rem;
+      color: var(--text2);
+    }
+    .legend-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      display: inline-block;
+      margin-right: 5px;
+    }
+
+    /* PROFIEL FORM */
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    .form-group textarea {
+      width: 100%;
+      background: #0D1A0F;
+      border: 0.5px solid var(--border);
+      border-radius: 10px;
+      padding: 0.75rem 1rem;
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.875rem;
+      font-weight: 300;
+      outline: none;
+      resize: vertical;
+      min-height: 80px;
+      transition: border-color 0.2s;
+    }
+    .form-group textarea:focus { border-color: var(--lime); }
+
+    .btn-save {
+      background: var(--lime);
+      color: var(--dark);
+      border: none;
+      padding: 0.75rem 1.75rem;
+      border-radius: 100px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.875rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+    .btn-save:hover { opacity: 0.88; }
+
+    /* CREDITS TABEL */
+    .credits-table { width: 100%; border-collapse: collapse; }
+    .credits-table th {
+      font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.08em;
+      color: var(--text3); font-weight: 500; padding: 0 0 0.75rem;
+      text-align: left; border-bottom: 0.5px solid var(--border);
+    }
+    .credits-table td {
+      padding: 0.875rem 0; font-size: 0.875rem;
+      border-bottom: 0.5px solid var(--border); color: var(--text2);
+      vertical-align: middle;
+    }
+    .credits-table td:first-child { color: var(--text); }
+    .credits-table tr:last-child td { border-bottom: none; }
+
+    .credit-input {
+      background: #0D1A0F;
+      border: 0.5px solid var(--border);
+      border-radius: 8px;
+      padding: 0.4rem 0.75rem;
+      color: var(--lime);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.875rem;
+      font-weight: 500;
+      width: 70px;
+      outline: none;
+      text-align: center;
+      transition: border-color 0.2s;
+    }
+    .credit-input:focus { border-color: var(--lime); }
+
+    /* NOTIFICATIES */
+    .notif-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1rem 0;
+      border-bottom: 0.5px solid var(--border);
+      gap: 1rem;
+    }
+    .notif-item:last-child { border-bottom: none; }
+    .notif-info h4 { font-size: 0.875rem; font-weight: 500; margin-bottom: 3px; }
+    .notif-info p { font-size: 0.78rem; color: var(--text2); font-weight: 300; }
+
+    .toggle-switch { position: relative; width: 44px; height: 24px; flex-shrink: 0; }
+    .toggle-switch input { opacity: 0; width: 0; height: 0; }
+    .toggle-slider { position: absolute; inset: 0; background: var(--muted); border-radius: 12px; cursor: pointer; transition: background 0.2s; }
+    .toggle-slider::before { content: ''; position: absolute; width: 18px; height: 18px; left: 3px; top: 3px; background: white; border-radius: 50%; transition: transform 0.2s; }
+    .toggle-switch input:checked + .toggle-slider { background: var(--lime); }
+    .toggle-switch input:checked + .toggle-slider::before { transform: translateX(20px); }
+
+    /* CHART */
+    .chart-bars {
+      display: flex;
+      align-items: flex-end;
+      gap: 6px;
+      height: 120px;
+      padding: 0 0 0.5rem;
+      border-bottom: 0.5px solid var(--border);
+    }
+    .chart-bar-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; height: 100%; justify-content: flex-end; }
+    .chart-bar { width: 100%; background: var(--lime); border-radius: 4px 4px 0 0; opacity: 0.8; transition: opacity 0.2s; min-height: 4px; }
+    .chart-bar:hover { opacity: 1; }
+    .chart-label { font-size: 0.65rem; color: var(--text3); text-align: center; }
+    .chart-value { font-size: 0.68rem; color: var(--lime); font-weight: 500; }
+
+    /* MOBILE */
+    @media (max-width: 768px) {
+      .admin-body { grid-template-columns: 1fr; }
+      .admin-sidebar { display: flex; overflow-x: auto; padding: 0.75rem; border-right: none; border-bottom: 0.5px solid var(--border); }
+      .sidebar-item { flex-shrink: 0; border-right: none !important; padding: 0.5rem 0.875rem; border-radius: 8px; font-size: 0.78rem; }
+      .sidebar-item.active { border-right: none !important; background: rgba(191,239,69,0.1); }
+      .sidebar-divider { display: none; }
+      .admin-content { padding: 1.25rem; }
+      .stats-grid { grid-template-columns: 1fr 1fr; }
+      .form-row { grid-template-columns: 1fr; }
+      .avail-grid { grid-template-columns: 60px repeat(7, 1fr); font-size: 0.6rem; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── LOGIN ── -->
+<div class="login-screen" id="loginScreen">
+  <div class="login-box">
+    <div class="login-logo">Court<span>Pass</span></div>
+    <div class="login-subtitle">Club Administratie Portaal</div>
+
+    <div class="login-card">
+      <h2>Club <em>login</em></h2>
+      <p>Log in met je club beheerdersaccount.</p>
+
+      <div class="msg" id="loginMsg"></div>
+
+      <div class="form-group">
+        <label>Gebruikersnaam</label>
+        <input type="text" id="loginUser" placeholder="bijv. AdminTennisclubOost" />
+      </div>
+
+      <div class="form-group">
+        <label>Wachtwoord</label>
+        <input type="password" id="loginPw" placeholder="Wachtwoord" />
+      </div>
+
+      <button class="btn-primary" onclick="handleLogin()">Inloggen</button>
+
+      <p style="text-align:center;font-size:0.75rem;color:var(--text3);margin-top:1rem;">
+        Geen toegang? <a href="mailto:hallo@courtpass.nl" style="color:var(--lime);">Vraag toegang aan</a>
+      </p>
+    </div>
+
+    <p style="text-align:center;font-size:0.75rem;color:var(--text3);margin-top:1.5rem;">
+      <a href="index.html" style="color:var(--text3);">← Terug naar CourtPass</a>
+    </p>
+  </div>
+</div>
+
+<!-- ── ADMIN PORTAAL ── -->
+<div class="admin-wrap" id="adminWrap">
+
+  <nav class="top-nav">
+    <div class="top-nav-left">
+      <a href="index.html" class="admin-logo">Court<span>Pass</span></a>
+      <span class="admin-badge">Club Admin</span>
+    </div>
+    <div class="top-nav-right">
+      <span class="club-name-tag">Ingelogd als <strong id="clubNameTag">—</strong></span>
+      <button class="btn-logout-sm" onclick="handleLogout()">Uitloggen</button>
+    </div>
+  </nav>
+
+  <div class="admin-body">
+
+    <!-- Sidebar -->
+    <div class="admin-sidebar">
+      <button class="sidebar-item active" onclick="showTab('overzicht', this)">📊 Overzicht</button>
+      <button class="sidebar-item" onclick="showTab('boekingen', this)">📅 Boekingen</button>
+      <button class="sidebar-item" onclick="showTab('beschikbaarheid', this)">🕐 Beschikbaarheid</button>
+      <button class="sidebar-item" onclick="showTab('credits', this)">💰 Credits</button>
+      <button class="sidebar-item" onclick="showTab('profiel', this)">🏟️ Club profiel</button>
+      <div class="sidebar-divider"></div>
+      <button class="sidebar-item" onclick="showTab('notificaties', this)">🔔 Notificaties</button>
+    </div>
+
+    <!-- Content -->
+    <div class="admin-content">
+
+      <!-- OVERZICHT -->
+      <div class="tab-panel active" id="tab-overzicht">
+        <div class="page-header">
+          <h1>Welkom, <span id="clubWelcomeName" style="font-style:italic;color:var(--lime);">Club</span> 👋</h1>
+          <p>Hier is je overzicht van vandaag</p>
+        </div>
+
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-label">Boekingen vandaag</div>
+            <div class="stat-value" id="statToday">3</div>
+            <div class="stat-sub">↑ 1 meer dan gisteren</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Deze week</div>
+            <div class="stat-value" id="statWeek">18</div>
+            <div class="stat-sub">Totaal boekingen</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Bezettingsgraad</div>
+            <div class="stat-value" id="statRate">64%</div>
+            <div class="stat-sub">Van beschikbare banen</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Vrije banen nu</div>
+            <div class="stat-value" id="statFree">4</div>
+            <div class="stat-sub">Van 6 totaal</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Boekingen per dag — deze week</div>
+          <div class="chart-bars" id="weekChart"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Aankomende boekingen vandaag</div>
+          <table class="booking-table">
+            <thead>
+              <tr>
+                <th>Speler</th>
+                <th>Tijdslot</th>
+                <th>Baan</th>
+                <th>Credits</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="todayBookings"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- BOEKINGEN -->
+      <div class="tab-panel" id="tab-boekingen">
+        <div class="page-header">
+          <h1>Boekingen</h1>
+          <p>Overzicht van alle reserveringen</p>
+        </div>
+
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem;">
+            <div class="card-title" style="margin:0;">Alle boekingen</div>
+            <select style="background:var(--surface2);border:0.5px solid var(--border);color:var(--text2);padding:0.4rem 0.875rem;border-radius:8px;font-size:0.78rem;font-family:'DM Sans',sans-serif;outline:none;">
+              <option>Alle statussen</option>
+              <option>Bevestigd</option>
+              <option>In afwachting</option>
+              <option>Geannuleerd</option>
+            </select>
+          </div>
+          <table class="booking-table">
+            <thead>
+              <tr>
+                <th>Speler</th>
+                <th>Datum</th>
+                <th>Tijdslot</th>
+                <th>Baan</th>
+                <th>Credits</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="allBookings"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- BESCHIKBAARHEID -->
+      <div class="tab-panel" id="tab-beschikbaarheid">
+        <div class="page-header">
+          <h1>Beschikbaarheid</h1>
+          <p>Stel in wanneer je banen beschikbaar zijn voor CourtPass spelers</p>
+        </div>
+
+        <div class="card">
+          <div class="avail-header">
+            <div class="card-title" style="margin:0;">Weekrooster</div>
+            <div class="week-nav">
+              <button class="week-btn" onclick="changeWeek(-1)">←</button>
+              <span id="weekLabel">Week van 17 mrt</span>
+              <button class="week-btn" onclick="changeWeek(1)">→</button>
+            </div>
+          </div>
+
+          <div class="avail-grid" id="availGrid"></div>
+
+          <div class="avail-legend">
+            <span><span class="legend-dot" style="background:var(--success)"></span>Open</span>
+            <span><span class="legend-dot" style="background:var(--warning)"></span>Beperkt</span>
+            <span><span class="legend-dot" style="background:var(--error)"></span>Gesloten</span>
+          </div>
+
+          <div style="margin-top:1.25rem;display:flex;gap:0.75rem;flex-wrap:wrap;">
+            <button class="btn-save" onclick="saveAvailability()">💾 Beschikbaarheid opslaan</button>
+            <button class="btn-secondary" onclick="setAllOpen()">✅ Alles openzetten</button>
+            <button class="btn-secondary" onclick="setAllClosed()">❌ Alles sluiten</button>
+          </div>
+
+          <div id="availMsg" style="margin-top:1rem;font-size:0.82rem;color:var(--success);display:none;">✓ Beschikbaarheid opgeslagen!</div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Snelle instellingen</div>
+          <div style="display:flex;flex-direction:column;gap:1rem;">
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:0.75rem 0;border-bottom:0.5px solid var(--border);">
+              <div>
+                <div style="font-size:0.875rem;font-weight:500;">Daluren automatisch openzetten</div>
+                <div style="font-size:0.78rem;color:var(--text2);font-weight:300;">Ma-vr 09:00-17:00 altijd beschikbaar</div>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" checked>
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:0.75rem 0;">
+              <div>
+                <div style="font-size:0.875rem;font-weight:500;">Weekend beschikbaar voor CourtPass</div>
+                <div style="font-size:0.78rem;color:var(--text2);font-weight:300;">Zaterdag en zondag meedoen</div>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox">
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CREDITS -->
+      <div class="tab-panel" id="tab-credits">
+        <div class="page-header">
+          <h1>Credits instellen</h1>
+          <p>Bepaal hoeveel credits spelers betalen per tijdslot</p>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Credits per tijdslot</div>
+          <table class="credits-table">
+            <thead>
+              <tr>
+                <th>Tijdslot</th>
+                <th>Omschrijving</th>
+                <th>Credits</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>🌅 Daluren</td>
+                <td style="color:var(--text3);">Ma–vr 09:00–17:00</td>
+                <td><input type="number" class="credit-input" value="1" min="1" max="5" id="cr-dal" /></td>
+              </tr>
+              <tr>
+                <td>🌆 Avonduren</td>
+                <td style="color:var(--text3);">Ma–vr 17:00–22:00</td>
+                <td><input type="number" class="credit-input" value="2" min="1" max="5" id="cr-avond" /></td>
+              </tr>
+              <tr>
+                <td>☀️ Weekend</td>
+                <td style="color:var(--text3);">Za–zo hele dag</td>
+                <td><input type="number" class="credit-input" value="2" min="1" max="5" id="cr-weekend" /></td>
+              </tr>
+              <tr>
+                <td>⭐ Premium slot</td>
+                <td style="color:var(--text3);">Speciale banen of toernooitijden</td>
+                <td><input type="number" class="credit-input" value="3" min="1" max="5" id="cr-premium" /></td>
+              </tr>
+            </tbody>
+          </table>
+          <div style="margin-top:1.25rem;display:flex;align-items:center;gap:1rem;">
+            <button class="btn-save" onclick="saveCredits()">💾 Credits opslaan</button>
+            <span id="creditsMsg" style="font-size:0.82rem;color:var(--success);display:none;">✓ Opgeslagen!</span>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">💡 Uitleg credits</div>
+          <p style="font-size:0.82rem;color:var(--text2);line-height:1.7;font-weight:300;">
+            Spelers betalen met credits uit hun abonnement. Jij bepaalt hoeveel credits een sessie kost. Hogere credits = meer waarde per boeking voor jou. CourtPass verdeelt de inkomsten op basis van verbruikte credits.
+          </p>
+        </div>
+      </div>
+
+      <!-- PROFIEL -->
+      <div class="tab-panel" id="tab-profiel">
+        <div class="page-header">
+          <h1>Club profiel</h1>
+          <p>Beheer hoe jouw club wordt weergegeven op CourtPass</p>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Clubgegevens</div>
+          <div id="profielMsg"></div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Clubnaam</label>
+              <input type="text" id="p-name" placeholder="Naam van je club" />
+            </div>
+            <div class="form-group">
+              <label>Stad</label>
+              <input type="text" id="p-city" placeholder="Amsterdam" />
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Adres</label>
+            <input type="text" id="p-address" placeholder="Straatnaam 1, Stad" />
+          </div>
+          <div class="form-group">
+            <label>Omschrijving</label>
+            <textarea id="p-desc" placeholder="Vertel iets over jullie club..."></textarea>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Aantal banen</label>
+              <input type="number" id="p-courts" placeholder="6" min="1" />
+            </div>
+            <div class="form-group">
+              <label>Website</label>
+              <input type="url" id="p-website" placeholder="https://jouwclub.nl" />
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Faciliteiten</label>
+            <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-top:0.5rem;">
+              <label style="display:flex;align-items:center;gap:6px;font-size:0.82rem;color:var(--text2);cursor:pointer;">
+                <input type="checkbox" id="fac-binnen" style="accent-color:var(--lime);width:14px;height:14px;" /> Binnenbanen
+              </label>
+              <label style="display:flex;align-items:center;gap:6px;font-size:0.82rem;color:var(--text2);cursor:pointer;">
+                <input type="checkbox" id="fac-buiten" checked style="accent-color:var(--lime);width:14px;height:14px;" /> Buitenbanen
+              </label>
+              <label style="display:flex;align-items:center;gap:6px;font-size:0.82rem;color:var(--text2);cursor:pointer;">
+                <input type="checkbox" id="fac-coaching" style="accent-color:var(--lime);width:14px;height:14px;" /> Coaching
+              </label>
+              <label style="display:flex;align-items:center;gap:6px;font-size:0.82rem;color:var(--text2);cursor:pointer;">
+                <input type="checkbox" id="fac-verhuur" style="accent-color:var(--lime);width:14px;height:14px;" /> Racketverhuur
+              </label>
+              <label style="display:flex;align-items:center;gap:6px;font-size:0.82rem;color:var(--text2);cursor:pointer;">
+                <input type="checkbox" id="fac-horeca" style="accent-color:var(--lime);width:14px;height:14px;" /> Horeca
+              </label>
+            </div>
+          </div>
+          <div style="margin-top:1.25rem;">
+            <button class="btn-save" onclick="saveProfiel()">💾 Profiel opslaan</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- NOTIFICATIES -->
+      <div class="tab-panel" id="tab-notificaties">
+        <div class="page-header">
+          <h1>Notificaties</h1>
+          <p>Kies wanneer je een melding ontvangt</p>
+        </div>
+
+        <div class="card">
+          <div class="card-title">E-mail notificaties</div>
+          <div>
+            <div class="notif-item">
+              <div class="notif-info">
+                <h4>Nieuwe boeking</h4>
+                <p>Ontvang een e-mail bij elke nieuwe reservering</p>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" checked>
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            <div class="notif-item">
+              <div class="notif-info">
+                <h4>Annulering</h4>
+                <p>Melding als een speler annuleert</p>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" checked>
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            <div class="notif-item">
+              <div class="notif-info">
+                <h4>Dagelijks overzicht</h4>
+                <p>Elke ochtend om 08:00 een overzicht van de dag</p>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" checked>
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            <div class="notif-item">
+              <div class="notif-info">
+                <h4>Weekrapport</h4>
+                <p>Elke maandag een samenvatting van de vorige week</p>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox">
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            <div class="notif-item">
+              <div class="notif-info">
+                <h4>Lage bezetting melding</h4>
+                <p>Melding als bezettingsgraad onder 30% zakt</p>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox">
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+  // ── DEMO ACCOUNTS ──
+  const accounts = {
+    'AdminCourtPass': { pw: 'CourtPass2025!', club: 'CourtPass HQ', role: 'admin' },
+    'AdminTennisclubOost': { pw: 'TennisOost2025!', club: 'Tennisclub Oost', role: 'club' },
+    'AdminAmsterdamAcademy': { pw: 'Academy2025!', club: 'Amsterdam Tennis Academy', role: 'club' },
+    'AdminRotterdamTC': { pw: 'Rotterdam2025!', club: 'Rotterdam Tennis Club', role: 'club' },
+    'AdminUtrechtCenter': { pw: 'Utrecht2025!', club: 'Utrecht Tennis Center', role: 'club' },
+  };
+
+  let currentClub = null;
+
+  // ── LOGIN ──
+  function handleLogin() {
+    const user = document.getElementById('loginUser').value.trim();
+    const pw = document.getElementById('loginPw').value;
+    const msg = document.getElementById('loginMsg');
+    msg.className = 'msg';
+
+    if (!user || !pw) {
+      msg.textContent = 'Vul je gebruikersnaam en wachtwoord in.';
+      msg.className = 'msg error';
+      return;
+    }
+
+    const account = accounts[user];
+    if (!account || account.pw !== pw) {
+      msg.textContent = 'Gebruikersnaam of wachtwoord onjuist.';
+      msg.className = 'msg error';
+      return;
+    }
+
+    currentClub = { user, ...account };
+    localStorage.setItem('courtpass_admin', JSON.stringify(currentClub));
+    showAdmin();
+  }
+
+  // Enter key
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && document.getElementById('loginScreen').style.display !== 'none') {
+      handleLogin();
+    }
+  });
+
+  // ── CHECK SAVED SESSION ──
+  window.addEventListener('load', () => {
+    const saved = localStorage.getItem('courtpass_admin');
+    if (saved) {
+      currentClub = JSON.parse(saved);
+      showAdmin();
+    }
+  });
+
+  // ── SHOW ADMIN ──
+  function showAdmin() {
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('adminWrap').style.display = 'block';
+    document.getElementById('clubNameTag').textContent = currentClub.club;
+    document.getElementById('clubWelcomeName').textContent = currentClub.club;
+    document.getElementById('p-name').value = currentClub.club;
+
+    renderWeekChart();
+    renderTodayBookings();
+    renderAllBookings();
+    renderAvailGrid();
+  }
+
+  // ── LOGOUT ──
+  function handleLogout() {
+    localStorage.removeItem('courtpass_admin');
+    currentClub = null;
+    document.getElementById('adminWrap').style.display = 'none';
+    document.getElementById('loginScreen').style.display = 'flex';
+    document.getElementById('loginUser').value = '';
+    document.getElementById('loginPw').value = '';
+  }
+
+  // ── TABS ──
+  function showTab(name, btn) {
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.sidebar-item').forEach(b => b.classList.remove('active'));
+    document.getElementById(`tab-${name}`).classList.add('active');
+    btn.classList.add('active');
+  }
+
+  // ── WEEK CHART ──
+  const weekData = [
+    { day: 'Ma', val: 12 },
+    { day: 'Di', val: 8 },
+    { day: 'Wo', val: 15 },
+    { day: 'Do', val: 10 },
+    { day: 'Vr', val: 18 },
+    { day: 'Za', val: 6 },
+    { day: 'Zo', val: 3 },
+  ];
+
+  function renderWeekChart() {
+    const max = Math.max(...weekData.map(d => d.val));
+    document.getElementById('weekChart').innerHTML = weekData.map(d => `
+      <div class="chart-bar-wrap">
+        <div class="chart-value">${d.val}</div>
+        <div class="chart-bar" style="height:${(d.val/max)*90}px"></div>
+        <div class="chart-label">${d.day}</div>
+      </div>
+    `).join('');
+  }
+
+  // ── DEMO BOOKINGS ──
+  const demoBookings = [
+    { name: 'Barthold van Gendt', date: 'Vandaag', time: '10:00–11:00', court: 'Baan 2', credits: 1, status: 'bevestigd' },
+    { name: 'Emma de Vries', date: 'Vandaag', time: '11:00–12:00', court: 'Baan 1', credits: 1, status: 'bevestigd' },
+    { name: 'Lucas Janssen', date: 'Vandaag', time: '17:00–18:00', court: 'Baan 3', credits: 2, status: 'afwachting' },
+    { name: 'Sophie Bakker', date: 'Morgen', time: '09:00–10:00', court: 'Baan 2', credits: 1, status: 'bevestigd' },
+    { name: 'Tim van der Berg', date: 'Morgen', time: '18:00–19:00', court: 'Baan 1', credits: 2, status: 'bevestigd' },
+    { name: 'Anna Smit', date: '20 mrt', time: '10:00–11:00', court: 'Baan 4', credits: 1, status: 'geannuleerd' },
+  ];
+
+  function renderTodayBookings() {
+    const today = demoBookings.filter(b => b.date === 'Vandaag');
+    document.getElementById('todayBookings').innerHTML = today.map(b => `
+      <tr>
+        <td>${b.name}</td>
+        <td>${b.time}</td>
+        <td>${b.court}</td>
+        <td style="color:var(--lime);">${b.credits} cr.</td>
+        <td><span class="status-badge status-${b.status}">${b.status}</span></td>
+      </tr>
+    `).join('');
+  }
+
+  function renderAllBookings() {
+    document.getElementById('allBookings').innerHTML = demoBookings.map(b => `
+      <tr>
+        <td>${b.name}</td>
+        <td style="color:var(--text2);">${b.date}</td>
+        <td>${b.time}</td>
+        <td>${b.court}</td>
+        <td style="color:var(--lime);">${b.credits} cr.</td>
+        <td><span class="status-badge status-${b.status}">${b.status}</span></td>
+      </tr>
+    `).join('');
+  }
+
+  // ── AVAILABILITY GRID ──
+  const days = ['Ma', 'Di', 'Wo', 'Do', 'Vr', 'Za', 'Zo'];
+  const times = ['09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00'];
+  let availState = {};
+  let currentWeekOffset = 0;
+
+  function getWeekLabel(offset) {
+    const d = new Date();
+    d.setDate(d.getDate() + offset * 7);
+    return `Week van ${d.getDate()} ${['jan','feb','mrt','apr','mei','jun','jul','aug','sep','okt','nov','dec'][d.getMonth()]}`;
+  }
+
+  function changeWeek(dir) {
+    currentWeekOffset += dir;
+    document.getElementById('weekLabel').textContent = getWeekLabel(currentWeekOffset);
+    renderAvailGrid();
+  }
+
+  function cycleSlot(key) {
+    const states = ['open', 'beperkt', 'gesloten'];
+    const current = availState[key] || 'open';
+    const idx = states.indexOf(current);
+    availState[key] = states[(idx + 1) % states.length];
+    renderAvailGrid();
+  }
+
+  function renderAvailGrid() {
+    const grid = document.getElementById('availGrid');
+    let html = '<div></div>';
+
+    days.forEach(d => {
+      html += `<div class="avail-day-header">${d}</div>`;
+    });
+
+    times.forEach(t => {
+      html += `<div class="avail-time-label">${t}</div>`;
+      days.forEach(d => {
+        const key = `${currentWeekOffset}-${d}-${t}`;
+        if (!availState[key]) availState[key] = t >= '17:00' || d === 'Za' || d === 'Zo' ? 'gesloten' : 'open';
+        const state = availState[key];
+        const label = state === 'open' ? '✓' : state === 'beperkt' ? '~' : '✕';
+        html += `<div class="avail-slot ${state}" onclick="cycleSlot('${key}')" title="${state}">${label}</div>`;
+      });
+    });
+
+    grid.innerHTML = html;
+  }
+
+  function setAllOpen() {
+    times.forEach(t => days.forEach(d => { availState[`${currentWeekOffset}-${d}-${t}`] = 'open'; }));
+    renderAvailGrid();
+  }
+
+  function setAllClosed() {
+    times.forEach(t => days.forEach(d => { availState[`${currentWeekOffset}-${d}-${t}`] = 'gesloten'; }));
+    renderAvailGrid();
+  }
+
+  function saveAvailability() {
+    const msg = document.getElementById('availMsg');
+    msg.style.display = 'block';
+    setTimeout(() => msg.style.display = 'none', 3000);
+  }
+
+  // ── CREDITS ──
+  function saveCredits() {
+    const msg = document.getElementById('creditsMsg');
+    msg.style.display = 'inline';
+    setTimeout(() => msg.style.display = 'none', 3000);
+  }
+
+  // ── PROFIEL ──
+  function saveProfiel() {
+    const msg = document.getElementById('profielMsg');
+    msg.textContent = '✓ Profiel opgeslagen!';
+    msg.className = 'msg success';
+    setTimeout(() => { msg.className = 'msg'; msg.textContent = ''; }, 3000);
+  }
+</script>
+</body>
+</html>
