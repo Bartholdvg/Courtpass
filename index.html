@@ -52,14 +52,14 @@
     .btn-nav { background: var(--lime) !important; color: var(--dark) !important; padding: 0.45rem 1.1rem !important; border-radius: 100px !important; font-weight: 500 !important; transition: opacity 0.2s !important; white-space: nowrap; }
     .btn-nav:hover { opacity: 0.85 !important; }
 
-    .hamburger { display: none; flex-direction: column; gap: 5px; cursor: pointer; padding: 6px; background: none; border: none; }
+    .hamburger { display: none; flex-direction: column; gap: 5px; cursor: pointer; padding: 6px; background: none; border: none; position: relative; z-index: 1000; }
     .hamburger span { display: block; width: 22px; height: 2px; background: var(--text2); border-radius: 2px; transition: transform 0.3s ease, opacity 0.3s ease; }
     .hamburger.open span:nth-child(1) { transform: rotate(45deg) translate(5px, 6px); }
     .hamburger.open span:nth-child(2) { opacity: 0; transform: scaleX(0); }
     .hamburger.open span:nth-child(3) { transform: rotate(-45deg) translate(5px, -6px); }
 
     .mobile-menu {
-      display: none; position: fixed; inset: 0; z-index: 199;
+      display: none; position: fixed; inset: 0; z-index: 999;
       background: rgba(9,18,10,0.98);
       flex-direction: column; justify-content: center; align-items: center;
       padding: 2rem;
