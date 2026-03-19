@@ -273,16 +273,16 @@
     <li><a href="login.html" class="btn-nav-ghost">Inloggen</a></li>
     <li><a href="login.html?tab=register" class="btn-nav">Probeer gratis</a></li>
   </ul>
-  <button class="hamburger" id="hamburger" aria-label="Menu">
+  <button class="hamburger" id="hamburger" aria-label="Menu" onclick="toggleMenu()">
     <span></span><span></span><span></span>
   </button>
 </nav>
 
 <div class="mobile-menu" id="mobileMenu">
-  <a href="#hoe-het-werkt">Hoe het werkt</a>
+  <a href="#hoe-het-werkt" onclick="toggleMenu()">Hoe het werkt</a>
   <a href="clubs.html">🎾 Clubs</a>
-  <a href="#abonnementen">Abonnementen</a>
-  <a href="#contact">Contact</a>
+  <a href="#abonnementen" onclick="toggleMenu()">Abonnementen</a>
+  <a href="#contact" onclick="toggleMenu()">Contact</a>
   <a href="login.html">Inloggen</a>
   <a href="login.html?tab=register" class="cta">Probeer gratis →</a>
 </div>
@@ -523,25 +523,11 @@
     ham.classList.toggle('open');
   }
 
-  // Hamburger click
-  document.getElementById('hamburger').addEventListener('click', function(e) {
-    e.stopPropagation();
-    toggleMenu();
-  });
-
-  // Sluit bij klik op link in menu
-  document.getElementById('mobileMenu').querySelectorAll('a').forEach(a => {
-    a.addEventListener('click', () => {
-      document.getElementById('mobileMenu').classList.remove('open');
-      document.getElementById('hamburger').classList.remove('open');
-    });
-  });
-
-  // Sluit bij klik buiten menu
+  // Sluit menu bij klik buiten
   document.addEventListener('click', function(e) {
     const menu = document.getElementById('mobileMenu');
     const ham = document.getElementById('hamburger');
-    if (!menu.contains(e.target) && !ham.contains(e.target)) {
+    if (menu.classList.contains('open') && !menu.contains(e.target) && !ham.contains(e.target)) {
       menu.classList.remove('open');
       ham.classList.remove('open');
     }
