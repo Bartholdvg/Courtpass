@@ -41,6 +41,7 @@
       background: rgba(13,26,15,0.88);
       backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
       border-bottom: 0.5px solid rgba(30,48,34,0.8);
+      overflow: visible;
     }
     .logo { font-family: 'Playfair Display', serif; font-weight: 700; font-size: clamp(1.1rem, 1.8vw, 1.35rem); color: var(--text); letter-spacing: -0.02em; text-decoration: none; }
     .logo span { color: var(--lime); }
@@ -59,16 +60,53 @@
     .hamburger.open span:nth-child(3) { transform: rotate(-45deg) translate(5px, -6px); }
 
     .mobile-menu {
-      display: none; position: fixed; inset: 0; z-index: 999;
-      background: rgba(9,18,10,0.98);
-      flex-direction: column; justify-content: center; align-items: center;
-      padding: 2rem;
+      display: none;
+      position: absolute;
+      top: calc(100% + 8px);
+      right: 1.25rem;
+      width: 240px;
+      background: #0F1C12;
+      border: 0.5px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+      z-index: 999;
+      box-shadow: 0 16px 40px rgba(0,0,0,0.5);
+      animation: dropIn 0.2s ease;
     }
-    .mobile-menu.open { display: flex; }
-    .mobile-menu a { color: var(--text2); text-decoration: none; font-size: clamp(1.6rem, 6vw, 2.2rem); font-family: 'Playfair Display', serif; font-weight: 700; padding: 0.8rem 0; text-align: center; transition: color 0.2s; width: 100%; border-bottom: 0.5px solid var(--border); }
+    @keyframes dropIn {
+      from { opacity: 0; transform: translateY(-8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .mobile-menu.open { display: block; }
+    .mobile-menu a {
+      display: flex;
+      align-items: center;
+      color: var(--text2);
+      text-decoration: none;
+      font-size: 0.9rem;
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 400;
+      padding: 0.875rem 1.25rem;
+      border-bottom: 0.5px solid var(--border);
+      transition: color 0.15s, background 0.15s;
+    }
     .mobile-menu a:last-child { border-bottom: none; }
-    .mobile-menu a:hover { color: var(--lime); }
-    .mobile-menu a.cta { color: var(--lime); margin-top: 1rem; border: none; }
+    .mobile-menu a:hover { color: var(--text); background: rgba(255,255,255,0.03); }
+    .mobile-menu a.cta {
+      background: var(--lime);
+      color: var(--dark) !important;
+      font-weight: 500;
+      margin: 0.5rem;
+      border-radius: 10px;
+      border: none;
+      justify-content: center;
+    }
+    .mobile-menu a.cta:hover { opacity: 0.88; background: var(--lime); }
+    .mobile-menu .menu-divider {
+      height: 0.5px;
+      background: var(--border);
+      margin: 0;
+    }
 
     /* ── HERO ── */
     .hero {
@@ -276,16 +314,16 @@
   <button class="hamburger" id="hamburger" aria-label="Menu" onclick="toggleMenu()">
     <span></span><span></span><span></span>
   </button>
-</nav>
 
-<div class="mobile-menu" id="mobileMenu">
-  <a href="#hoe-het-werkt" onclick="toggleMenu()">Hoe het werkt</a>
-  <a href="clubs.html">🎾 Clubs</a>
-  <a href="#abonnementen" onclick="toggleMenu()">Abonnementen</a>
-  <a href="#contact" onclick="toggleMenu()">Contact</a>
-  <a href="login.html">Inloggen</a>
-  <a href="login.html?tab=register" class="cta">Probeer gratis →</a>
-</div>
+  <div class="mobile-menu" id="mobileMenu">
+    <a href="#hoe-het-werkt" onclick="toggleMenu()">Hoe het werkt</a>
+    <a href="clubs.html" onclick="toggleMenu()">🎾 Clubs</a>
+    <a href="#abonnementen" onclick="toggleMenu()">Abonnementen</a>
+    <a href="#contact" onclick="toggleMenu()">Contact</a>
+    <a href="login.html" onclick="toggleMenu()">Inloggen</a>
+    <a href="login.html?tab=register" class="cta" onclick="toggleMenu()">Probeer gratis →</a>
+  </div>
+</nav>
 
 <section>
   <div class="hero">
