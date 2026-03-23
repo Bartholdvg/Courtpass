@@ -460,7 +460,7 @@
       <li><span class="check">✓</span> App + web toegang</li>
       <li><span class="check">✓</span> Eerste maand gratis</li>
     </ul>
-    <button class="btn-checkout btn-checkout-ghost" onclick="startCheckout('price_1TCxrjFgp1PZQf1VtYsHjD8u', 'Starter')">
+    <button class="btn-checkout btn-checkout-ghost" onclick="startCheckout('price_1TCxrjFgp1PZQf1VtYsHjD8u')">
       Kies Starter
     </button>
   </div>
@@ -477,7 +477,7 @@
       <li><span class="check">✓</span> 1 vriend uitnodigen</li>
       <li><span class="check">✓</span> 10% korting op losse credits</li>
     </ul>
-    <button class="btn-checkout btn-checkout-solid" onclick="startCheckout('price_1TCxt3Fgp1PZQf1V4loQwqLk', 'Popular')">
+    <button class="btn-checkout btn-checkout-solid" onclick="startCheckout('price_1TCxt3Fgp1PZQf1V4loQwqLk')">
       Kies Popular
     </button>
   </div>
@@ -493,7 +493,7 @@
       <li><span class="check">✓</span> 20% korting op coaching</li>
       <li><span class="check">✓</span> 20% korting op losse credits</li>
     </ul>
-    <button class="btn-checkout btn-checkout-ghost" onclick="startCheckout('price_1TCxwwFgp1PZQf1VaiuY1KBl', 'Pro')">
+    <button class="btn-checkout btn-checkout-ghost" onclick="startCheckout('price_1TCxwwFgp1PZQf1VaiuY1KBl')">
       Kies Pro
     </button>
   </div>
@@ -508,21 +508,21 @@
   </div>
 
   <div class="credits-grid">
-    <div class="credit-card" onclick="startCheckout('price_1TCyAlFgp1PZQf1VA8igAUtg', '1 credit')">
+    <div class="credit-card" onclick="startCheckout('price_1TCyAlFgp1PZQf1VA8igAUtg')">
       <div class="credit-amount">1</div>
       <div class="credit-label">credit</div>
       <div class="credit-price">€19,99</div>
       <div class="credit-per">€19,99 per credit</div>
       <button class="btn-checkout btn-checkout-ghost" style="font-size:0.78rem;padding:0.5rem;">Kopen</button>
     </div>
-    <div class="credit-card" onclick="startCheckout('price_1TCyFjFgp1PZQf1VOMgg3qJx', '2 credits')">
+    <div class="credit-card" onclick="startCheckout('price_1TCyFjFgp1PZQf1VOMgg3qJx')">
       <div class="credit-amount">2</div>
       <div class="credit-label">credits</div>
       <div class="credit-price">€37,49</div>
       <div class="credit-per">€18,75 per credit</div>
       <button class="btn-checkout btn-checkout-ghost" style="font-size:0.78rem;padding:0.5rem;">Kopen</button>
     </div>
-    <div class="credit-card best-value" onclick="startCheckout('price_1TCyBEFgp1PZQf1V2OlIDgoK', '4 credits')">
+    <div class="credit-card best-value" onclick="startCheckout('price_1TCyBEFgp1PZQf1V2OlIDgoK')">
       <div class="credit-amount">4</div>
       <div class="credit-label">credits</div>
       <div class="credit-price">€74,99</div>
@@ -531,7 +531,7 @@
       <br><br>
       <button class="btn-checkout btn-checkout-solid" style="font-size:0.78rem;padding:0.5rem;">Kopen</button>
     </div>
-    <div class="credit-card" onclick="startCheckout('price_1TCyBZFgp1PZQf1VMwmrEdRx', '8 credits')">
+    <div class="credit-card" onclick="startCheckout('price_1TCyBZFgp1PZQf1VMwmrEdRx')">
       <div class="credit-amount">8</div>
       <div class="credit-label">credits</div>
       <div class="credit-price">€119,99</div>
@@ -544,30 +544,31 @@
 <!-- ANNULERINGSBELEID -->
 <div class="cancellation-section">
   <div class="cancellation-card">
-    <h3>📋 Annuleringsbeleid reserveringen</h3>
+    <h3>📋 Annuleringsbeleid baanreserveringen</h3>
     <div class="cancellation-rules">
       <div class="rule">
         <div class="rule-icon">✅</div>
         <div>
           <div class="rule-title">48+ uur van tevoren</div>
-          <div class="rule-desc">Gratis annuleren. Je credits worden volledig teruggestort.</div>
+          <div class="rule-desc">Gratis annuleren. Je gebruikte credits worden volledig teruggestort op je account.</div>
         </div>
       </div>
       <div class="rule">
         <div class="rule-icon">⚠️</div>
         <div>
           <div class="rule-title">24–48 uur van tevoren</div>
-          <div class="rule-desc">Je betaalt 50% van de credits. De helft wordt teruggestort.</div>
+          <div class="rule-desc">Je ontvangt 50% van je credits terug. De andere helft wordt ingehouden.</div>
         </div>
       </div>
       <div class="rule">
         <div class="rule-icon">❌</div>
         <div>
           <div class="rule-title">Minder dan 24 uur</div>
-          <div class="rule-desc">Geen restitutie. De volledige credits worden in rekening gebracht.</div>
+          <div class="rule-desc">Geen credits terug. De volledige credits voor de baan worden ingehouden.</div>
         </div>
       </div>
     </div>
+    <p style="font-size:0.75rem;color:var(--text3);margin-top:1rem;">ℹ️ Dit beleid geldt uitsluitend voor het annuleren van geboekte tennisbanen — niet voor het opzeggen van abonnementen of het terugboeken van gekochte credits.</p>
   </div>
 </div>
 
@@ -577,12 +578,19 @@
 </div>
 
 <script>
-  const stripe = Stripe('pk_test_51TCic0Fgp1PZQf1VYDGJLzVhpySpew1zzZmfdqTzFbdCHL32M5LWMQDtX21MlHdbfo861W1wqlRpeT3tBhEMcMJt00tsJnH2qB');
+  const PAYMENT_LINKS = {
+    'price_1TCxrjFgp1PZQf1VtYsHjD8u': 'https://buy.stripe.com/test_fZuaEXflj4Nk3ot9O34sE00',
+    'price_1TCxt3Fgp1PZQf1V4loQwqLk': 'https://buy.stripe.com/test_3cI6oH2yxfrY5wB9O34sE01',
+    'price_1TCxwwFgp1PZQf1VaiuY1KBl': 'https://buy.stripe.com/test_6oU5kDehfenU3ot4tJ4sE02',
+    'price_1TCyAlFgp1PZQf1VA8igAUtg': 'https://buy.stripe.com/test_fZucN5ddb4Nk6AF8JZ4sE06',
+    'price_1TCyFjFgp1PZQf1VOMgg3qJx': 'https://buy.stripe.com/test_14AdR93CBcfMcZ31hx4sE03',
+    'price_1TCyBEFgp1PZQf1V2OlIDgoK': 'https://buy.stripe.com/test_4gM5kD4GF93A0ch1hx4sE05',
+    'price_1TCyBZFgp1PZQf1VMwmrEdRx': 'https://buy.stripe.com/test_28EdR93CB93A7EJ0dt4sE04',
+  };
 
   function switchTab(tab, btn) {
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
-
     document.getElementById('section-abonnementen').style.display = tab === 'abonnementen' ? 'grid' : 'none';
     const creditsSection = document.getElementById('section-credits');
     if (tab === 'credits') {
@@ -592,24 +600,11 @@
     }
   }
 
-  async function startCheckout(priceId, planName) {
-    document.getElementById('loadingOverlay').classList.add('show');
-
-    try {
-      const { error } = await stripe.redirectToCheckout({
-        lineItems: [{ price: priceId, quantity: 1 }],
-        mode: planName === '1 credit' || planName === '2 credits' || planName === '4 credits' || planName === '8 credits' ? 'payment' : 'subscription',
-        successUrl: 'https://bartholdvg.github.io/Courtpass/betaal-succes.html?plan=' + encodeURIComponent(planName),
-        cancelUrl: 'https://bartholdvg.github.io/Courtpass/betalen.html',
-        locale: 'nl',
-      });
-
-      if (error) {
-        document.getElementById('loadingOverlay').classList.remove('show');
-        alert('Er ging iets mis: ' + error.message);
-      }
-    } catch (e) {
-      document.getElementById('loadingOverlay').classList.remove('show');
+  function startCheckout(priceId) {
+    const link = PAYMENT_LINKS[priceId];
+    if (link) {
+      window.location.href = link;
+    } else {
       alert('Er ging iets mis. Probeer opnieuw.');
     }
   }
