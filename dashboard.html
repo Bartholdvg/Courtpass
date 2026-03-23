@@ -294,9 +294,22 @@
     .plan-card:hover { border-color: var(--muted); }
     .plan-card.current { border-color: rgba(191,239,69,0.5); background: #0F2014; }
 
-    .plan-badge {
-      position: absolute;
-      top: -10px;
+    .plan-pay-btn {
+      display: block;
+      text-align: center;
+      margin-top: 0.75rem;
+      padding: 0.5rem;
+      border-radius: 8px;
+      font-size: 0.78rem;
+      font-weight: 500;
+      text-decoration: none;
+      border: 0.5px solid var(--muted);
+      color: var(--text2);
+      transition: all 0.2s;
+    }
+    .plan-pay-btn:hover { border-color: var(--lime); color: var(--lime); }
+    .plan-pay-btn-solid { background: var(--lime); color: var(--dark) !important; border-color: var(--lime) !important; }
+    .plan-pay-btn-solid:hover { opacity: 0.88; }
       left: 50%;
       transform: translateX(-50%);
       background: var(--lime);
@@ -615,24 +628,54 @@
       <div class="card">
         <div class="card-title">Huidig pakket</div>
         <div class="plan-cards">
-          <div class="plan-card" id="plan-starter" onclick="selectPlan('Starter')">
+          <div class="plan-card" id="plan-starter">
             <div class="plan-name">Starter</div>
             <div class="plan-price">€49<sub>/maand</sub></div>
-            <div class="plan-sessions">4 speelbeurten</div>
+            <div class="plan-sessions">4 credits per maand</div>
+            <a href="https://buy.stripe.com/test_fZuaEXflj4Nk3ot9O34sE00" class="plan-pay-btn">Kies Starter →</a>
           </div>
-          <div class="plan-card" id="plan-popular" onclick="selectPlan('Popular')">
+          <div class="plan-card" id="plan-popular">
             <div class="plan-badge">Meest gekozen</div>
             <div class="plan-name">Popular</div>
             <div class="plan-price">€79<sub>/maand</sub></div>
-            <div class="plan-sessions">8 speelbeurten</div>
+            <div class="plan-sessions">10 credits per maand</div>
+            <a href="https://buy.stripe.com/test_3cI6oH2yxfrY5wB9O34sE01" class="plan-pay-btn plan-pay-btn-solid">Kies Popular →</a>
           </div>
-          <div class="plan-card" id="plan-pro" onclick="selectPlan('Pro')">
+          <div class="plan-card" id="plan-pro">
             <div class="plan-name">Pro</div>
             <div class="plan-price">€119<sub>/maand</sub></div>
-            <div class="plan-sessions">Onbeperkt</div>
+            <div class="plan-sessions">14 credits per maand</div>
+            <a href="https://buy.stripe.com/test_6oU5kDehfenU3ot4tJ4sE02" class="plan-pay-btn">Kies Pro →</a>
           </div>
         </div>
-        <p style="font-size:0.78rem;color:var(--text3);margin-top:1.25rem;">💡 Betalingen worden geactiveerd in een volgende update.</p>
+      </div>
+
+      <!-- LOSSE CREDITS KOPEN -->
+      <div class="card">
+        <div class="card-title">💳 Losse credits bijkopen</div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:0.75rem;">
+          <a href="https://buy.stripe.com/test_fZucN5ddb4Nk6AF8JZ4sE06" style="background:var(--surface2);border:0.5px solid var(--border);border-radius:12px;padding:1rem;text-align:center;text-decoration:none;transition:border-color 0.2s;" onmouseover="this.style.borderColor='var(--muted)'" onmouseout="this.style.borderColor='var(--border)'">
+            <div style="font-family:'Playfair Display',serif;font-size:1.5rem;font-weight:700;color:var(--lime);">1</div>
+            <div style="font-size:0.72rem;color:var(--text2);margin-bottom:0.5rem;">credit</div>
+            <div style="font-size:0.9rem;font-weight:500;color:var(--text);">€19,99</div>
+          </a>
+          <a href="https://buy.stripe.com/test_14AdR93CBcfMcZ31hx4sE03" style="background:var(--surface2);border:0.5px solid var(--border);border-radius:12px;padding:1rem;text-align:center;text-decoration:none;transition:border-color 0.2s;" onmouseover="this.style.borderColor='var(--muted)'" onmouseout="this.style.borderColor='var(--border)'">
+            <div style="font-family:'Playfair Display',serif;font-size:1.5rem;font-weight:700;color:var(--lime);">2</div>
+            <div style="font-size:0.72rem;color:var(--text2);margin-bottom:0.5rem;">credits</div>
+            <div style="font-size:0.9rem;font-weight:500;color:var(--text);">€37,49</div>
+          </a>
+          <a href="https://buy.stripe.com/test_4gM5kD4GF93A0ch1hx4sE05" style="background:#0F2014;border:0.5px solid rgba(191,239,69,0.3);border-radius:12px;padding:1rem;text-align:center;text-decoration:none;">
+            <div style="font-family:'Playfair Display',serif;font-size:1.5rem;font-weight:700;color:var(--lime);">4</div>
+            <div style="font-size:0.72rem;color:var(--text2);margin-bottom:0.5rem;">credits</div>
+            <div style="font-size:0.9rem;font-weight:500;color:var(--text);">€74,99</div>
+            <div style="font-size:0.6rem;color:var(--lime);margin-top:4px;">BESTE WAARDE</div>
+          </a>
+          <a href="https://buy.stripe.com/test_28EdR93CB93A7EJ0dt4sE04" style="background:var(--surface2);border:0.5px solid var(--border);border-radius:12px;padding:1rem;text-align:center;text-decoration:none;transition:border-color 0.2s;" onmouseover="this.style.borderColor='var(--muted)'" onmouseout="this.style.borderColor='var(--border)'">
+            <div style="font-family:'Playfair Display',serif;font-size:1.5rem;font-weight:700;color:var(--lime);">8</div>
+            <div style="font-size:0.72rem;color:var(--text2);margin-bottom:0.5rem;">credits</div>
+            <div style="font-size:0.9rem;font-weight:500;color:var(--text);">€119,99</div>
+          </a>
+        </div>
       </div>
     </div>
 
@@ -659,6 +702,34 @@
           </div>
         </div>
         <p style="font-size:0.78rem;color:var(--text3);margin-top:1rem;">🔄 Credits worden elke maand vernieuwd op de startdatum van je abonnement.</p>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Losse credits bijkopen</div>
+        <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:0.75rem;margin-bottom:1rem;">
+          <a href="https://buy.stripe.com/test_fZucN5ddb4Nk6AF8JZ4sE06" style="background:var(--surface2);border:0.5px solid var(--border);border-radius:12px;padding:1rem;text-decoration:none;text-align:center;">
+            <div style="font-family:'Playfair Display',serif;font-size:1.5rem;font-weight:700;color:var(--lime);">1</div>
+            <div style="font-size:0.72rem;color:var(--text2);margin-bottom:0.4rem;">credit</div>
+            <div style="font-size:0.875rem;font-weight:500;color:var(--text);">€19,99</div>
+          </a>
+          <a href="https://buy.stripe.com/test_14AdR93CBcfMcZ31hx4sE03" style="background:var(--surface2);border:0.5px solid var(--border);border-radius:12px;padding:1rem;text-decoration:none;text-align:center;">
+            <div style="font-family:'Playfair Display',serif;font-size:1.5rem;font-weight:700;color:var(--lime);">2</div>
+            <div style="font-size:0.72rem;color:var(--text2);margin-bottom:0.4rem;">credits</div>
+            <div style="font-size:0.875rem;font-weight:500;color:var(--text);">€37,49</div>
+          </a>
+          <a href="https://buy.stripe.com/test_4gM5kD4GF93A0ch1hx4sE05" style="background:#0F2014;border:0.5px solid rgba(191,239,69,0.3);border-radius:12px;padding:1rem;text-decoration:none;text-align:center;">
+            <div style="font-family:'Playfair Display',serif;font-size:1.5rem;font-weight:700;color:var(--lime);">4</div>
+            <div style="font-size:0.72rem;color:var(--text2);margin-bottom:0.4rem;">credits</div>
+            <div style="font-size:0.875rem;font-weight:500;color:var(--text);">€74,99</div>
+            <div style="font-size:0.6rem;color:var(--lime);margin-top:4px;">BESTE WAARDE</div>
+          </a>
+          <a href="https://buy.stripe.com/test_28EdR93CB93A7EJ0dt4sE04" style="background:var(--surface2);border:0.5px solid var(--border);border-radius:12px;padding:1rem;text-decoration:none;text-align:center;">
+            <div style="font-family:'Playfair Display',serif;font-size:1.5rem;font-weight:700;color:var(--lime);">8</div>
+            <div style="font-size:0.72rem;color:var(--text2);margin-bottom:0.4rem;">credits</div>
+            <div style="font-size:0.875rem;font-weight:500;color:var(--text);">€119,99</div>
+          </a>
+        </div>
+        <p style="font-size:0.75rem;color:var(--text3);">💳 Veilig betalen via Stripe · iDEAL beschikbaar</p>
       </div>
 
       <div class="card">
