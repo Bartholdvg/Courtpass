@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CourtPass — Betaling geslaagd!</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --lime: #BFEF45;
+      --dark: #0D1A0F;
+      --surface: #132015;
+      --border: #1E3022;
+      --text: #E8F0E9;
+      --text2: #8BAA8F;
+      --text3: #4A6650;
+    }
+    body {
+      background: var(--dark);
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+    }
+
+    .success-card {
+      background: var(--surface);
+      border: 0.5px solid rgba(191,239,69,0.3);
+      border-radius: 24px;
+      padding: 3rem 2.5rem;
+      max-width: 480px;
+      width: 100%;
+      text-align: center;
+    }
+
+    .success-icon {
+      font-size: 3.5rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .success-card h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.8rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 0.5rem;
+    }
+    .success-card h1 em { font-style: italic; color: var(--lime); }
+
+    .success-card p {
+      font-size: 0.9rem;
+      color: var(--text2);
+      font-weight: 300;
+      line-height: 1.7;
+      margin-bottom: 2rem;
+    }
+
+    .plan-tag {
+      display: inline-block;
+      background: rgba(191,239,69,0.1);
+      border: 0.5px solid rgba(191,239,69,0.3);
+      color: var(--lime);
+      font-size: 0.82rem;
+      font-weight: 500;
+      padding: 0.4rem 1.25rem;
+      border-radius: 100px;
+      margin-bottom: 2rem;
+    }
+
+    .steps {
+      background: #0F2014;
+      border-radius: 12px;
+      padding: 1.25rem;
+      margin-bottom: 2rem;
+      text-align: left;
+    }
+
+    .step {
+      display: flex;
+      gap: 0.875rem;
+      align-items: flex-start;
+      padding: 0.6rem 0;
+      border-bottom: 0.5px solid var(--border);
+    }
+    .step:last-child { border-bottom: none; }
+    .step-num {
+      width: 22px;
+      height: 22px;
+      background: var(--lime);
+      color: var(--dark);
+      border-radius: 50%;
+      font-size: 0.7rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+    .step-text { font-size: 0.82rem; color: var(--text2); font-weight: 300; line-height: 1.5; }
+    .step-text strong { color: var(--text); font-weight: 500; }
+
+    .btn-dashboard {
+      display: block;
+      background: var(--lime);
+      color: var(--dark);
+      text-decoration: none;
+      padding: 0.875rem;
+      border-radius: 12px;
+      font-size: 0.9rem;
+      font-weight: 500;
+      margin-bottom: 0.75rem;
+      transition: opacity 0.2s;
+    }
+    .btn-dashboard:hover { opacity: 0.88; }
+
+    .btn-clubs {
+      display: block;
+      background: transparent;
+      color: var(--text2);
+      text-decoration: none;
+      padding: 0.875rem;
+      border-radius: 12px;
+      font-size: 0.9rem;
+      border: 0.5px solid var(--border);
+      transition: all 0.2s;
+    }
+    .btn-clubs:hover { border-color: var(--muted); color: var(--text); }
+
+    .logo {
+      font-family: 'Playfair Display', serif;
+      font-weight: 700;
+      font-size: 1.1rem;
+      color: var(--text);
+      text-decoration: none;
+      display: block;
+      margin-bottom: 2rem;
+    }
+    .logo span { color: var(--lime); }
+  </style>
+</head>
+<body>
+  <a href="index.html" class="logo">Court<span>Pass</span></a>
+
+  <div class="success-card">
+    <div class="success-icon">🎾</div>
+    <h1>Welkom bij <em>CourtPass!</em></h1>
+    <p>Je betaling is geslaagd. Je account is geactiveerd en je bent klaar om te spelen!</p>
+
+    <div class="plan-tag" id="planTag">✓ Abonnement geactiveerd</div>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-text"><strong>Je ontvangt een bevestigingsmail</strong> van Stripe met je factuur.</div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-text"><strong>Log in op je dashboard</strong> om je credits en abonnement te bekijken.</div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-text"><strong>Bekijk de clubs</strong> bij jou in de buurt en boek je eerste baan!</div>
+      </div>
+    </div>
+
+    <a href="dashboard.html" class="btn-dashboard">Naar mijn dashboard →</a>
+    <a href="clubs.html" class="btn-clubs">🗺️ Bekijk clubs</a>
+  </div>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const plan = params.get('plan');
+    if (plan) {
+      document.getElementById('planTag').textContent = '✓ ' + plan + ' geactiveerd';
+    }
+  </script>
+</body>
+</html>
