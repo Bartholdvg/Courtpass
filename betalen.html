@@ -2,6 +2,8 @@
 <html lang="nl">
 <head>
   <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+  <link rel="shortcut icon" href="favicon.svg" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>CourtPass — Kies je abonnement</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -428,8 +430,8 @@
 </div>
 
 <nav>
-  <a href="index.html" class="logo">Court<span>Pass</span></a>
-  <a href="index.html" class="nav-back">← Terug naar home</a>
+  <a href="/" class="logo">Court<span>Pass</span></a>
+  <a href="/" class="nav-back">← Terug naar home</a>
 </nav>
 
 <div class="page-hero">
@@ -577,7 +579,15 @@
   <a href="index.html#contact">Vragen?</a> · <a href="#">Algemene voorwaarden</a> · <a href="#">Privacybeleid</a>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
+  // ── SUPABASE ──
+  const { createClient } = supabase;
+  const sb = createClient(
+    'https://aplxpnqkkamolmqzuuon.supabase.co',
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFwbHhwbnFra2Ftb2xtcXp1dW9uIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM3NjM5NTAsImV4cCI6MjA4OTMzOTk1MH0.o9Z4lYNgA_Ym36x0S48OzaK6oD63kdZikD3j4uC_zHY'
+  );
+
   const PAYMENT_LINKS = {
     'price_1TCxrjFgp1PZQf1VtYsHjD8u': 'https://buy.stripe.com/test_fZuaEXflj4Nk3ot9O34sE00',
     'price_1TCxt3Fgp1PZQf1V4loQwqLk': 'https://buy.stripe.com/test_3cI6oH2yxfrY5wB9O34sE01',
@@ -600,14 +610,41 @@
     }
   }
 
-  function startCheckout(priceId) {
+  async function startCheckout(priceId) {
+    // Check of gebruiker is ingelogd
+    const { data: { session } } = await sb.auth.getSession();
+
+    if (!session) {
+      // Niet ingelogd → stuur naar loginpagina met redirect terug
+      window.location.href = 'login.html?redirect=betalen.html&price=' + priceId;
+      return;
+    }
+
+    // Ingelogd → ga naar Stripe
     const link = PAYMENT_LINKS[priceId];
     if (link) {
-      window.location.href = link;
+      // Voeg email toe aan Stripe link zodat het account gekoppeld wordt
+      const email = session.user.email;
+      window.location.href = link + '?prefilled_email=' + encodeURIComponent(email);
     } else {
       alert('Er ging iets mis. Probeer opnieuw.');
     }
   }
+
+  // Als teruggestuurd na login met price parameter → direct checkout starten
+  window.addEventListener('load', async () => {
+    const params = new URLSearchParams(window.location.search);
+    const priceId = params.get('price');
+    if (priceId) {
+      const { data: { session } } = await sb.auth.getSession();
+      if (session) {
+        const link = PAYMENT_LINKS[priceId];
+        if (link) {
+          window.location.href = link + '?prefilled_email=' + encodeURIComponent(session.user.email);
+        }
+      }
+    }
+  });
 </script>
 </body>
 </html>
