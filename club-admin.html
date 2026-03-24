@@ -2,6 +2,9 @@
 <html lang="nl">
 <head>
   <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+  <link rel="shortcut icon" href="favicon.svg" />
+  <link rel="icon" href="logo.svg" type="image/svg+xml">
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>CourtPass — Club Admin</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -566,12 +569,12 @@
       <button class="btn-primary" onclick="handleLogin()">Inloggen</button>
 
       <p style="text-align:center;font-size:0.75rem;color:var(--text3);margin-top:1rem;">
-        Geen toegang? <a href="mailto:hallo@courtpass.nl" style="color:var(--lime);">Vraag toegang aan</a>
+        Geen toegang? <a href="/cdn-cgi/l/email-protection#197178757576597a766c6b6d69786a6a377775" style="color:var(--lime);">Vraag toegang aan</a>
       </p>
     </div>
 
     <p style="text-align:center;font-size:0.75rem;color:var(--text3);margin-top:1.5rem;">
-      <a href="index.html" style="color:var(--text3);">← Terug naar CourtPass</a>
+      <a href="/" style="color:var(--text3);">← Terug naar CourtPass</a>
     </p>
   </div>
 </div>
@@ -581,7 +584,7 @@
 
   <nav class="top-nav">
     <div class="top-nav-left">
-      <a href="index.html" class="admin-logo">Court<span>Pass</span></a>
+      <a href="/" class="admin-logo">Court<span>Pass</span></a>
       <span class="admin-badge">Club Admin</span>
     </div>
     <div class="top-nav-right">
@@ -938,7 +941,7 @@
   </div>
 </div>
 
-<script>
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
   // ── DEMO ACCOUNTS ──
   const accounts = {
     'AdminCourtPass': { pw: 'CourtPass2025!', club: 'CourtPass HQ', role: 'admin' },
@@ -1155,10 +1158,4 @@
   // ── PROFIEL ──
   function saveProfiel() {
     const msg = document.getElementById('profielMsg');
-    msg.textContent = '✓ Profiel opgeslagen!';
-    msg.className = 'msg success';
-    setTimeout(() => { msg.className = 'msg'; msg.textContent = ''; }, 3000);
-  }
-</script>
-</body>
-</html>
+    msg.textContent = '✓ Profiel opgeslag
