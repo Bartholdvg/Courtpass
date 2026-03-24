@@ -1,0 +1,18 @@
+<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <!-- Achtergrond cirkel -->
+  <circle cx="100" cy="100" r="95" fill="#0D1A0F" stroke="#1E3022" stroke-width="1.5"/>
+  <!-- Tennisbaan rechthoek -->
+  <rect x="57" y="42" width="86" height="116" rx="5" fill="none" stroke="#E8F0E9" stroke-width="3.5"/>
+  <!-- Net (middenlijn) -->
+  <line x1="57" y1="100" x2="143" y2="100" stroke="#E8F0E9" stroke-width="3.5"/>
+  <!-- Service lijnen -->
+  <line x1="57" y1="75" x2="143" y2="75" stroke="#E8F0E9" stroke-width="1.5" opacity="0.4"/>
+  <line x1="57" y1="125" x2="143" y2="125" stroke="#E8F0E9" stroke-width="1.5" opacity="0.4"/>
+  <!-- Middenlijn service box -->
+  <line x1="100" y1="75" x2="100" y2="125" stroke="#E8F0E9" stroke-width="1.5" opacity="0.4"/>
+  <!-- Tennisbal -->
+  <circle cx="73" cy="58" r="12" fill="#BFEF45"/>
+  <!-- Tennisbal curves -->
+  <path d="M 64 54 Q 73 58 64 62" fill="none" stroke="#0D1A0F" stroke-width="1.8" stroke-linecap="round"/>
+  <path d="M 82 54 Q 73 58 82 62" fill="none" stroke="#0D1A0F" stroke-width="1.8" stroke-linecap="round"/>
+</svg>
