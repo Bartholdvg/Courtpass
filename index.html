@@ -56,7 +56,7 @@
     .btn-nav { background: var(--lime) !important; color: var(--dark) !important; padding: 0.45rem 1.1rem !important; border-radius: 100px !important; font-weight: 500 !important; transition: opacity 0.2s !important; white-space: nowrap; }
     .btn-nav:hover { opacity: 0.85 !important; }
 
-    .hamburger { display: none; flex-direction: column; gap: 5px; cursor: pointer; padding: 6px; background: none; border: none; position: relative; z-index: 1000; }
+    .hamburger { display: none; flex-direction: column; gap: 5px; cursor: pointer; padding: 6px; background: none; border: none; z-index: 1001; }
     .hamburger span { display: block; width: 22px; height: 2px; background: var(--text2); border-radius: 2px; transition: transform 0.3s ease, opacity 0.3s ease; }
     .hamburger.open span:nth-child(1) { transform: rotate(45deg) translate(5px, 6px); }
     .hamburger.open span:nth-child(2) { opacity: 0; transform: scaleX(0); }
@@ -64,23 +64,22 @@
 
     .mobile-menu {
       display: none;
-      position: absolute;
-      top: calc(100% + 8px);
+      position: fixed;
+      top: 60px;
       right: 1.25rem;
       width: 240px;
       background: #0F1C12;
       border: 0.5px solid var(--border);
       border-radius: 16px;
       overflow: hidden;
-      z-index: 999;
-      box-shadow: 0 16px 40px rgba(0,0,0,0.5);
-      animation: dropIn 0.2s ease;
+      z-index: 1000;
+      box-shadow: 0 16px 40px rgba(0,0,0,0.6);
     }
     @keyframes dropIn {
       from { opacity: 0; transform: translateY(-8px); }
       to { opacity: 1; transform: translateY(0); }
     }
-    .mobile-menu.open { display: block; }
+    .mobile-menu.open { display: block; animation: dropIn 0.2s ease; }
     .mobile-menu a {
       display: flex;
       align-items: center;
@@ -339,17 +338,17 @@
   <button class="hamburger" id="hamburger" aria-label="Menu" onclick="toggleMenu()">
     <span></span><span></span><span></span>
   </button>
-
-  <div class="mobile-menu" id="mobileMenu">
-    <a href="#hoe-het-werkt" onclick="toggleMenu()">Hoe het werkt</a>
-    <a href="clubs.html" onclick="toggleMenu()">🎾 Clubs</a>
-    <a href="#abonnementen" onclick="toggleMenu()">Abonnementen</a>
-    <a href="#contact" onclick="toggleMenu()">Contact</a>
-    <a href="dashboard.html" onclick="toggleMenu()" id="mobile-dashboard" style="display:none;">📊 Dashboard</a>
-    <a href="login.html" onclick="toggleMenu()" id="mobile-login">Inloggen</a>
-    <a href="login.html?tab=register" class="cta" onclick="toggleMenu()" id="mobile-register">Probeer gratis →</a>
-  </div>
 </nav>
+
+<div class="mobile-menu" id="mobileMenu">
+  <a href="#hoe-het-werkt" onclick="toggleMenu()">Hoe het werkt</a>
+  <a href="clubs.html" onclick="toggleMenu()">🎾 Clubs</a>
+  <a href="#abonnementen" onclick="toggleMenu()">Abonnementen</a>
+  <a href="#contact" onclick="toggleMenu()">Contact</a>
+  <a href="dashboard.html" onclick="toggleMenu()" id="mobile-dashboard" style="display:none;">📊 Dashboard</a>
+  <a href="login.html" onclick="toggleMenu()" id="mobile-login">Inloggen</a>
+  <a href="login.html?tab=register" class="cta" onclick="toggleMenu()" id="mobile-register">Probeer gratis →</a>
+</div>
 
 <section>
   <div class="hero">
