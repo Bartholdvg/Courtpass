@@ -34,7 +34,7 @@
     }
 
     html { scroll-behavior: smooth; }
-    body { background: var(--dark); color: var(--text); font-family: 'DM Sans', sans-serif; font-weight: 400; line-height: 1.6; overflow-x: hidden; }
+    body { background: var(--dark); color: var(--text); font-family: 'DM Sans', sans-serif; font-weight: 400; line-height: 1.6; overflow-x: hidden; -webkit-user-select: none; -webkit-touch-callout: none; }
 
     /* ── NAV ── */
     nav {
@@ -56,8 +56,26 @@
     .btn-nav { background: var(--lime) !important; color: var(--dark) !important; padding: 0.45rem 1.1rem !important; border-radius: 100px !important; font-weight: 500 !important; transition: opacity 0.2s !important; white-space: nowrap; }
     .btn-nav:hover { opacity: 0.85 !important; }
 
-    .hamburger { display: none; flex-direction: column; gap: 5px; cursor: pointer; padding: 6px; background: none; border: none; z-index: 1001; }
-    .hamburger span { display: block; width: 22px; height: 2px; background: var(--text2); border-radius: 2px; transition: transform 0.3s ease, opacity 0.3s ease; }
+    .hamburger { 
+      display: none; 
+      flex-direction: column; 
+      gap: 5px; 
+      cursor: pointer; 
+      padding: 6px; 
+      background: none; 
+      border: none; 
+      z-index: 1001;
+      color: var(--text2);
+    }
+    .hamburger:focus { outline: none; }
+    .hamburger span { 
+      display: block; 
+      width: 22px; 
+      height: 2px; 
+      background: var(--text2); 
+      border-radius: 2px; 
+      transition: transform 0.3s ease, opacity 0.3s ease; 
+    }
     .hamburger.open span:nth-child(1) { transform: rotate(45deg) translate(5px, 6px); }
     .hamburger.open span:nth-child(2) { opacity: 0; transform: scaleX(0); }
     .hamburger.open span:nth-child(3) { transform: rotate(-45deg) translate(5px, -6px); }
@@ -66,7 +84,7 @@
       display: none;
       position: fixed;
       top: 60px;
-      right: 1.25rem;
+      right: clamp(1rem, 2vw, 1.5rem);
       width: 240px;
       background: #0F1C12;
       border: 0.5px solid var(--border);
@@ -76,34 +94,44 @@
       box-shadow: 0 16px 40px rgba(0,0,0,0.6);
     }
     @keyframes dropIn {
-      from { opacity: 0; transform: translateY(-8px); }
+      from { opacity: 0; transform: translateY(-10px); }
       to { opacity: 1; transform: translateY(0); }
     }
-    .mobile-menu.open { display: block; animation: dropIn 0.2s ease; }
-    .mobile-menu a {
+    .mobile-menu.open { 
       display: flex;
-      align-items: center;
+      flex-direction: column;
+      animation: dropIn 0.2s ease;
+    }
+    .mobile-menu a {
+      display: block;
       color: var(--text2);
       text-decoration: none;
       font-size: 0.9rem;
       font-family: 'DM Sans', sans-serif;
       font-weight: 400;
-      padding: 0.875rem 1.25rem;
+      padding: 1rem 1.25rem;
       border-bottom: 0.5px solid var(--border);
       transition: color 0.15s, background 0.15s;
+      -webkit-tap-highlight-color: transparent;
     }
     .mobile-menu a:last-child { border-bottom: none; }
-    .mobile-menu a:hover { color: var(--text); background: rgba(255,255,255,0.03); }
+    .mobile-menu a:active, .mobile-menu a:hover { 
+      color: var(--text); 
+      background: rgba(255,255,255,0.05); 
+    }
     .mobile-menu a.cta {
       background: var(--lime);
       color: var(--dark) !important;
       font-weight: 500;
-      margin: 0.5rem;
+      margin: 0.75rem 0.5rem 0.5rem;
       border-radius: 10px;
       border: none;
-      justify-content: center;
+      text-align: center;
     }
-    .mobile-menu a.cta:hover { opacity: 0.88; background: var(--lime); }
+    .mobile-menu a.cta:active, .mobile-menu a.cta:hover { 
+      opacity: 0.88; 
+      background: var(--lime); 
+    }
     .mobile-menu .menu-divider {
       height: 0.5px;
       background: var(--border);
@@ -288,6 +316,7 @@
       .contact-grid { grid-template-columns: 1fr; }
       .nav-desktop { display: none !important; }
       .hamburger { display: flex !important; }
+      .mobile-menu { right: 0.75rem; width: calc(100vw - 1.5rem); max-width: 280px; }
     }
 
     @media (max-width: 580px) {
@@ -298,6 +327,7 @@
       .footer-bottom { flex-direction: column; text-align: center; }
       .hero-actions { flex-direction: column; align-items: flex-start; }
       .hero-actions a { width: 100%; text-align: center; }
+      .mobile-menu { right: 0.5rem; width: calc(100vw - 1rem); max-width: 100%; }
     }
   </style>
 </head>
@@ -341,6 +371,10 @@
 </nav>
 
 <div class="mobile-menu" id="mobileMenu">
+  <div style="display:flex;justify-content:space-between;align-items:center;padding:0.875rem 1.25rem;border-bottom:0.5px solid var(--border);gap:1rem;">
+    <span style="font-weight:500;color:var(--text);font-size:0.9rem;">Menu</span>
+    <button onclick="toggleMenu()" style="background:none;border:none;cursor:pointer;color:var(--text2);font-size:1.2rem;padding:0;width:24px;height:24px;display:flex;align-items:center;justify-content:center;">✕</button>
+  </div>
   <a href="#hoe-het-werkt" onclick="toggleMenu()">Hoe het werkt</a>
   <a href="clubs.html" onclick="toggleMenu()">🎾 Clubs</a>
   <a href="#abonnementen" onclick="toggleMenu()">Abonnementen</a>
@@ -627,21 +661,46 @@
     window.location.reload();
   }
 
-  // Mobile menu
+  // Mobile menu toggle
   function toggleMenu() {
     const menu = document.getElementById('mobileMenu');
     const ham = document.getElementById('hamburger');
-    menu.classList.toggle('open');
-    ham.classList.toggle('open');
+    if (!menu || !ham) return;
+    
+    const isOpen = menu.classList.contains('open');
+    if (isOpen) {
+      menu.classList.remove('open');
+      ham.classList.remove('open');
+    } else {
+      menu.classList.add('open');
+      ham.classList.add('open');
+    }
   }
 
-  // Sluit menu bij klik buiten
+  // Close menu when clicking outside
   document.addEventListener('click', function(e) {
     const menu = document.getElementById('mobileMenu');
     const ham = document.getElementById('hamburger');
-    if (menu.classList.contains('open') && !menu.contains(e.target) && !ham.contains(e.target)) {
-      menu.classList.remove('open');
-      ham.classList.remove('open');
+    if (!menu || !ham) return;
+    
+    // Check if click is outside both menu and hamburger
+    if (menu.classList.contains('open')) {
+      if (!menu.contains(e.target) && !ham.contains(e.target)) {
+        menu.classList.remove('open');
+        ham.classList.remove('open');
+      }
+    }
+  });
+
+  // Close menu when a link is clicked
+  document.addEventListener('click', function(e) {
+    if (e.target.tagName === 'A' && e.target.closest('.mobile-menu')) {
+      const menu = document.getElementById('mobileMenu');
+      const ham = document.getElementById('hamburger');
+      if (menu && ham) {
+        menu.classList.remove('open');
+        ham.classList.remove('open');
+      }
     }
   });
 
