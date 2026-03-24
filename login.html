@@ -2,6 +2,8 @@
 <html lang="nl">
 <head>
   <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+  <link rel="shortcut icon" href="favicon.svg" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>CourtPass — Inloggen</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -438,8 +440,8 @@
 <body>
 
 <nav>
-  <a href="index.html" class="logo">Court<span>Pass</span></a>
-  <a href="index.html" class="nav-back">← Terug naar home</a>
+  <a href="/" class="logo">Court<span>Pass</span></a>
+  <a href="/" class="nav-back">← Terug naar home</a>
 </nav>
 
 <main>
@@ -621,7 +623,7 @@
 </main>
 
 <footer>
-  <span>© 2025 CourtPass · <a href="index.html" style="color: var(--text3); text-decoration: none;">Home</a> · <a href="#" style="color: var(--text3); text-decoration: none;">Privacy</a></span>
+  <span>© 2025 CourtPass · <a href="/" style="color: var(--text3); text-decoration: none;">Home</a> · <a href="#" style="color: var(--text3); text-decoration: none;">Privacy</a></span>
 </footer>
 
 <script>
@@ -635,6 +637,20 @@
   const urlParams = new URLSearchParams(window.location.search);
   if (urlParams.get('tab') === 'register') {
     switchTab('register');
+  }
+
+  // Bepaal redirect URL na inloggen
+  function getRedirectUrl() {
+    const params = new URLSearchParams(window.location.search);
+    const redirect = params.get('redirect');
+    const price = params.get('price');
+    if (redirect && price) {
+      return redirect + '?price=' + price;
+    }
+    if (redirect) {
+      return redirect;
+    }
+    return 'dashboard.html';
   }
 
   // Check session on load
@@ -651,7 +667,7 @@
         showMsg('loginError', 'Bevestigingslink is verlopen. Registreer opnieuw.');
         document.getElementById('loginError').classList.add('show');
       } else {
-        window.location.href = 'dashboard.html';
+        window.location.href = getRedirectUrl();
       }
       return;
     }
@@ -670,7 +686,7 @@
 
     const { data: { session } } = await sb.auth.getSession();
     if (session) {
-      window.location.href = 'dashboard.html';
+      window.location.href = getRedirectUrl();
       return;
     }
   });
@@ -702,7 +718,7 @@
     }
 
     showMsg('newPasswordSuccess', '✓ Wachtwoord gewijzigd! Je wordt doorgestuurd...');
-    setTimeout(() => { window.location.href = 'dashboard.html'; }, 2000);
+    setTimeout(() => { window.location.href = getRedirectUrl(); }, 2000);
   }
 
   // ── TAB SWITCHING ──
@@ -790,7 +806,7 @@
       return;
     }
 
-    window.location.href = 'dashboard.html';
+    window.location.href = getRedirectUrl();
   }
 
   // ── REGISTER ──
@@ -839,7 +855,7 @@
       document.getElementById('registerEmail').value = '';
       document.getElementById('registerPassword').value = '';
     } else if (data.session) {
-      window.location.href = 'dashboard.html';
+      window.location.href = getRedirectUrl();
     }
   }
 
