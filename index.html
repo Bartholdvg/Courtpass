@@ -311,8 +311,30 @@
     <li><a href="clubs.html">🎾 Clubs</a></li>
     <li><a href="#abonnementen">Abonnementen</a></li>
     <li><a href="#contact">Contact</a></li>
-    <li><a href="login.html" class="btn-nav-ghost">Inloggen</a></li>
-    <li><a href="login.html?tab=register" class="btn-nav">Probeer gratis</a></li>
+    <!-- Niet ingelogd -->
+    <li id="nav-auth-out" style="display:flex;gap:0.75rem;align-items:center;">
+      <a href="login.html" class="btn-nav-ghost">Inloggen</a>
+      <a href="login.html?tab=register" class="btn-nav">Probeer gratis</a>
+    </li>
+    <!-- Ingelogd -->
+    <li id="nav-auth-in" style="display:none;position:relative;">
+      <button onclick="toggleProfileMenu()" style="display:flex;align-items:center;gap:8px;background:var(--surface);border:0.5px solid var(--border);border-radius:100px;padding:0.4rem 0.875rem 0.4rem 0.5rem;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:0.82rem;color:var(--text2);transition:border-color 0.2s;" onmouseover="this.style.borderColor='var(--muted)'" onmouseout="this.style.borderColor='var(--border)'">
+        <div id="nav-avatar" style="width:26px;height:26px;border-radius:50%;background:#1A2E1D;display:flex;align-items:center;justify-content:center;font-size:0.65rem;font-weight:500;color:var(--lime);">?</div>
+        <span id="nav-name">...</span>
+        <span style="font-size:0.6rem;opacity:0.5;">▼</span>
+      </button>
+      <!-- Dropdown -->
+      <div id="profile-dropdown" style="display:none;position:absolute;top:calc(100% + 8px);right:0;width:200px;background:#0F1C12;border:0.5px solid var(--border);border-radius:14px;overflow:hidden;box-shadow:0 12px 32px rgba(0,0,0,0.4);z-index:999;">
+        <div style="padding:0.875rem 1rem;border-bottom:0.5px solid var(--border);">
+          <div style="font-size:0.78rem;font-weight:500;color:var(--text);" id="dropdown-name">...</div>
+          <div style="font-size:0.72rem;color:var(--text3);" id="dropdown-email">...</div>
+        </div>
+        <a href="dashboard.html" style="display:block;padding:0.75rem 1rem;font-size:0.82rem;color:var(--text2);text-decoration:none;border-bottom:0.5px solid var(--border);transition:background 0.15s;" onmouseover="this.style.background='rgba(255,255,255,0.03)'" onmouseout="this.style.background='transparent'">📊 Dashboard</a>
+        <a href="clubs.html" style="display:block;padding:0.75rem 1rem;font-size:0.82rem;color:var(--text2);text-decoration:none;border-bottom:0.5px solid var(--border);transition:background 0.15s;" onmouseover="this.style.background='rgba(255,255,255,0.03)'" onmouseout="this.style.background='transparent'">🎾 Clubs</a>
+        <a href="betalen.html" style="display:block;padding:0.75rem 1rem;font-size:0.82rem;color:var(--text2);text-decoration:none;border-bottom:0.5px solid var(--border);transition:background 0.15s;" onmouseover="this.style.background='rgba(255,255,255,0.03)'" onmouseout="this.style.background='transparent'">💳 Abonnement</a>
+        <button onclick="handleLogout()" style="display:block;width:100%;padding:0.75rem 1rem;font-size:0.82rem;color:var(--error);text-align:left;background:none;border:none;cursor:pointer;font-family:'DM Sans',sans-serif;transition:background 0.15s;" onmouseover="this.style.background='rgba(255,255,255,0.03)'" onmouseout="this.style.background='transparent'">🚪 Uitloggen</button>
+      </div>
+    </li>
   </ul>
   <button class="hamburger" id="hamburger" aria-label="Menu" onclick="toggleMenu()">
     <span></span><span></span><span></span>
@@ -323,8 +345,9 @@
     <a href="clubs.html" onclick="toggleMenu()">🎾 Clubs</a>
     <a href="#abonnementen" onclick="toggleMenu()">Abonnementen</a>
     <a href="#contact" onclick="toggleMenu()">Contact</a>
-    <a href="login.html" onclick="toggleMenu()">Inloggen</a>
-    <a href="login.html?tab=register" class="cta" onclick="toggleMenu()">Probeer gratis →</a>
+    <a href="dashboard.html" onclick="toggleMenu()" id="mobile-dashboard" style="display:none;">📊 Dashboard</a>
+    <a href="login.html" onclick="toggleMenu()" id="mobile-login">Inloggen</a>
+    <a href="login.html?tab=register" class="cta" onclick="toggleMenu()" id="mobile-register">Probeer gratis →</a>
   </div>
 </nav>
 
@@ -550,10 +573,59 @@
   </div>
 </footer>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
   // Als Supabase reset token op homepage terechtkomt → doorsturen naar login.html
   if (window.location.hash && window.location.hash.includes('type=recovery')) {
     window.location.href = 'login.html' + window.location.hash;
+  }
+
+  // ── SUPABASE AUTH CHECK ──
+  const { createClient } = supabase;
+  const sb = createClient(
+    'https://aplxpnqkkamolmqzuuon.supabase.co',
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFwbHhwbnFra2Ftb2xtcXp1dW9uIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM3NjM5NTAsImV4cCI6MjA4OTMzOTk1MH0.o9Z4lYNgA_Ym36x0S48OzaK6oD63kdZikD3j4uC_zHY'
+  );
+
+  window.addEventListener('load', async () => {
+    const { data: { session } } = await sb.auth.getSession();
+    if (session) {
+      const user = session.user;
+      const name = user.user_metadata?.full_name || user.email.split('@')[0];
+      const initials = name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0,2);
+
+      // Toon ingelogde staat
+      document.getElementById('nav-auth-out').style.display = 'none';
+      document.getElementById('nav-auth-in').style.display = 'block';
+      document.getElementById('nav-avatar').textContent = initials;
+      document.getElementById('nav-name').textContent = name.split(' ')[0];
+      document.getElementById('dropdown-name').textContent = name;
+      document.getElementById('dropdown-email').textContent = user.email;
+
+      // Mobiel menu
+      document.getElementById('mobile-login').style.display = 'none';
+      document.getElementById('mobile-register').style.display = 'none';
+      document.getElementById('mobile-dashboard').style.display = 'block';
+    }
+  });
+
+  function toggleProfileMenu() {
+    const dd = document.getElementById('profile-dropdown');
+    dd.style.display = dd.style.display === 'none' ? 'block' : 'none';
+  }
+
+  // Sluit dropdown bij klik buiten
+  document.addEventListener('click', function(e) {
+    const dd = document.getElementById('profile-dropdown');
+    const btn = document.getElementById('nav-auth-in');
+    if (dd && btn && !btn.contains(e.target)) {
+      dd.style.display = 'none';
+    }
+  });
+
+  async function handleLogout() {
+    await sb.auth.signOut();
+    window.location.reload();
   }
 
   // Mobile menu
