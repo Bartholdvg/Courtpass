@@ -95,3 +95,19 @@ a {
 .text-step-4 {
   font-size: var(--step-4);
 }
+
+/* Map styling */
+.leaflet-container {
+  background: #F8FAFC !important;
+}
+
+.leaflet-popup-content-wrapper {
+  background: white !important;
+  color: black !important;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.leaflet-popup-tip {
+  background: white !important;
+}

@@ -177,24 +177,29 @@
 
     /* Override Leaflet styles */
     .leaflet-container {
-      background: #091A0B !important;
+      background: #F8FAFC !important;
       font-family: 'DM Sans', sans-serif;
     }
 
     .leaflet-popup-content-wrapper {
-      background: var(--surface) !important;
-      border: 0.5px solid var(--border) !important;
+      background: #ffffff !important;
+      border: 0.5px solid #d1d5db !important;
       border-radius: 12px !important;
       box-shadow: 0 8px 24px rgba(0,0,0,0.4) !important;
       color: var(--text) !important;
     }
 
     .leaflet-popup-tip {
-      background: var(--surface) !important;
+      background: #ffffff !important;
     }
 
     .leaflet-popup-close-button {
-      color: var(--text2) !important;
+      color: #6b7280 !important;
+    }
+    
+    .leaflet-popup-content-wrapper,
+    .leaflet-popup-content {
+      color: #111827 !important;
     }
 
     .popup-content h3 {
@@ -608,8 +613,8 @@
       zoomControl: true,
     });
 
-    // Dark tile layer
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    // Light tile layer
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
       attribution: '© OpenStreetMap contributors © CARTO',
       maxZoom: 18,
     }).addTo(map);

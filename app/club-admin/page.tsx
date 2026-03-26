@@ -1,7 +1,5 @@
 "use client"
 
-import Link from "next/link"
-import { motion } from "framer-motion"
 import ScrollObserver from "@/components/ScrollObserver"
 
 export default function ClubAdminPage() {
