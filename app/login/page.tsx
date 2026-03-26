@@ -3,22 +3,36 @@
 import { useState } from "react"
 import Link from "next/link"
 import { motion } from "framer-motion"
+import { signIn, signUp } from "@/lib/supabase"
+import { useRouter } from "next/navigation"
 
 export default function LoginPage() {
   const [tab, setTab] = useState("login")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [fullName, setFullName] = useState("")
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState("")
+  const router = useRouter()
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    // TODO: Integrate with Supabase
-    console.log({
-      tab,
-      email,
-      password,
-      ...(tab === "register" && { fullName }),
-    })
+    setLoading(true)
+    setError("")
+
+    try {
+      if (tab === "login") {
+        await signIn(email, password)
+        router.push("/dashboard")
+      } else {
+        await signUp(email, password, fullName)
+        setError("Check je email voor de bevestigingslink!")
+      }
+    } catch (err: any) {
+      setError(err.message || "Er ging iets mis")
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -62,6 +76,12 @@ export default function LoginPage() {
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
+            {error && (
+              <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3">
+                <p className="text-red-400 text-sm">{error}</p>
+              </div>
+            )}
+
             {tab === "register" && (
               <div>
                 <label className="block text-sm text-text2 mb-2">Volledige naam</label>
@@ -71,6 +91,7 @@ export default function LoginPage() {
                   onChange={(e) => setFullName(e.target.value)}
                   className="w-full bg-dark border border-border rounded-lg px-4 py-3 text-text focus:outline-none focus:border-lime transition-colors"
                   placeholder="Jan de Vries"
+                  required
                 />
               </div>
             )}
@@ -83,6 +104,7 @@ export default function LoginPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 className="w-full bg-dark border border-border rounded-lg px-4 py-3 text-text focus:outline-none focus:border-lime transition-colors"
                 placeholder="jouw@email.com"
+                required
               />
             </div>
 
@@ -94,14 +116,17 @@ export default function LoginPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 className="w-full bg-dark border border-border rounded-lg px-4 py-3 text-text focus:outline-none focus:border-lime transition-colors"
                 placeholder="••••••••"
+                required
+                minLength={6}
               />
             </div>
 
             <button
               type="submit"
-              className="w-full bg-lime text-dark py-3 rounded-lg font-bold hover:opacity-90 transition-opacity mt-6"
+              disabled={loading}
+              className="w-full bg-lime text-dark py-3 rounded-lg font-bold hover:opacity-90 transition-opacity mt-6 cursor-pointer relative z-10 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {tab === "login" ? "Inloggen" : "Account aanmaken"}
+              {loading ? "Bezig..." : (tab === "login" ? "Inloggen" : "Account aanmaken")}
             </button>
           </form>
 
