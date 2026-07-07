@@ -19,7 +19,36 @@ const supabaseAnonKey =
 
 const AUTH_STORAGE_KEY = "courtpass-auth-user"
 
+export interface RecoveryParams {
+  accessToken?: string | null
+  refreshToken?: string | null
+  tokenHash?: string | null
+  type?: string | null
+  errorCode?: string | null
+  errorDescription?: string | null
+}
+
 export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+
+export const getRecoveryParamsFromLocation = (
+  location?: Pick<Location, "hash" | "search"> | null,
+): RecoveryParams => {
+  const hash = location?.hash?.replace(/^#/, "") || ""
+  const search = location?.search?.replace(/^\?/, "") || ""
+  const hashParams = new URLSearchParams(hash)
+  const searchParams = new URLSearchParams(search)
+
+  const getParam = (name: string) => hashParams.get(name) || searchParams.get(name)
+
+  return {
+    accessToken: getParam("access_token"),
+    refreshToken: getParam("refresh_token"),
+    tokenHash: getParam("token_hash"),
+    type: getParam("type"),
+    errorCode: getParam("error_code"),
+    errorDescription: getParam("error_description"),
+  }
+}
 
 export const getRankFromPoints = (points: number) => {
   if (points >= 250) return "Elite"
@@ -112,7 +141,8 @@ export const requestPasswordReset = async (email: string) => {
     process.env.NEXT_PUBLIC_SITE_URL ||
     (typeof window !== "undefined" ? window.location.origin : "https://courtpass.nl")
   const normalizedSiteUrl = siteUrl.replace(/\/$/, "")
-  const redirectTo = `${normalizedSiteUrl}/reset-password`
+  const basePath = process.env.NEXT_PUBLIC_BASE_PATH || ""
+  const redirectTo = `${normalizedSiteUrl}${basePath}/reset-password/`
   const { data, error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo })
   if (error) throw error
   return data

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import { motion } from "framer-motion"
-import { requestPasswordReset, signIn, signUp, storeAuthUser, supabase } from "@/lib/supabase"
+import { getRecoveryParamsFromLocation, requestPasswordReset, signIn, signUp, storeAuthUser, supabase } from "@/lib/supabase"
 import { useRouter } from "next/navigation"
 
 export default function LoginPage() {
@@ -25,19 +25,21 @@ export default function LoginPage() {
   const router = useRouter()
 
   useEffect(() => {
-    const hash = window.location.hash.replace(/^#/, "")
-    const params = new URLSearchParams(hash)
-    const type = params.get("type")
-    const accessToken = params.get("access_token")
-    const refreshToken = params.get("refresh_token")
+    const initRecovery = async () => {
+      const { accessToken, refreshToken, tokenHash, type } = getRecoveryParamsFromLocation(window.location)
 
-    if (type === "recovery" && accessToken) {
-      setRecoveryMode(true)
-      if (refreshToken) {
-        supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken }).catch(() => undefined)
+      if (type === "recovery" && accessToken && refreshToken) {
+        setRecoveryMode(true)
+        await supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken }).catch(() => undefined)
+      } else if (type === "recovery" && tokenHash) {
+        setRecoveryMode(true)
+        await supabase.auth.verifyOtp({ token_hash: tokenHash, type: "recovery" }).catch(() => undefined)
       }
+
+      setRecoveryReady(true)
     }
-    setRecoveryReady(true)
+
+    initRecovery()
   }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {

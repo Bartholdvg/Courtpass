@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { useEffect, useState } from "react"
 import { motion } from "framer-motion"
-import { supabase } from "@/lib/supabase"
+import { getRecoveryParamsFromLocation, supabase } from "@/lib/supabase"
 
 export default function ResetPasswordPage() {
   const [newPassword, setNewPassword] = useState("")
@@ -16,14 +16,14 @@ export default function ResetPasswordPage() {
   useEffect(() => {
     const initRecovery = async () => {
       try {
-        const hash = window.location.hash.replace(/^#/, "")
-        const params = new URLSearchParams(hash)
-        const accessToken = params.get("access_token")
-        const refreshToken = params.get("refresh_token")
-        const type = params.get("type")
+        const { accessToken, refreshToken, tokenHash, type } = getRecoveryParamsFromLocation(window.location)
 
         if (accessToken && refreshToken && type === "recovery") {
           await supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken })
+        } else if (tokenHash && type === "recovery") {
+          await supabase.auth.verifyOtp({ token_hash: tokenHash, type: "recovery" })
+        } else {
+          setError("De herstellink is ongeldig of verlopen.")
         }
       } catch (err: any) {
         setError(err.message || "De herstellink is ongeldig of verlopen.")
