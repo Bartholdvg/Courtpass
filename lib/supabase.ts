@@ -111,7 +111,8 @@ export const requestPasswordReset = async (email: string) => {
   const siteUrl =
     process.env.NEXT_PUBLIC_SITE_URL ||
     (typeof window !== "undefined" ? window.location.origin : "https://courtpass.nl")
-  const redirectTo = `${siteUrl}/reset-password/`
+  const normalizedSiteUrl = siteUrl.replace(/\/$/, "")
+  const redirectTo = `${normalizedSiteUrl}/reset-password`
   const { data, error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo })
   if (error) throw error
   return data
