@@ -23,6 +23,7 @@ export interface RecoveryParams {
   accessToken?: string | null
   refreshToken?: string | null
   tokenHash?: string | null
+  code?: string | null
   type?: string | null
   errorCode?: string | null
   errorDescription?: string | null
@@ -44,6 +45,7 @@ export const getRecoveryParamsFromLocation = (
     accessToken: getParam("access_token"),
     refreshToken: getParam("refresh_token"),
     tokenHash: getParam("token_hash"),
+    code: getParam("code"),
     type: getParam("type"),
     errorCode: getParam("error_code"),
     errorDescription: getParam("error_description"),

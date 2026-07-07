@@ -16,17 +16,19 @@ export default function ResetPasswordPage() {
   useEffect(() => {
     const initRecovery = async () => {
       try {
-        const { accessToken, refreshToken, tokenHash, type } = getRecoveryParamsFromLocation(window.location)
+        const { accessToken, refreshToken, tokenHash, code, type } = getRecoveryParamsFromLocation(window.location)
 
         if (accessToken && refreshToken && type === "recovery") {
           await supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken })
         } else if (tokenHash && type === "recovery") {
           await supabase.auth.verifyOtp({ token_hash: tokenHash, type: "recovery" })
+        } else if (code && type === "recovery") {
+          await supabase.auth.exchangeCodeForSession(code)
         } else {
-          setError("De herstellink is ongeldig of verlopen.")
+          setError("Deze herstellink is verlopen, is al gebruikt of is niet juist. Vraag een nieuwe resetlink aan via het inlogscherm.")
         }
       } catch (err: any) {
-        setError(err.message || "De herstellink is ongeldig of verlopen.")
+        setError(err.message || "Deze herstellink is verlopen, is al gebruikt of is niet juist. Vraag een nieuwe resetlink aan via het inlogscherm.")
       } finally {
         setReady(true)
       }
@@ -128,10 +130,15 @@ export default function ResetPasswordPage() {
           </form>
         )}
 
-        <div className="mt-6 text-center text-sm text-text3">
-          <Link href="/login" className="text-lime hover:underline">
+        <div className="mt-6 text-center text-sm text-text3 space-y-2">
+          <Link href="/login" className="block text-lime hover:underline">
             Terug naar inloggen
           </Link>
+          {error && (
+            <Link href="/login" className="block text-text2 hover:underline">
+              Nieuwe resetlink aanvragen
+            </Link>
+          )}
         </div>
       </motion.div>
     </main>

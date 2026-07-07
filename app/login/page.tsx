@@ -26,7 +26,7 @@ export default function LoginPage() {
 
   useEffect(() => {
     const initRecovery = async () => {
-      const { accessToken, refreshToken, tokenHash, type } = getRecoveryParamsFromLocation(window.location)
+      const { accessToken, refreshToken, tokenHash, code, type } = getRecoveryParamsFromLocation(window.location)
 
       if (type === "recovery" && accessToken && refreshToken) {
         setRecoveryMode(true)
@@ -34,6 +34,9 @@ export default function LoginPage() {
       } else if (type === "recovery" && tokenHash) {
         setRecoveryMode(true)
         await supabase.auth.verifyOtp({ token_hash: tokenHash, type: "recovery" }).catch(() => undefined)
+      } else if (type === "recovery" && code) {
+        setRecoveryMode(true)
+        await supabase.auth.exchangeCodeForSession(code).catch(() => undefined)
       }
 
       setRecoveryReady(true)
