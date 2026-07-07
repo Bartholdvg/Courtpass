@@ -659,12 +659,19 @@
     return 'dashboard.html';
   }
 
+  function getHashParams() {
+    const hash = window.location.hash.startsWith('#') ? window.location.hash.slice(1) : window.location.hash;
+    return new URLSearchParams(hash);
+  }
+
   // Check session on load
   window.addEventListener('load', async () => {
-    const hash = window.location.hash;
-    const params = new URLSearchParams(window.location.search);
-    const tokenHash = params.get('token_hash');
-    const type = params.get('type');
+    const queryParams = new URLSearchParams(window.location.search);
+    const hashParams = getHashParams();
+    const tokenHash = queryParams.get('token_hash') || hashParams.get('token_hash');
+    const type = queryParams.get('type') || hashParams.get('type');
+    const accessToken = hashParams.get('access_token');
+    const refreshToken = hashParams.get('refresh_token');
 
     // ── E-mail bevestiging ──
     if (tokenHash && type === 'signup') {
@@ -679,12 +686,18 @@
     }
 
     // ── Wachtwoord reset ──
-    const isRecovery = (hash && hash.includes('type=recovery')) || type === 'recovery';
+    const isRecovery = (type === 'recovery') || (hashParams.get('type') === 'recovery');
     if (isRecovery) {
-      const recoveryToken = params.get('token') || tokenHash;
-      if (recoveryToken) {
-        await sb.auth.verifyOtp({ token_hash: recoveryToken, type: 'recovery' });
+      try {
+        if (accessToken && refreshToken) {
+          await sb.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
+        } else if (tokenHash) {
+          await sb.auth.verifyOtp({ token_hash: tokenHash, type: 'recovery' });
+        }
+      } catch (err) {
+        console.error(err);
       }
+
       document.getElementById('authContainer').querySelectorAll('.auth-card, .tabs').forEach(el => el.style.display = 'none');
       document.getElementById('newPasswordForm').style.display = 'block';
       return;
@@ -878,7 +891,7 @@
     setLoading('forgotBtn', 'forgotSpinner', 'forgotBtnText', true, 'Versturen...');
 
     const { error } = await sb.auth.resetPasswordForEmail(email, {
-      redirectTo: 'https://bartholdvg.github.io/Courtpass/login.html'
+      redirectTo: window.location.origin + '/login.html'
     });
 
     setLoading('forgotBtn', 'forgotSpinner', 'forgotBtnText', false, 'Stuur reset link');
