@@ -1,9 +1,9 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import { motion } from "framer-motion"
-import { requestPasswordReset, signIn, signUp, storeAuthUser } from "@/lib/supabase"
+import { requestPasswordReset, signIn, signUp, storeAuthUser, supabase } from "@/lib/supabase"
 import { useRouter } from "next/navigation"
 
 export default function LoginPage() {
@@ -17,7 +17,26 @@ export default function LoginPage() {
   const [showForgotPassword, setShowForgotPassword] = useState(false)
   const [forgotEmail, setForgotEmail] = useState("")
   const [forgotLoading, setForgotLoading] = useState(false)
+  const [recoveryMode, setRecoveryMode] = useState(false)
+  const [newPassword, setNewPassword] = useState("")
+  const [confirmPassword, setConfirmPassword] = useState("")
+  const [passwordLoading, setPasswordLoading] = useState(false)
   const router = useRouter()
+
+  useEffect(() => {
+    const hash = window.location.hash.replace(/^#/, "")
+    const params = new URLSearchParams(hash)
+    const type = params.get("type")
+    const accessToken = params.get("access_token")
+    const refreshToken = params.get("refresh_token")
+
+    if (type === "recovery" && accessToken) {
+      setRecoveryMode(true)
+      if (refreshToken) {
+        supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken }).catch(() => undefined)
+      }
+    }
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -58,6 +77,38 @@ export default function LoginPage() {
     }
   }
 
+  const handlePasswordReset = async (e?: React.FormEvent) => {
+    e?.preventDefault()
+    setPasswordLoading(true)
+    setError("")
+    setSuccessMessage("")
+
+    if (newPassword.length < 6) {
+      setError("Gebruik minimaal 6 tekens voor je nieuwe wachtwoord.")
+      setPasswordLoading(false)
+      return
+    }
+
+    if (newPassword !== confirmPassword) {
+      setError("De wachtwoorden komen niet overeen.")
+      setPasswordLoading(false)
+      return
+    }
+
+    try {
+      const { error } = await supabase.auth.updateUser({ password: newPassword })
+      if (error) throw error
+      setSuccessMessage("Je wachtwoord is succesvol gewijzigd. Je kunt nu inloggen.")
+      setNewPassword("")
+      setConfirmPassword("")
+      setRecoveryMode(false)
+    } catch (err: any) {
+      setError(err.message || "Kon je wachtwoord niet wijzigen")
+    } finally {
+      setPasswordLoading(false)
+    }
+  }
+
   const handleForgotPassword = async (e?: React.FormEvent) => {
     e?.preventDefault()
     setForgotLoading(true)
@@ -88,35 +139,73 @@ export default function LoginPage() {
           {/* Header */}
           <div className="mb-8">
             <h1 className="font-playfair text-3xl font-bold mb-2">
-              {tab === "login" ? "Welkom terug" : "Maak account"}
+              {recoveryMode ? "Nieuw wachtwoord" : (tab === "login" ? "Welkom terug" : "Maak account")}
             </h1>
             <p className="text-text2 text-sm">
-              {tab === "login" ? "Inloggen op jouw CourtPass account" : "Registreer je en begin vandaag nog"}
+              {recoveryMode
+                ? "Stel hier je nieuwe wachtwoord in."
+                : (tab === "login" ? "Inloggen op jouw CourtPass account" : "Registreer je en begin vandaag nog")}
             </p>
           </div>
 
-          {/* Tabs */}
-          <div className="flex gap-4 mb-8 border-b border-border pb-4">
-            <button
-              onClick={() => setTab("login")}
-              className={`pb-2 text-sm font-bold transition-colors ${
-                tab === "login" ? "text-lime border-b-2 border-lime" : "text-text2 hover:text-text"
-              }`}
-            >
-              Inloggen
-            </button>
-            <button
-              onClick={() => setTab("register")}
-              className={`pb-2 text-sm font-bold transition-colors ${
-                tab === "register" ? "text-lime border-b-2 border-lime" : "text-text2 hover:text-text"
-              }`}
-            >
-              Registreren
-            </button>
-          </div>
+          {!recoveryMode && (
+            <div className="flex gap-4 mb-8 border-b border-border pb-4">
+              <button
+                onClick={() => setTab("login")}
+                className={`pb-2 text-sm font-bold transition-colors ${
+                  tab === "login" ? "text-lime border-b-2 border-lime" : "text-text2 hover:text-text"
+                }`}
+              >
+                Inloggen
+              </button>
+              <button
+                onClick={() => setTab("register")}
+                className={`pb-2 text-sm font-bold transition-colors ${
+                  tab === "register" ? "text-lime border-b-2 border-lime" : "text-text2 hover:text-text"
+                }`}
+              >
+                Registreren
+              </button>
+            </div>
+          )}
 
           {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-4">
+          {recoveryMode ? (
+            <form onSubmit={handlePasswordReset} className="space-y-4">
+              <div>
+                <label className="block text-sm text-text2 mb-2">Nieuw wachtwoord</label>
+                <input
+                  type="password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  className="w-full bg-dark border border-border rounded-lg px-4 py-3 text-text focus:outline-none focus:border-lime transition-colors"
+                  placeholder="••••••••"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm text-text2 mb-2">Bevestig wachtwoord</label>
+                <input
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className="w-full bg-dark border border-border rounded-lg px-4 py-3 text-text focus:outline-none focus:border-lime transition-colors"
+                  placeholder="••••••••"
+                  required
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={passwordLoading}
+                className="w-full bg-lime text-dark py-3 rounded-lg font-bold hover:opacity-90 transition-opacity mt-6 cursor-pointer relative z-10 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {passwordLoading ? "Bezig..." : "Wachtwoord opslaan"}
+              </button>
+            </form>
+          ) : (
+            <form onSubmit={handleSubmit} className="space-y-4">
             {error && (
               <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3">
                 <p className="text-red-400 text-sm">{error}</p>
@@ -224,7 +313,8 @@ export default function LoginPage() {
             >
               {loading ? "Bezig..." : (tab === "login" ? "Inloggen" : "Account aanmaken")}
             </button>
-          </form>
+            </form>
+          )}
 
           {/* Footer */}
           <div className="mt-6 text-center text-sm text-text3">
