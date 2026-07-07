@@ -18,6 +18,7 @@ export default function LoginPage() {
   const [forgotEmail, setForgotEmail] = useState("")
   const [forgotLoading, setForgotLoading] = useState(false)
   const [recoveryMode, setRecoveryMode] = useState(false)
+  const [recoveryReady, setRecoveryReady] = useState(false)
   const [newPassword, setNewPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
   const [passwordLoading, setPasswordLoading] = useState(false)
@@ -36,6 +37,7 @@ export default function LoginPage() {
         supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken }).catch(() => undefined)
       }
     }
+    setRecoveryReady(true)
   }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -148,7 +150,13 @@ export default function LoginPage() {
             </p>
           </div>
 
-          {!recoveryMode && (
+          {!recoveryReady && (
+            <div className="mb-4 rounded-lg border border-border/60 bg-surface2/40 p-3 text-sm text-text2">
+              Bezig met het verwerken van je herstelverzoek…
+            </div>
+          )}
+
+          {!recoveryMode && recoveryReady && (
             <div className="flex gap-4 mb-8 border-b border-border pb-4">
               <button
                 onClick={() => setTab("login")}
@@ -202,6 +210,17 @@ export default function LoginPage() {
                 className="w-full bg-lime text-dark py-3 rounded-lg font-bold hover:opacity-90 transition-opacity mt-6 cursor-pointer relative z-10 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {passwordLoading ? "Bezig..." : "Wachtwoord opslaan"}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setRecoveryMode(false)
+                  setTab("login")
+                }}
+                className="mt-2 block w-full rounded-lg border border-border px-4 py-3 text-sm text-text2"
+              >
+                Terug naar inloggen
               </button>
             </form>
           ) : (
