@@ -3,7 +3,7 @@
 import { useState } from "react"
 import Link from "next/link"
 import { motion } from "framer-motion"
-import { signIn, signUp } from "@/lib/supabase"
+import { signIn, signUp, storeAuthUser } from "@/lib/supabase"
 import { useRouter } from "next/navigation"
 
 export default function LoginPage() {
@@ -23,10 +23,28 @@ export default function LoginPage() {
     try {
       if (tab === "login") {
         await signIn(email, password)
+        storeAuthUser({
+          email,
+          name: fullName || email.split("@")[0] || "Speler",
+          points: 120,
+          level: "Intermediate",
+          location: "Amsterdam",
+          credits: 8,
+          plan: "Pro",
+        })
         router.push("/dashboard")
       } else {
         await signUp(email, password, fullName)
-        setError("Check je email voor de bevestigingslink!")
+        storeAuthUser({
+          email,
+          name: fullName || email.split("@")[0] || "Speler",
+          points: 120,
+          level: "Intermediate",
+          location: "Amsterdam",
+          credits: 8,
+          plan: "Pro",
+        })
+        router.push("/dashboard")
       }
     } catch (err: any) {
       setError(err.message || "Er ging iets mis")

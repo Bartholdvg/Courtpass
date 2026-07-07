@@ -3,13 +3,19 @@
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import MobileMenu from "./MobileMenu"
+import { clearStoredUser, getUserDisplayName, loadStoredUser, type CourtPassUser } from "@/lib/supabase"
 
 export default function Navigation() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isMounted, setIsMounted] = useState(false)
+  const [user, setUser] = useState<CourtPassUser | null>(null)
 
   useEffect(() => {
     setIsMounted(true)
+    const syncUser = () => setUser(loadStoredUser())
+    syncUser()
+    window.addEventListener("storage", syncUser)
+    return () => window.removeEventListener("storage", syncUser)
   }, [])
 
   useEffect(() => {
@@ -29,6 +35,12 @@ export default function Navigation() {
       document.body.style.overflow = "unset"
     }
   }, [isMenuOpen])
+
+  const handleLogout = () => {
+    clearStoredUser()
+    setUser(null)
+    setIsMenuOpen(false)
+  }
 
   if (!isMounted) return null
 
@@ -62,18 +74,28 @@ export default function Navigation() {
             </a>
           </li>
           <li className="flex gap-3 items-center ml-3">
-            <Link
-              href="/login"
-              className="border border-muted text-text2 hover:text-text hover:border-text px-4 py-2 rounded-full transition-all text-sm"
-            >
-              Inloggen
-            </Link>
-            <Link
-              href="/login?tab=register"
-              className="bg-lime text-dark px-4 py-2 rounded-full font-medium hover:opacity-90 transition-opacity text-sm"
-            >
-              Probeer gratis
-            </Link>
+            {user ? (
+              <>
+                <Link href="/dashboard" className="border border-lime/40 text-lime px-4 py-2 rounded-full transition-all text-sm flex items-center gap-2">
+                  <span className="w-6 h-6 rounded-full bg-lime/15 flex items-center justify-center text-[11px] font-bold">
+                    {getUserDisplayName(user).slice(0, 2).toUpperCase()}
+                  </span>
+                  <span>{getUserDisplayName(user)}</span>
+                </Link>
+                <button onClick={handleLogout} className="text-text2 hover:text-text text-sm">
+                  Uitloggen
+                </button>
+              </>
+            ) : (
+              <>
+                <Link href="/login" className="border border-muted text-text2 hover:text-text hover:border-text px-4 py-2 rounded-full transition-all text-sm">
+                  Inloggen
+                </Link>
+                <Link href="/login?tab=register" className="bg-lime text-dark px-4 py-2 rounded-full font-medium hover:opacity-90 transition-opacity text-sm">
+                  Probeer gratis
+                </Link>
+              </>
+            )}
           </li>
         </ul>
 
@@ -84,33 +106,18 @@ export default function Navigation() {
           aria-label="Menu toggle"
           aria-expanded={isMenuOpen}
         >
-          <span
-            className={`w-5 h-0.5 bg-text2 rounded transition-all duration-300 ${
-              isMenuOpen ? "rotate-45 translate-y-2" : ""
-            }`}
-          />
-          <span
-            className={`w-5 h-0.5 bg-text2 rounded transition-all duration-300 ${
-              isMenuOpen ? "opacity-0 scale-x-0" : ""
-            }`}
-          />
-          <span
-            className={`w-5 h-0.5 bg-text2 rounded transition-all duration-300 ${
-              isMenuOpen ? "-rotate-45 -translate-y-2" : ""
-            }`}
-          />
+          <span className={`w-5 h-0.5 bg-text2 rounded transition-all duration-300 ${isMenuOpen ? "rotate-45 translate-y-2" : ""}`} />
+          <span className={`w-5 h-0.5 bg-text2 rounded transition-all duration-300 ${isMenuOpen ? "opacity-0 scale-x-0" : ""}`} />
+          <span className={`w-5 h-0.5 bg-text2 rounded transition-all duration-300 ${isMenuOpen ? "-rotate-45 -translate-y-2" : ""}`} />
         </button>
       </nav>
 
       {/* Mobile Menu */}
-      {isMenuOpen && <MobileMenu onClose={() => setIsMenuOpen(false)} />}
+      {isMenuOpen && <MobileMenu user={user} onClose={() => setIsMenuOpen(false)} onLogout={handleLogout} />}
 
       {/* Overlay */}
       {isMenuOpen && (
-        <div
-          className="fixed inset-0 bg-black/30 z-40 md:hidden"
-          onClick={() => setIsMenuOpen(false)}
-        />
+        <div className="fixed inset-0 bg-black/30 z-40 md:hidden" onClick={() => setIsMenuOpen(false)} />
       )}
     </>
   )
