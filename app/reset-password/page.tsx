@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { useEffect, useState } from "react"
 import { motion } from "framer-motion"
-import { getRecoveryParamsFromLocation, supabase } from "@/lib/supabase"
+import { getRecoveryParamsFromLocation, requestPasswordReset, supabase } from "@/lib/supabase"
 
 export default function ResetPasswordPage() {
   const [newPassword, setNewPassword] = useState("")
@@ -12,6 +12,8 @@ export default function ResetPasswordPage() {
   const [error, setError] = useState("")
   const [success, setSuccess] = useState("")
   const [ready, setReady] = useState(false)
+  const [email, setEmail] = useState("")
+  const [resendLoading, setResendLoading] = useState(false)
 
   useEffect(() => {
     const initRecovery = async () => {
@@ -67,6 +69,27 @@ export default function ResetPasswordPage() {
     }
   }
 
+  const handleResendLink = async (e?: React.FormEvent) => {
+    e?.preventDefault()
+    if (!email.trim()) {
+      setError("Vul je e-mailadres in om een nieuwe resetlink te ontvangen.")
+      return
+    }
+
+    setResendLoading(true)
+    setError("")
+    setSuccess("")
+
+    try {
+      await requestPasswordReset(email)
+      setSuccess("Er is een nieuwe resetlink verstuurd. Check je e-mail.")
+    } catch (err: any) {
+      setError(err.message || "Kon geen nieuwe resetlink versturen.")
+    } finally {
+      setResendLoading(false)
+    }
+  }
+
   return (
     <main className="min-h-screen flex items-center justify-center px-4 py-20">
       <motion.div
@@ -94,6 +117,30 @@ export default function ResetPasswordPage() {
 
         {!ready && !error ? (
           <div className="text-sm text-text2">Bezig met het verwerken van je herstellink…</div>
+        ) : error ? (
+          <div className="space-y-4">
+            <form onSubmit={handleResendLink} className="space-y-3">
+              <div>
+                <label className="mb-2 block text-sm text-text2">E-mailadres</label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full rounded-lg border border-border bg-dark px-4 py-3 text-text focus:border-lime focus:outline-none"
+                  placeholder="jouw@email.com"
+                  required
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={resendLoading}
+                className="w-full rounded-lg bg-lime px-4 py-3 font-semibold text-dark transition-opacity hover:opacity-90 disabled:opacity-50"
+              >
+                {resendLoading ? "Versturen..." : "Nieuwe resetlink sturen"}
+              </button>
+            </form>
+          </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
