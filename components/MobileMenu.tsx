@@ -61,33 +61,30 @@ export default function MobileMenu({ onClose }: MobileMenuProps) {
           { href: "#abonnementen", label: "Abonnementen" },
           { href: "#contact", label: "Contact" },
         ].map((item, i) => (
-          <motion.a
-            key={item.href}
-            href={item.href}
-            custom={i}
-            variants={menuItemVariants}
-            initial="hidden"
-            animate="visible"
-            className="block px-5 py-3 text-text2 hover:text-text hover:bg-surface transition-colors text-sm border-b border-border/30 last:border-b-0"
-          >
-            {item.label}
-          </motion.a>
+          <motion.div key={item.href} custom={i} variants={menuItemVariants} initial="hidden" animate="visible">
+            <Link
+              href={item.href}
+              className="block px-5 py-3 text-text2 hover:text-text hover:bg-surface transition-colors text-sm border-b border-border/30 last:border-b-0"
+              onClick={onClose}
+            >
+              {item.label}
+            </Link>
+          </motion.div>
         ))}
 
         {/* Divider */}
         <div className="h-px bg-border/30 my-2" />
 
         {/* Auth Links */}
-        <motion.a
-          href="/login"
-          custom={4}
-          variants={menuItemVariants}
-          initial="hidden"
-          animate="visible"
-          className="block px-5 py-3 text-text2 hover:text-text hover:bg-surface transition-colors text-sm"
-        >
-          Inloggen
-        </motion.a>
+        <motion.div custom={4} variants={menuItemVariants} initial="hidden" animate="visible">
+          <Link
+            href="/login"
+            className="block px-5 py-3 text-text2 hover:text-text hover:bg-surface transition-colors text-sm"
+            onClick={onClose}
+          >
+            Inloggen
+          </Link>
+        </motion.div>
 
         <motion.div
           custom={5}
