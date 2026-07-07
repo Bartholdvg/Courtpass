@@ -125,45 +125,33 @@ export default function Home() {
               transition={{ duration: 0.7, delay: 0.3 }}
               className="hidden md:flex flex-col gap-6"
             >
-              <div className="bg-surface border border-border rounded-3xl p-6">
-                <div className="bg-surface2 rounded-2xl p-8 aspect-video flex items-center justify-center">
-                  <svg viewBox="0 0 320 200" className="w-full max-w-xs" fill="none">
-                    <rect x="10" y="10" width="300" height="180" rx="3" stroke="rgba(191,239,69,0.3)" strokeWidth="1.5" />
-                    <line x1="160" y1="10" x2="160" y2="190" stroke="rgba(191,239,69,0.2)" strokeWidth="1.5" />
-                    <line x1="80" y1="10" x2="80" y2="100" stroke="rgba(191,239,69,0.18)" strokeWidth="1" />
-                    <line x1="240" y1="10" x2="240" y2="100" stroke="rgba(191,239,69,0.18)" strokeWidth="1" />
-                    <line x1="80" y1="100" x2="240" y2="100" stroke="rgba(191,239,69,0.18)" strokeWidth="1" />
-                    <line x1="160" y1="10" x2="160" y2="100" stroke="rgba(191,239,69,0.18)" strokeWidth="1" />
-                    <line x1="80" y1="100" x2="80" y2="190" stroke="rgba(191,239,69,0.18)" strokeWidth="1" />
-                    <line x1="240" y1="100" x2="240" y2="190" stroke="rgba(191,239,69,0.18)" strokeWidth="1" />
-                    <line x1="160" y1="100" x2="160" y2="190" stroke="rgba(191,239,69,0.18)" strokeWidth="1" />
-                    <line x1="10" y1="100" x2="80" y2="100" stroke="rgba(191,239,69,0.18)" strokeWidth="1" />
-                    <line x1="240" y1="100" x2="310" y2="100" stroke="rgba(191,239,69,0.18)" strokeWidth="1" />
-                    <circle cx="160" cy="10" r="3" fill="rgba(191,239,69,0.3)" />
-                    <circle cx="160" cy="190" r="3" fill="rgba(191,239,69,0.3)" />
-                    <circle cx="115" cy="75" r="10" fill="#BFEF45" opacity="0.95" />
-                    <path d="M107 72 Q115 67 123 72" stroke="#0D1A0F" strokeWidth="1.2" fill="none" />
-                    <path d="M107 78 Q115 83 123 78" stroke="#0D1A0F" strokeWidth="1.2" fill="none" />
-                    <circle cx="115" cy="155" r="6" fill="rgba(191,239,69,0.15)" stroke="rgba(191,239,69,0.3)" strokeWidth="1" />
-                    <circle cx="205" cy="45" r="6" fill="rgba(191,239,69,0.15)" stroke="rgba(191,239,69,0.3)" strokeWidth="1" />
-                  </svg>
-                </div>
+              <div className="bg-surface border border-border rounded-3xl overflow-hidden">
+                <img
+                  src="https://images.unsplash.com/photo-1547347298-4074fc3086f0?auto=format&fit=crop&w=900&q=80"
+                  alt="Tennisbaan met spelers in de avond"
+                  className="h-56 w-full object-cover"
+                />
+                <div className="p-6">
+                  <div className="flex items-center justify-between gap-3 mb-3">
+                    <h3 className="font-playfair text-xl font-bold text-text">CourtPass — Tennis zonder binding</h3>
+                    <span className="rounded-full bg-lime/10 px-3 py-1 text-xs font-semibold text-lime">Flexibel</span>
+                  </div>
+                  <p className="text-sm text-text2 leading-relaxed">
+                    Reserveer eenvoudig bij meerdere clubs, betaal met credits en speel wanneer het jou uitkomt.
+                  </p>
 
-                <div className="mt-6 space-y-3 border-t border-border pt-6">
-                  <div className="flex justify-between text-center">
-                    <div>
-                      <div className="font-playfair text-2xl font-bold text-lime">12+</div>
-                      <div className="text-xs text-text3 uppercase tracking-wider mt-1">Clubs</div>
+                  <div className="mt-5 grid grid-cols-3 gap-3 text-sm">
+                    <div className="rounded-2xl border border-border bg-surface2/60 p-3 text-center">
+                      <div className="font-playfair text-lg font-bold text-lime">12+</div>
+                      <div className="text-[11px] uppercase tracking-wider text-text3 mt-1">Clubs</div>
                     </div>
-                    <div className="h-px bg-border w-12" />
-                    <div>
-                      <div className="font-playfair text-2xl font-bold text-lime">48u</div>
-                      <div className="text-xs text-text3 uppercase tracking-wider mt-1">Vooruit</div>
+                    <div className="rounded-2xl border border-border bg-surface2/60 p-3 text-center">
+                      <div className="font-playfair text-lg font-bold text-lime">48u</div>
+                      <div className="text-[11px] uppercase tracking-wider text-text3 mt-1">Vooruit</div>
                     </div>
-                    <div className="h-px bg-border w-12" />
-                    <div>
-                      <div className="font-playfair text-2xl font-bold text-lime">∞</div>
-                      <div className="text-xs text-text3 uppercase tracking-wider mt-1">Flexibel</div>
+                    <div className="rounded-2xl border border-border bg-surface2/60 p-3 text-center">
+                      <div className="font-playfair text-lg font-bold text-lime">€</div>
+                      <div className="text-[11px] uppercase tracking-wider text-text3 mt-1">Credits</div>
                     </div>
                   </div>
                 </div>
@@ -246,26 +234,26 @@ export default function Home() {
           <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
             {[
               {
-                name: "Weekender",
-                price: "€29",
+                name: "Starter",
+                price: "€49",
                 period: "/maand",
                 sessions: "4 sessies/maand",
                 features: ["Toegang tot alle clubs", "Reserveren tot 48u van tevoren", "Maandelijks opzeggen"],
               },
               {
-                name: "Pro",
-                price: "€49",
+                name: "Popular",
+                price: "€79",
                 period: "/maand",
-                sessions: "Onbeperkt",
+                sessions: "8 sessies/maand",
                 features: ["Toegang tot alle clubs", "Reserveren tot 48u van tevoren", "Voorrangstoegang", "Community forum"],
                 popular: true,
               },
               {
-                name: "Starter",
-                price: "€19",
+                name: "Pro",
+                price: "€119",
                 period: "/maand",
-                sessions: "2 sessies/maand",
-                features: ["Basistoegang", "Standaard support", "Maandelijks opzeggen"],
+                sessions: "Onbeperkt",
+                features: ["Alle clubs incl. privébanen", "Prioriteit bij reserveren", "Gratis gastcredits", "20% korting op coaching"],
               },
             ].map((plan, i) => (
               <ScrollObserver key={i} delay={i * 0.1}>
