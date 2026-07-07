@@ -1,12 +1,12 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/router';
 
-export default function LoginHtmlRedirect() {
+export default function ResetPasswordHtmlRedirect() {
   const router = useRouter();
 
   useEffect(() => {
     router.replace({
-      pathname: '/login',
+      pathname: '/reset-password',
       search: window.location.search,
       hash: window.location.hash,
     });
