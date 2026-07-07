@@ -107,6 +107,13 @@ export const signUp = async (email: string, password: string, fullName: string) 
   return data
 }
 
+export const requestPasswordReset = async (email: string) => {
+  const redirectTo = typeof window !== "undefined" ? `${window.location.origin}/login` : undefined
+  const { data, error } = await supabase.auth.resetPasswordForEmail(email, redirectTo ? { redirectTo } : undefined)
+  if (error) throw error
+  return data
+}
+
 export const signOut = async () => {
   const { error } = await supabase.auth.signOut()
   if (error) throw error

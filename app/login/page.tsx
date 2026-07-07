@@ -3,7 +3,7 @@
 import { useState } from "react"
 import Link from "next/link"
 import { motion } from "framer-motion"
-import { signIn, signUp, storeAuthUser } from "@/lib/supabase"
+import { requestPasswordReset, signIn, signUp, storeAuthUser } from "@/lib/supabase"
 import { useRouter } from "next/navigation"
 
 export default function LoginPage() {
@@ -13,12 +13,17 @@ export default function LoginPage() {
   const [fullName, setFullName] = useState("")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
+  const [successMessage, setSuccessMessage] = useState("")
+  const [showForgotPassword, setShowForgotPassword] = useState(false)
+  const [forgotEmail, setForgotEmail] = useState("")
+  const [forgotLoading, setForgotLoading] = useState(false)
   const router = useRouter()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
     setError("")
+    setSuccessMessage("")
 
     try {
       if (tab === "login") {
@@ -50,6 +55,24 @@ export default function LoginPage() {
       setError(err.message || "Er ging iets mis")
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleForgotPassword = async (e?: React.FormEvent) => {
+    e?.preventDefault()
+    setForgotLoading(true)
+    setError("")
+    setSuccessMessage("")
+
+    try {
+      await requestPasswordReset(forgotEmail || email)
+      setSuccessMessage("Check je e-mailbox voor een resetlink.")
+      setShowForgotPassword(false)
+      setForgotEmail("")
+    } catch (err: any) {
+      setError(err.message || "Kon geen resetlink versturen")
+    } finally {
+      setForgotLoading(false)
     }
   }
 
@@ -100,6 +123,12 @@ export default function LoginPage() {
               </div>
             )}
 
+            {successMessage && (
+              <div className="bg-lime/10 border border-lime/20 rounded-lg p-3">
+                <p className="text-lime text-sm">{successMessage}</p>
+              </div>
+            )}
+
             {tab === "register" && (
               <div>
                 <label className="block text-sm text-text2 mb-2">Volledige naam</label>
@@ -138,6 +167,55 @@ export default function LoginPage() {
                 minLength={6}
               />
             </div>
+
+            {tab === "login" && !showForgotPassword && (
+              <button
+                type="button"
+                onClick={() => {
+                  setShowForgotPassword(true)
+                  setError("")
+                  setSuccessMessage("")
+                }}
+                className="text-sm text-lime hover:underline"
+              >
+                Wachtwoord vergeten?
+              </button>
+            )}
+
+            {showForgotPassword && (
+              <div className="rounded-lg border border-lime/20 bg-lime/10 p-3 space-y-3">
+                <label className="block text-sm text-text2">Vul je e-mailadres in voor een resetlink</label>
+                <input
+                  type="email"
+                  value={forgotEmail || email}
+                  onChange={(e) => setForgotEmail(e.target.value)}
+                  className="w-full bg-dark border border-border rounded-lg px-4 py-3 text-text focus:outline-none focus:border-lime transition-colors"
+                  placeholder="jouw@email.com"
+                />
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleForgotPassword()}
+                    disabled={forgotLoading}
+                    className="flex-1 bg-lime text-dark py-2 rounded-lg font-semibold hover:opacity-90 transition-opacity disabled:opacity-50"
+                  >
+                    {forgotLoading ? "Versturen..." : "Stuur resetlink"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowForgotPassword(false)
+                      setForgotEmail("")
+                      setError("")
+                      setSuccessMessage("")
+                    }}
+                    className="px-3 py-2 rounded-lg border border-border text-sm"
+                  >
+                    Sluiten
+                  </button>
+                </div>
+              </div>
+            )}
 
             <button
               type="submit"
