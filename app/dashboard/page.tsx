@@ -1,196 +1,152 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import ScrollObserver from "@/components/ScrollObserver"
-import { getUserDisplayName, loadStoredUser, type CourtPassUser, updateStoredUser } from "@/lib/supabase"
+import { getCurrentUser, getUserDisplayName, loadStoredUser } from "@/lib/supabase"
+import { fetchMyBookings, cancelBooking, type Booking } from "@/lib/booking"
 
-const clubOffers = [
-  { club: "Tennisclub Oost", district: "Amsterdam Oost", points: 20, credits: 4, cost: "€14", courts: 3, level: "Alle niveaus" },
-  { club: "Vondelpark Courts", district: "Amsterdam Zuid", points: 24, credits: 6, cost: "€18", courts: 2, level: "Gevorderd" },
-  { club: "Noord Sportpark", district: "Amsterdam Noord", points: 16, credits: 3, cost: "€11", courts: 4, level: "Beginner" },
-]
-
-const nearbyPlayers = [
-  { name: "Mila", level: "Intermediate", district: "Amsterdam Oost", points: 168, availability: "Vandaag 19:00" },
-  { name: "Jeroen", level: "Advanced", district: "Amsterdam Zuid", points: 242, availability: "Morgen 18:30" },
-  { name: "Sara", level: "Beginner", district: "Amsterdam Noord", points: 84, availability: "Vrijdag 17:00" },
-]
+function todayISO(): string {
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
+}
 
 export default function DashboardPage() {
   const router = useRouter()
-  const [user, setUser] = useState<CourtPassUser | null>(null)
-  const [search, setSearch] = useState("")
-  const [selectedLevel, setSelectedLevel] = useState("Alle niveaus")
+  const [loading, setLoading] = useState(true)
+  const [bookings, setBookings] = useState<Booking[]>([])
+  const [error, setError] = useState("")
+  const [cancellingId, setCancellingId] = useState<string | null>(null)
+  const displayName = getUserDisplayName(loadStoredUser())
 
-  useEffect(() => {
-    const storedUser = loadStoredUser()
-    if (!storedUser) {
-      router.replace("/login")
+  async function load() {
+    const user = await getCurrentUser()
+    if (!user) {
+      router.replace("/login?redirect=/dashboard")
       return
     }
-    setUser(storedUser)
-  }, [router])
-
-  const filteredPlayers = useMemo(() => {
-    return nearbyPlayers.filter((player) => {
-      const matchesQuery = `${player.name} ${player.district}`.toLowerCase().includes(search.toLowerCase())
-      const matchesLevel = selectedLevel === "Alle niveaus" || player.level === selectedLevel
-      return matchesQuery && matchesLevel
-    })
-  }, [search, selectedLevel])
-
-  const handleMatchResult = (result: "win" | "loss" | "neutral") => {
-    if (!user) return
-    let nextPoints = user.points
-    if (result === "win") nextPoints += 15
-    if (result === "loss") nextPoints = Math.max(0, nextPoints - 10)
-
-    const updated = updateStoredUser({ points: nextPoints })
-    if (updated) setUser(updated)
+    try {
+      const data = await fetchMyBookings(user.id)
+      setBookings(data)
+    } catch (err: any) {
+      setError(err.message || "Kon je boekingen niet laden.")
+    } finally {
+      setLoading(false)
+    }
   }
 
-  if (!user) return null
+  useEffect(() => {
+    load()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  async function handleCancel(id: string) {
+    if (!confirm("Deze boeking annuleren?")) return
+    setCancellingId(id)
+    try {
+      await cancelBooking(id)
+      await load()
+    } catch (err: any) {
+      setError(err.message || "Annuleren mislukt.")
+    } finally {
+      setCancellingId(null)
+    }
+  }
+
+  const today = todayISO()
+  const upcoming = bookings
+    .filter((b) => b.status === "confirmed" && b.date >= today)
+    .sort((a, b) => (a.date + a.startTime).localeCompare(b.date + b.startTime))
+  const history = bookings
+    .filter((b) => b.status === "cancelled" || b.date < today)
+    .sort((a, b) => (b.date + b.startTime).localeCompare(a.date + a.startTime))
+
+  if (loading) {
+    return (
+      <main className="min-h-screen pt-20 flex items-center justify-center">
+        <p className="text-text2">Laden…</p>
+      </main>
+    )
+  }
 
   return (
     <main className="min-h-screen pt-20 pb-16">
       <section className="section-padding">
         <div className="container-max px-4 md:px-6">
           <ScrollObserver delay={0}>
-            <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-8">
-              <div>
-                <p className="text-sm uppercase tracking-[0.2em] text-lime">Welkom terug</p>
-                <h1 className="font-playfair text-4xl md:text-5xl font-bold">{getUserDisplayName(user)}</h1>
-              </div>
-              <div className="rounded-full border border-lime/20 bg-lime/10 px-4 py-2 text-sm text-lime">
-                {user.rank} · {user.points} punten
-              </div>
+            <div className="mb-8">
+              <p className="text-sm uppercase tracking-[0.2em] text-lime">Welkom terug</p>
+              <h1 className="font-playfair text-4xl md:text-5xl font-bold">{displayName}</h1>
             </div>
           </ScrollObserver>
 
-          <div className="grid md:grid-cols-3 gap-6 mb-8">
-            <ScrollObserver delay={0.1}>
-              <div className="border border-border rounded-2xl p-6 bg-surface/50">
-                <h3 className="text-text3 text-sm uppercase tracking-wider font-bold mb-2">Credits</h3>
-                <p className="text-2xl font-bold text-lime">{user.credits}</p>
-                <p className="text-text2 text-sm mt-2">Beschikbaar voor jouw volgende sessie</p>
-              </div>
-            </ScrollObserver>
+          {error && <div className="mb-6 rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-400">{error}</div>}
 
-            <ScrollObserver delay={0.15}>
-              <div className="border border-border rounded-2xl p-6 bg-surface/50">
-                <h3 className="text-text3 text-sm uppercase tracking-wider font-bold mb-2">Rank</h3>
-                <p className="text-2xl font-bold">{user.rank}</p>
-                <p className="text-text2 text-sm mt-2">Niveau {user.level} · {user.location}</p>
-              </div>
-            </ScrollObserver>
-
-            <ScrollObserver delay={0.2}>
-              <div className="border border-border rounded-2xl p-6 bg-surface/50">
-                <h3 className="text-text3 text-sm uppercase tracking-wider font-bold mb-2">Plan</h3>
-                <p className="text-2xl font-bold">{user.plan}</p>
-                <p className="text-text2 text-sm mt-2">Maandelijks opzegbaar · 24/7 toegang</p>
-              </div>
-            </ScrollObserver>
-          </div>
-
-          <div className="grid lg:grid-cols-[1.2fr_0.8fr] gap-6 mb-8">
-            <ScrollObserver delay={0.25}>
-              <div className="border border-border rounded-2xl p-6 bg-surface/40">
-                <div className="flex items-center justify-between mb-4">
-                  <div>
-                    <h2 className="font-bold text-lg">Club kaarten</h2>
-                    <p className="text-sm text-text2">Bekijk punten, credits, kosten en beschikbare banen.</p>
+          <div className="grid lg:grid-cols-[1.4fr_0.6fr] gap-6">
+            <div>
+              <ScrollObserver delay={0.1}>
+                <div className="border border-border rounded-2xl p-6 bg-surface/40 mb-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="font-bold text-lg">Aankomende boekingen</h2>
+                    <Link href="/clubs" className="text-sm text-lime hover:text-text transition-colors">
+                      + Nieuwe boeking
+                    </Link>
                   </div>
-                  <Link href="/clubs" className="text-sm text-lime hover:text-text transition-colors">
-                    Meer clubs →
-                  </Link>
-                </div>
-                <div className="grid md:grid-cols-2 gap-4">
-                  {clubOffers.map((club) => (
-                    <div key={club.club} className="rounded-2xl border border-border/70 bg-dark/60 p-4">
-                      <div className="flex items-center justify-between mb-3">
-                        <div>
-                          <h3 className="font-semibold text-text">{club.club}</h3>
-                          <p className="text-sm text-text2">{club.district}</p>
+                  {upcoming.length === 0 ? (
+                    <p className="text-sm text-text2">Nog geen aankomende boekingen. Reserveer je eerste baan!</p>
+                  ) : (
+                    <div className="space-y-3">
+                      {upcoming.map((b) => (
+                        <div key={b.id} className="flex flex-wrap items-center gap-3 rounded-2xl border border-border/70 bg-dark/60 p-4">
+                          <div className="min-w-0">
+                            <p className="font-semibold text-text truncate">{b.clubName}</p>
+                            <p className="text-sm text-text2">
+                              {b.courtName} · {new Date(b.date + "T12:00:00").toLocaleDateString("nl-NL", { weekday: "short", day: "numeric", month: "short" })} · {b.startTime}–{b.endTime}
+                            </p>
+                          </div>
+                          <div className="ml-auto flex items-center gap-3 flex-none">
+                            <span className="font-mono font-bold text-lime">{Math.round(b.priceCredits)} cr</span>
+                            <button
+                              onClick={() => handleCancel(b.id)}
+                              disabled={cancellingId === b.id}
+                              className="text-xs border border-red-500/30 text-red-400 rounded-full px-3 py-1.5 hover:bg-red-500/10 disabled:opacity-50"
+                            >
+                              {cancellingId === b.id ? "Bezig…" : "Annuleren"}
+                            </button>
+                          </div>
                         </div>
-                        <span className="rounded-full bg-lime/10 px-3 py-1 text-xs text-lime">{club.level}</span>
-                      </div>
-                      <div className="grid grid-cols-2 gap-3 text-sm text-text2">
-                        <div><span className="block text-xs uppercase text-text3">Credits</span><span className="text-text font-medium">{club.credits}</span></div>
-                        <div><span className="block text-xs uppercase text-text3">Kosten</span><span className="text-text font-medium">{club.cost}</span></div>
-                        <div><span className="block text-xs uppercase text-text3">Banen</span><span className="text-text font-medium">{club.courts} vrij</span></div>
-                        <div><span className="block text-xs uppercase text-text3">Score</span><span className="text-text font-medium">{club.points} pts</span></div>
-                      </div>
-                      <Link href="/clubs" className="mt-4 inline-flex rounded-full bg-lime px-4 py-2 text-sm font-semibold text-dark hover:opacity-90 transition-opacity">
-                        Reserveer
-                      </Link>
+                      ))}
                     </div>
-                  ))}
-                </div>
-              </div>
-            </ScrollObserver>
-
-            <ScrollObserver delay={0.3}>
-              <div className="border border-border rounded-2xl p-6 bg-surface/40">
-                <h2 className="font-bold text-lg mb-4">Ranking & matchresultaat</h2>
-                <p className="text-sm text-text2 mb-4">Na een match kun je punten verdienen of verliezen. Speel ook zonder ranking-impact.</p>
-                <div className="flex flex-wrap gap-3">
-                  <button onClick={() => handleMatchResult("win")} className="rounded-full bg-lime px-4 py-2 text-sm font-semibold text-dark">Winst +15</button>
-                  <button onClick={() => handleMatchResult("loss")} className="rounded-full border border-border px-4 py-2 text-sm">Verlies -10</button>
-                  <button onClick={() => handleMatchResult("neutral")} className="rounded-full border border-border px-4 py-2 text-sm">Spelen zonder punten</button>
-                </div>
-                <div className="mt-5 rounded-2xl border border-border/70 bg-dark/70 p-4 text-sm text-text2">
-                  <p><span className="text-lime font-semibold">Huidig niveau:</span> {user.rank}</p>
-                  <p><span className="text-lime font-semibold">Puntentotaal:</span> {user.points}</p>
-                  <p><span className="text-lime font-semibold">Volgende stap:</span> speel 3 matches om je ranking verder te groeien.</p>
-                </div>
-              </div>
-            </ScrollObserver>
-          </div>
-
-          <div className="grid lg:grid-cols-[1fr_0.9fr] gap-6">
-            <ScrollObserver delay={0.35}>
-              <div className="border border-border rounded-2xl p-6">
-                <h2 className="font-bold text-lg mb-4">Zoek iemand in de buurt</h2>
-                <p className="text-sm text-text2 mb-4">Vind een sparringpartner op jouw niveau in jouw regio.</p>
-                <div className="flex flex-col sm:flex-row gap-3 mb-4">
-                  <input
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    placeholder="Zoek op naam of buurt"
-                    className="w-full rounded-xl border border-border bg-dark px-4 py-3 text-sm text-text placeholder:text-text3"
-                  />
-                  <select value={selectedLevel} onChange={(e) => setSelectedLevel(e.target.value)} className="rounded-xl border border-border bg-dark px-4 py-3 text-sm text-text">
-                    <option>Alle niveaus</option>
-                    <option>Beginner</option>
-                    <option>Intermediate</option>
-                    <option>Advanced</option>
-                  </select>
-                </div>
-                <div className="space-y-3">
-                  {filteredPlayers.map((player) => (
-                    <div key={player.name} className="flex items-center justify-between rounded-2xl border border-border/70 bg-surface/40 px-4 py-3">
-                      <div>
-                        <p className="font-semibold text-text">{player.name}</p>
-                        <p className="text-sm text-text2">{player.level} · {player.district}</p>
-                        <p className="text-xs text-text3">Beschikbaar: {player.availability}</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-sm font-semibold text-lime">{player.points} pts</p>
-                        <button className="mt-2 rounded-full border border-lime/30 px-3 py-1 text-xs text-lime">Vraag uit</button>
-                      </div>
-                    </div>
-                  ))}
-                  {filteredPlayers.length === 0 && (
-                    <div className="rounded-2xl border border-dashed border-border p-4 text-sm text-text2">Geen spelers gevonden. Probeer een andere zoekterm of niveau.</div>
                   )}
                 </div>
-              </div>
-            </ScrollObserver>
+              </ScrollObserver>
 
-            <ScrollObserver delay={0.4}>
+              <ScrollObserver delay={0.15}>
+                <div className="border border-border rounded-2xl p-6">
+                  <h2 className="font-bold text-lg mb-4">Eerdere boekingen</h2>
+                  {history.length === 0 ? (
+                    <p className="text-sm text-text2">Nog geen geschiedenis.</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {history.map((b) => (
+                        <div key={b.id} className="flex flex-wrap items-center gap-3 rounded-xl border border-border/50 px-4 py-3 text-sm">
+                          <span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded-full flex-none ${b.status === "cancelled" ? "bg-red-500/10 text-red-400" : "bg-surface2 text-text3"}`}>
+                            {b.status === "cancelled" ? "Geannuleerd" : "Gespeeld"}
+                          </span>
+                          <span className="text-text2 min-w-0 truncate">
+                            {b.clubName} · {b.courtName} · {b.date}
+                          </span>
+                          <span className="ml-auto font-mono text-text3 flex-none">{Math.round(b.priceCredits)} cr</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </ScrollObserver>
+            </div>
+
+            <ScrollObserver delay={0.2}>
               <div className="border border-border rounded-2xl p-6">
                 <h2 className="font-bold text-lg mb-4">Snelle acties</h2>
                 <div className="space-y-3">
