@@ -41,6 +41,7 @@ export interface Club {
 export interface BookedSlot {
   clubId: string
   courtId: string
+  date: string
   startTime: string
 }
 
@@ -159,19 +160,21 @@ export async function fetchClub(id: string): Promise<Club | null> {
   return data ? mapClubRow(data) : null
 }
 
-/** Confirmed bookings for a set of clubs on one date — one query, used both
- * for the selected club's own availability and for the "free courts nearby"
- * pricing input. */
-export async function fetchBookedSlots(clubIds: string[], date: string): Promise<BookedSlot[]> {
+/** Confirmed bookings for a set of clubs within a date range — one query,
+ * used both for a single day (dateFrom === dateTo, e.g. the "free courts
+ * nearby" pricing input) and for a whole visible calendar month (to grey out
+ * fully-booked days). */
+export async function fetchBookedSlots(clubIds: string[], dateFrom: string, dateTo: string): Promise<BookedSlot[]> {
   if (clubIds.length === 0) return []
   const { data, error } = await supabase
     .from("bookings")
-    .select("club_id, court_id, start_time")
+    .select("club_id, court_id, date, start_time")
     .in("club_id", clubIds)
-    .eq("date", date)
+    .gte("date", dateFrom)
+    .lte("date", dateTo)
     .eq("status", "confirmed")
   if (error) throw error
-  return (data ?? []).map((b) => ({ clubId: b.club_id, courtId: b.court_id, startTime: b.start_time }))
+  return (data ?? []).map((b) => ({ clubId: b.club_id, courtId: b.court_id, date: b.date, startTime: b.start_time }))
 }
 
 export async function fetchMyBookings(userId: string): Promise<Booking[]> {
@@ -238,7 +241,7 @@ export function isPast(dateStr: string, time: string): boolean {
 export function getAvailableCourts(club: Club, bookedSlots: BookedSlot[], dateStr: string, time: string): Court[] {
   if (isPast(dateStr, time)) return []
   const bookedCourtIds = new Set(
-    bookedSlots.filter((b) => b.clubId === club.id && b.startTime === time).map((b) => b.courtId),
+    bookedSlots.filter((b) => b.clubId === club.id && b.date === dateStr && b.startTime === time).map((b) => b.courtId),
   )
   return club.courts.filter((c) => c.active && !bookedCourtIds.has(c.id))
 }
