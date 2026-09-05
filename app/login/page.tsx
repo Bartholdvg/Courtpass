@@ -1,12 +1,13 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { Suspense, useEffect, useState } from "react"
 import Link from "next/link"
 import { motion } from "framer-motion"
 import { getRecoveryParamsFromLocation, requestPasswordReset, signIn, signUp, storeAuthUser, supabase } from "@/lib/supabase"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 
-export default function LoginPage() {
+function LoginForm() {
+  const searchParams = useSearchParams()
   const [tab, setTab] = useState("login")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
@@ -54,27 +55,25 @@ export default function LoginPage() {
     try {
       if (tab === "login") {
         await signIn(email, password)
-        storeAuthUser({
-          email,
-          name: fullName || email.split("@")[0] || "Speler",
-          points: 120,
-          level: "Intermediate",
-          location: "Amsterdam",
-          credits: 8,
-          plan: "Pro",
-        })
-        router.push("/dashboard")
       } else {
         await signUp(email, password, fullName)
-        storeAuthUser({
-          email,
-          name: fullName || email.split("@")[0] || "Speler",
-          points: 120,
-          level: "Intermediate",
-          location: "Amsterdam",
-          credits: 8,
-          plan: "Pro",
-        })
+      }
+
+      storeAuthUser({
+        email,
+        name: fullName || email.split("@")[0] || "Speler",
+        points: 120,
+        level: "Intermediate",
+        location: "Amsterdam",
+        credits: 8,
+        plan: "Pro",
+      })
+
+      const redirect = searchParams?.get("redirect")
+      const price = searchParams?.get("price")
+      if (redirect) {
+        router.push(price ? `${redirect}?price=${price}` : redirect)
+      } else {
         router.push("/dashboard")
       }
     } catch (err: any) {
@@ -365,5 +364,13 @@ export default function LoginPage() {
         </motion.div>
       </div>
     </main>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={null}>
+      <LoginForm />
+    </Suspense>
   )
 }

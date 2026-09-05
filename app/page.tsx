@@ -327,7 +327,7 @@ export default function Home() {
                     ))}
                   </ul>
                   <Link
-                    href="/login?tab=register"
+                    href="/betalen"
                     className={`w-full py-3 rounded-lg font-bold text-sm transition-all block text-center ${
                       plan.popular
                         ? "bg-lime text-dark hover:opacity-90"
