@@ -45,14 +45,26 @@ where u.id = p.id and (p.email is null or p.email <> u.email);
 drop policy if exists "profiles are editable by their owner" on profiles;
 
 -- Platform admins need to see every profile to resolve "email -> user id"
--- when assigning a club owner. (References profiles from within its own
--- policy; safe because the calling user's own row is still visible via
--- the existing "profiles are viewable by their owner" policy, so the
--- subquery below terminates without recursion.)
+-- when assigning a club owner. A policy on `profiles` cannot query
+-- `profiles` directly in its own USING clause — Postgres always treats
+-- that as infinite recursion, even when the query would in fact
+-- terminate. The fix is a SECURITY DEFINER helper: it runs as its
+-- (superuser) owner, which bypasses RLS entirely for this one lookup,
+-- so the policy itself never re-triggers RLS on profiles.
+create or replace function is_platform_admin(uid uuid)
+returns boolean
+language sql
+security definer
+stable
+set search_path = public
+as $$
+  select coalesce((select p.is_platform_admin from profiles p where p.id = uid), false);
+$$;
+
 drop policy if exists "platform admins view all profiles" on profiles;
 create policy "platform admins view all profiles"
   on profiles for select
-  using (exists (select 1 from profiles p where p.id = auth.uid() and p.is_platform_admin));
+  using (is_platform_admin(auth.uid()));
 
 -- ---------- credits: the only way credits_balance may change ----------
 -- security definer so it can update the row despite no general UPDATE

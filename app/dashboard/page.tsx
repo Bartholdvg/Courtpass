@@ -17,9 +17,12 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true)
   const [bookings, setBookings] = useState<Booking[]>([])
   const [credits, setCredits] = useState(0)
+  const [creditsError, setCreditsError] = useState(false)
   const [error, setError] = useState("")
   const [cancellingId, setCancellingId] = useState<string | null>(null)
-  const displayName = getUserDisplayName(loadStoredUser())
+  const storedUser = loadStoredUser()
+  const displayName = getUserDisplayName(storedUser)
+  const rank = storedUser?.rank
 
   async function load() {
     const user = await getCurrentUser()
@@ -28,11 +31,18 @@ export default function DashboardPage() {
       return
     }
     try {
-      const [data, balance] = await Promise.all([fetchMyBookings(user.id), fetchMyCreditsBalance()])
+      const data = await fetchMyBookings(user.id)
       setBookings(data)
-      setCredits(balance)
     } catch (err: any) {
       setError(err.message || "Kon je boekingen niet laden.")
+    }
+
+    try {
+      const balance = await fetchMyCreditsBalance()
+      setCredits(balance)
+      setCreditsError(false)
+    } catch {
+      setCreditsError(true)
     } finally {
       setLoading(false)
     }
@@ -81,15 +91,33 @@ export default function DashboardPage() {
               <div>
                 <p className="text-sm uppercase tracking-[0.2em] text-lime">Welkom terug</p>
                 <h1 className="font-playfair text-4xl md:text-5xl font-bold">{displayName}</h1>
+                {rank && <p className="mt-1 text-sm text-text2">Rank: <span className="text-lime font-semibold">{rank}</span></p>}
               </div>
-              <div className="rounded-2xl border border-lime/30 bg-lime/10 px-5 py-3">
-                <p className="text-[10px] uppercase tracking-wider text-text3 font-bold mb-0.5">Credits</p>
-                <p className="font-mono text-2xl font-bold text-lime">{Math.round(credits)}</p>
+              <div className="flex items-center gap-3">
+                <div className="rounded-2xl border border-lime/30 bg-lime/10 px-5 py-3">
+                  <p className="text-[10px] uppercase tracking-wider text-text3 font-bold mb-0.5">Credits</p>
+                  {creditsError ? (
+                    <p className="text-xs text-text2">Niet beschikbaar</p>
+                  ) : (
+                    <p className="font-mono text-2xl font-bold text-lime">{Math.round(credits)}</p>
+                  )}
+                </div>
+                <Link
+                  href="/betalen?tab=credits"
+                  className="rounded-2xl border border-border px-4 py-3 text-sm font-bold text-text2 hover:text-text hover:border-muted transition-colors"
+                >
+                  + Bijkopen
+                </Link>
               </div>
             </div>
           </ScrollObserver>
 
           {error && <div className="mb-6 rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-400">{error}</div>}
+          {creditsError && (
+            <div className="mb-6 rounded-lg border border-yellow-500/30 bg-yellow-500/10 p-3 text-sm text-yellow-400">
+              Je creditsaldo kon niet worden geladen. Waarschijnlijk moet de laatste database-migratie nog worden uitgevoerd.
+            </div>
+          )}
 
           <div className="grid lg:grid-cols-[1.4fr_0.6fr] gap-6">
             <div>
@@ -160,6 +188,9 @@ export default function DashboardPage() {
                 <div className="space-y-3">
                   <Link href="/clubs" className="block w-full bg-lime text-dark py-2 rounded-lg font-bold text-center hover:opacity-90 transition-opacity text-sm">
                     Baan reserveren
+                  </Link>
+                  <Link href="/betalen?tab=credits" className="block w-full border border-border text-text2 hover:text-text py-2 rounded-lg font-bold text-center transition-colors text-sm">
+                    Credits bijkopen
                   </Link>
                   <Link href="/betalen" className="block w-full border border-border text-text2 hover:text-text py-2 rounded-lg font-bold text-center transition-colors text-sm">
                     Abonnement beheren
