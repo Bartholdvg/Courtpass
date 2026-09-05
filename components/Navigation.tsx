@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import MobileMenu from "./MobileMenu"
-import { clearStoredUser, getUserDisplayName, loadStoredUser, signOut, type CourtPassUser } from "@/lib/supabase"
+import { AUTH_CHANGED_EVENT, clearStoredUser, getUserDisplayName, loadStoredUser, signOut, type CourtPassUser } from "@/lib/supabase"
 
 export default function Navigation() {
   const router = useRouter()
@@ -17,7 +17,11 @@ export default function Navigation() {
     const syncUser = () => setUser(loadStoredUser())
     syncUser()
     window.addEventListener("storage", syncUser)
-    return () => window.removeEventListener("storage", syncUser)
+    window.addEventListener(AUTH_CHANGED_EVENT, syncUser)
+    return () => {
+      window.removeEventListener("storage", syncUser)
+      window.removeEventListener(AUTH_CHANGED_EVENT, syncUser)
+    }
   }, [])
 
   useEffect(() => {
@@ -58,7 +62,7 @@ export default function Navigation() {
         {/* Desktop Navigation */}
         <ul className="hidden md:flex gap-6 list-none items-center">
           <li>
-            <a href="#hoe-het-werkt" className="text-text2 hover:text-text transition-colors text-sm">
+            <a href="/#hoe-het-werkt" className="text-text2 hover:text-text transition-colors text-sm">
               Hoe het werkt
             </a>
           </li>
@@ -68,12 +72,12 @@ export default function Navigation() {
             </Link>
           </li>
           <li>
-            <a href="#abonnementen" className="text-text2 hover:text-text transition-colors text-sm">
+            <a href="/#abonnementen" className="text-text2 hover:text-text transition-colors text-sm">
               Abonnementen
             </a>
           </li>
           <li>
-            <a href="#contact" className="text-text2 hover:text-text transition-colors text-sm">
+            <a href="/#contact" className="text-text2 hover:text-text transition-colors text-sm">
               Contact
             </a>
           </li>

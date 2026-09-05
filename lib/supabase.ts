@@ -75,10 +75,17 @@ export const buildStoredUser = (email: string, name: string, overrides: Partial<
   plan: overrides.plan ?? "Pro",
 })
 
+export const AUTH_CHANGED_EVENT = "courtpass-auth-changed"
+
+const notifyAuthChanged = () => {
+  if (typeof window !== "undefined") window.dispatchEvent(new Event(AUTH_CHANGED_EVENT))
+}
+
 export const storeAuthUser = (user: Partial<CourtPassUser> & { email: string; name: string }) => {
   if (typeof window === "undefined") return null
   const nextUser = buildStoredUser(user.email, user.name, user)
   window.localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(nextUser))
+  notifyAuthChanged()
   return nextUser
 }
 
@@ -98,6 +105,7 @@ export const loadStoredUser = (): CourtPassUser | null => {
 export const clearStoredUser = () => {
   if (typeof window === "undefined") return
   window.localStorage.removeItem(AUTH_STORAGE_KEY)
+  notifyAuthChanged()
 }
 
 export const updateStoredUser = (updates: Partial<CourtPassUser>) => {
@@ -110,6 +118,7 @@ export const updateStoredUser = (updates: Partial<CourtPassUser>) => {
   }
   if (typeof window !== "undefined") {
     window.localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(nextUser))
+    notifyAuthChanged()
   }
   return nextUser
 }

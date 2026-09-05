@@ -22,7 +22,7 @@ import {
 } from "@/lib/booking"
 import { fetchForecast, getRainBucket, isForecastLive } from "@/lib/weather"
 import { haversineKm, type PricingModel } from "@/lib/pricing"
-import { loadStoredUser } from "@/lib/supabase"
+import { AUTH_CHANGED_EVENT, getCurrentUser } from "@/lib/supabase"
 
 const BookingMap = dynamic(() => import("@/components/BookingMap"), { ssr: false })
 
@@ -77,6 +77,22 @@ export default function ClubsPage() {
     })()
     return () => {
       cancelled = true
+    }
+  }, [])
+
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null)
+  useEffect(() => {
+    let cancelled = false
+    const checkAuth = () => {
+      getCurrentUser().then((u) => {
+        if (!cancelled) setIsAuthenticated(!!u)
+      })
+    }
+    checkAuth()
+    window.addEventListener(AUTH_CHANGED_EVENT, checkAuth)
+    return () => {
+      cancelled = true
+      window.removeEventListener(AUTH_CHANGED_EVENT, checkAuth)
     }
   }, [])
 
@@ -148,8 +164,9 @@ export default function ClubsPage() {
 
   async function handleBook() {
     if (!selectedClub || !selectedCourt || !selectedDate || !selectedTime || !model) return
-    const localUser = loadStoredUser()
-    if (!localUser) {
+    const currentUser = await getCurrentUser()
+    if (!currentUser) {
+      setIsAuthenticated(false)
       router.push("/login?redirect=/clubs")
       return
     }
@@ -456,7 +473,7 @@ export default function ClubsPage() {
                     {(() => {
                       const weatherBucket = getRainBucket(selectedClub.id, selectedDate, model.settings.rainForecast)
                       const price = getPrice(selectedClub, clubs, daySlots, selectedDate, selectedTime, model, weatherBucket)
-                      const loggedIn = !!loadStoredUser()
+                      const loggedIn = isAuthenticated === true
                       return (
                         <>
                           <div className="flex items-baseline justify-between border-t border-dashed border-border pt-3">

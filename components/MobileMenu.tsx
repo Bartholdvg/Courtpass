@@ -53,10 +53,10 @@ export default function MobileMenu({ user, onClose, onLogout }: MobileMenuProps)
 
       <div className="py-2">
         {[
-          { href: "#hoe-het-werkt", label: "Hoe het werkt" },
+          { href: "/#hoe-het-werkt", label: "Hoe het werkt" },
           { href: "/clubs", label: "🎾 Clubs" },
-          { href: "#abonnementen", label: "Abonnementen" },
-          { href: "#contact", label: "Contact" },
+          { href: "/#abonnementen", label: "Abonnementen" },
+          { href: "/#contact", label: "Contact" },
         ].map((item, i) => (
           <motion.div key={item.href} custom={i} variants={menuItemVariants} initial="hidden" animate="visible">
             <Link href={item.href} className="block px-5 py-3 text-text2 hover:text-text hover:bg-surface transition-colors text-sm border-b border-border/30 last:border-b-0" onClick={onClose}>
