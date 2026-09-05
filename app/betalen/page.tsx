@@ -4,6 +4,7 @@ import { Suspense, useEffect, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import ScrollObserver from "@/components/ScrollObserver"
 import { loadStoredUser } from "@/lib/supabase"
+import { savePendingCreditPurchase } from "@/lib/booking"
 
 const PAYMENT_LINKS: Record<string, string> = {
   price_1TCxrjFgp1PZQf1VtYsHjD8u: "https://buy.stripe.com/test_fZuaEXflj4Nk3ot9O34sE00",
@@ -50,6 +51,10 @@ const CREDIT_PACKS = [
   { amount: 8, label: "credits", price: "€119,99", per: "€15,00 per credit", priceId: "price_1TCyBZFgp1PZQf1VMwmrEdRx" },
 ]
 
+// price_id -> credits, for the one-time credit packs only (subscriptions
+// renew monthly and need real webhook-driven top-ups, out of scope for now).
+const CREDIT_AMOUNTS: Record<string, number> = Object.fromEntries(CREDIT_PACKS.map((p) => [p.priceId, p.amount]))
+
 function BetalenContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -64,6 +69,8 @@ function BetalenContent() {
 
     const link = PAYMENT_LINKS[priceId]
     if (link) {
+      const credits = CREDIT_AMOUNTS[priceId]
+      if (credits) savePendingCreditPurchase(priceId, credits)
       window.location.href = `${link}?prefilled_email=${encodeURIComponent(user.email)}`
     }
   }

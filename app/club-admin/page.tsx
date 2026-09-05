@@ -22,6 +22,10 @@ import {
   updatePricingWeight,
   updateScoreRow,
   cancelBooking,
+  getTimeSlots,
+  findUserIdByEmail,
+  assignClubOwner,
+  fetchProfileEmails,
 } from "@/lib/booking"
 import { calculatePrice, type PricingModel, type PricingInputs } from "@/lib/pricing"
 
@@ -205,7 +209,7 @@ export default function ClubAdminPage() {
           )}
           {section === "simulator" && profile.isPlatformAdmin && <SimulatorSection model={model} />}
           {section === "boekingen" && (
-            <BookingsSection bookings={bookings} onChanged={() => reloadBookings()} showToast={showToast} />
+            <BookingsSection bookings={bookings} clubs={clubs} model={model} onChanged={() => reloadBookings()} showToast={showToast} />
           )}
         </div>
       </div>
@@ -290,6 +294,49 @@ function ClubsSection({
   const [draft, setDraft] = useState<ClubDraft | null>(null)
   const [saving, setSaving] = useState(false)
   const [isNew, setIsNew] = useState(false)
+  const [ownerEmails, setOwnerEmails] = useState<Record<string, string>>({})
+  const [ownerInput, setOwnerInput] = useState("")
+  const [assigningOwner, setAssigningOwner] = useState(false)
+
+  useEffect(() => {
+    if (!profile.isPlatformAdmin) return
+    const ownerIds = clubs.map((c) => c.ownerId).filter((id): id is string => !!id)
+    if (ownerIds.length === 0) return
+    fetchProfileEmails(ownerIds).then(setOwnerEmails).catch(() => {})
+  }, [clubs, profile.isPlatformAdmin])
+
+  async function handleAssignOwner(clubId: string) {
+    if (!ownerInput.trim()) return
+    setAssigningOwner(true)
+    try {
+      const userId = await findUserIdByEmail(ownerInput.trim())
+      if (!userId) {
+        showToast("Geen account gevonden met dit e-mailadres")
+        return
+      }
+      await assignClubOwner(clubId, userId)
+      await onChanged()
+      setOwnerInput("")
+      showToast("Eigenaar toegewezen")
+    } catch (err: any) {
+      showToast(err.message || "Toewijzen mislukt")
+    } finally {
+      setAssigningOwner(false)
+    }
+  }
+
+  async function handleRemoveOwner(clubId: string) {
+    setAssigningOwner(true)
+    try {
+      await assignClubOwner(clubId, null)
+      await onChanged()
+      showToast("Eigenaar verwijderd — alleen platform-admins beheren deze club nu")
+    } catch (err: any) {
+      showToast(err.message || "Mislukt")
+    } finally {
+      setAssigningOwner(false)
+    }
+  }
 
   function expand(club: Club) {
     setExpandedId(club.id)
@@ -410,7 +457,48 @@ function ClubsSection({
               </div>
             </div>
 
-            {expandedId === club.id && draft && <ClubEditForm draft={draft} setDraft={setDraft} updateCourt={updateCourtDraft} addCourt={addCourtDraft} removeCourt={removeCourtDraft} onSave={save} saving={saving} />}
+            {expandedId === club.id && draft && (
+              <>
+                {profile.isPlatformAdmin && (
+                  <div className="border-t border-border p-4 bg-dark/30">
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-text3 mb-2">Clubeigenaar</h4>
+                    {club.ownerId ? (
+                      <div className="flex flex-wrap items-center gap-3 text-sm">
+                        <span className="text-text2">
+                          Toegewezen aan <span className="text-text font-medium">{ownerEmails[club.ownerId] || club.ownerId}</span>
+                        </span>
+                        <button
+                          onClick={() => handleRemoveOwner(club.id)}
+                          disabled={assigningOwner}
+                          className="text-xs border border-red-500/30 text-red-400 rounded-lg px-3 py-1.5 hover:bg-red-500/10 disabled:opacity-50"
+                        >
+                          Eigenaar verwijderen
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex flex-wrap gap-2">
+                        <input
+                          type="email"
+                          value={ownerInput}
+                          onChange={(e) => setOwnerInput(e.target.value)}
+                          placeholder="email@clubeigenaar.nl"
+                          className="bg-dark border border-border rounded-lg px-3 py-2 text-sm flex-1 min-w-[200px]"
+                        />
+                        <button
+                          onClick={() => handleAssignOwner(club.id)}
+                          disabled={assigningOwner || !ownerInput.trim()}
+                          className="bg-lime text-dark px-4 py-2 rounded-lg font-bold text-sm hover:opacity-90 disabled:opacity-50"
+                        >
+                          {assigningOwner ? "Bezig…" : "Toewijzen"}
+                        </button>
+                      </div>
+                    )}
+                    <p className="text-[10px] text-text3 mt-2">De persoon moet al een account hebben aangemaakt op de site met dit e-mailadres.</p>
+                  </div>
+                )}
+                <ClubEditForm draft={draft} setDraft={setDraft} updateCourt={updateCourtDraft} addCourt={addCourtDraft} removeCourt={removeCourtDraft} onSave={save} saving={saving} />
+              </>
+            )}
           </div>
         ))}
       </div>
@@ -811,16 +899,53 @@ function SimulatorSection({ model }: { model: PricingModel }) {
   )
 }
 
+function BookingAuditBox({ booking }: { booking: Booking }) {
+  return (
+    <div className="border-t border-border p-4 bg-dark/40 text-sm space-y-1">
+      {Object.entries(booking.pricingSnapshot.inputs).map(([k, v]) => (
+        <div key={k} className="flex justify-between">
+          <span className="text-text2">{k}</span>
+          <span className="font-mono">{v}</span>
+        </div>
+      ))}
+      <div className="flex justify-between border-t border-border/40 pt-1.5 mt-1.5">
+        <span className="text-text2">Gewogen score</span>
+        <span className="font-mono">{booking.pricingSnapshot.totalScore.toFixed(2)}</span>
+      </div>
+      <div className="flex justify-between">
+        <span className="text-text2">Weerbron</span>
+        <span className="font-mono">{booking.pricingSnapshot.weatherSource}</span>
+      </div>
+      <div className="flex justify-between">
+        <span className="text-text2">Geboekt op</span>
+        <span className="font-mono">{new Date(booking.createdAt).toLocaleString("nl-NL")}</span>
+      </div>
+    </div>
+  )
+}
+
 function BookingsSection({
   bookings,
+  clubs,
+  model,
   onChanged,
   showToast,
 }: {
   bookings: Booking[]
+  clubs: Club[]
+  model: PricingModel
   onChanged: () => Promise<Booking[]>
   showToast: (m: string) => void
 }) {
+  const [view, setView] = useState<"rooster" | "lijst">(clubs.length ? "rooster" : "lijst")
   const [openId, setOpenId] = useState<string | null>(null)
+  const [gridClubId, setGridClubId] = useState<string>(clubs[0]?.id || "")
+  const [gridDate, setGridDate] = useState<string>(todayISO())
+
+  const gridClub = clubs.find((c) => c.id === gridClubId) || clubs[0] || null
+  const timeSlots = gridClub ? getTimeSlots(gridClub, model) : []
+  const dayBookings = bookings.filter((b) => b.clubId === (gridClub?.id ?? "__none__") && b.date === gridDate && b.status === "confirmed")
+  const openBooking = bookings.find((b) => b.id === openId) || null
 
   async function handleCancel(id: string) {
     if (!confirm("Deze boeking annuleren?")) return
@@ -840,7 +965,113 @@ function BookingsSection({
         Open &ldquo;Waarom deze prijs?&rdquo; om de exacte berekening te zien zoals die was op het moment van boeken — nooit opnieuw berekend met de huidige instellingen.
       </p>
 
-      {bookings.length === 0 ? (
+      <div className="flex gap-2 mb-5">
+        <button
+          onClick={() => setView("rooster")}
+          className={`text-sm px-4 py-2 rounded-lg font-semibold ${view === "rooster" ? "bg-lime text-dark" : "border border-border text-text2 hover:text-text"}`}
+        >
+          Rooster
+        </button>
+        <button
+          onClick={() => setView("lijst")}
+          className={`text-sm px-4 py-2 rounded-lg font-semibold ${view === "lijst" ? "bg-lime text-dark" : "border border-border text-text2 hover:text-text"}`}
+        >
+          Lijst
+        </button>
+      </div>
+
+      {view === "rooster" ? (
+        !gridClub ? (
+          <p className="text-sm text-text3">Nog geen clubs om een rooster voor te tonen.</p>
+        ) : (
+          <div>
+            <div className="flex flex-wrap gap-3 mb-4">
+              <select
+                value={gridClub.id}
+                onChange={(e) => {
+                  setGridClubId(e.target.value)
+                  setOpenId(null)
+                }}
+                className="bg-dark border border-border rounded-lg px-3 py-2 text-sm"
+              >
+                {clubs.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+              <input
+                type="date"
+                value={gridDate}
+                onChange={(e) => {
+                  setGridDate(e.target.value)
+                  setOpenId(null)
+                }}
+                className="bg-dark border border-border rounded-lg px-3 py-2 text-sm"
+              />
+            </div>
+
+            <div className="overflow-x-auto border border-border rounded-2xl">
+              <table className="w-full text-sm border-collapse min-w-[480px]">
+                <thead>
+                  <tr>
+                    <th className="p-2 text-left text-text3 text-[10px] uppercase tracking-wider border-b border-border bg-surface2 sticky left-0">Tijd</th>
+                    {gridClub.courts.map((court, i) => (
+                      <th key={court.id} className="p-2 text-center text-xs border-b border-l border-border bg-surface2 font-semibold">
+                        Baan {i + 1}
+                        <div className="text-[10px] text-text3 font-normal">{court.name}</div>
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {timeSlots.map((t) => (
+                    <tr key={t}>
+                      <td className="p-2 text-xs text-text3 border-b border-border font-mono bg-surface2 sticky left-0">{t}</td>
+                      {gridClub.courts.map((court) => {
+                        const b = dayBookings.find((x) => x.courtId === court.id && x.startTime === t)
+                        return (
+                          <td key={court.id} className="p-1 border-b border-l border-border align-top">
+                            {b ? (
+                              <button
+                                onClick={() => setOpenId(openId === b.id ? null : b.id)}
+                                className={`w-full min-h-[2.75rem] rounded-lg border text-left p-1.5 transition-colors ${
+                                  openId === b.id ? "border-lime bg-lime/20" : "border-lime/40 bg-lime/10 hover:bg-lime/15"
+                                }`}
+                              >
+                                <div className="text-[11px] font-bold text-lime">{Math.round(b.priceCredits)} cr</div>
+                                <div className="text-[10px] text-text3 font-mono truncate">{b.bookingCode}</div>
+                              </button>
+                            ) : (
+                              <div className="w-full min-h-[2.75rem] rounded-lg bg-dark/30" />
+                            )}
+                          </td>
+                        )
+                      })}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {openBooking && (
+              <div className="border border-border rounded-2xl bg-surface2 overflow-hidden mt-4">
+                <div className="flex flex-wrap items-center gap-3 p-3 text-sm">
+                  <span className="font-semibold">
+                    {openBooking.courtName} · {openBooking.startTime}–{openBooking.endTime}
+                  </span>
+                  <span className="ml-auto font-mono text-lime">{Math.round(openBooking.priceCredits)} cr</span>
+                  <button onClick={() => handleCancel(openBooking.id)} className="text-xs border border-red-500/30 text-red-400 rounded-lg px-3 py-1.5 hover:bg-red-500/10">
+                    Annuleren
+                  </button>
+                </div>
+                <BookingAuditBox booking={openBooking} />
+              </div>
+            )}
+            <p className="text-[10px] text-text3 mt-3">Klik op een geboekte baan voor de prijsberekening.</p>
+          </div>
+        )
+      ) : bookings.length === 0 ? (
         <p className="text-sm text-text3">Nog geen boekingen.</p>
       ) : (
         <div className="space-y-2">
@@ -864,28 +1095,7 @@ function BookingsSection({
                   </button>
                 )}
               </div>
-              {openId === b.id && (
-                <div className="border-t border-border p-4 bg-dark/40 text-sm space-y-1">
-                  {Object.entries(b.pricingSnapshot.inputs).map(([k, v]) => (
-                    <div key={k} className="flex justify-between">
-                      <span className="text-text2">{k}</span>
-                      <span className="font-mono">{v}</span>
-                    </div>
-                  ))}
-                  <div className="flex justify-between border-t border-border/40 pt-1.5 mt-1.5">
-                    <span className="text-text2">Gewogen score</span>
-                    <span className="font-mono">{b.pricingSnapshot.totalScore.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-text2">Weerbron</span>
-                    <span className="font-mono">{b.pricingSnapshot.weatherSource}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-text2">Geboekt op</span>
-                    <span className="font-mono">{new Date(b.createdAt).toLocaleString("nl-NL")}</span>
-                  </div>
-                </div>
-              )}
+              {openId === b.id && <BookingAuditBox booking={b} />}
             </div>
           ))}
         </div>

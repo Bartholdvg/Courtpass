@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
+import Link from "next/link"
 import dynamic from "next/dynamic"
 import { useRouter } from "next/navigation"
 import {
@@ -19,6 +20,7 @@ import {
   getFromPrice,
   createBooking,
   BookingUnavailableError,
+  InsufficientCreditsError,
 } from "@/lib/booking"
 import { fetchForecast, getRainBucket, isForecastLive } from "@/lib/weather"
 import { haversineKm, type PricingModel } from "@/lib/pricing"
@@ -59,6 +61,7 @@ export default function ClubsPage() {
   const [, setWeatherTick] = useState(0)
   const [booking, setBooking] = useState<Booking | null>(null)
   const [bookingError, setBookingError] = useState("")
+  const [insufficientCredits, setInsufficientCredits] = useState(false)
   const [isBooking, setIsBooking] = useState(false)
 
   useEffect(() => {
@@ -172,6 +175,7 @@ export default function ClubsPage() {
     }
     setIsBooking(true)
     setBookingError("")
+    setInsufficientCredits(false)
     try {
       const weatherBucket = getRainBucket(selectedClub.id, selectedDate, model.settings.rainForecast)
       const price = getPrice(selectedClub, clubs, daySlots, selectedDate, selectedTime, model, weatherBucket)
@@ -184,6 +188,9 @@ export default function ClubsPage() {
         setBookingError(err.message)
         setSelectedCourtId(null)
         fetchBookedSlots([selectedClub.id, ...nearbyClubIds], selectedDate, selectedDate).then(setDaySlots).catch(() => {})
+      } else if (err instanceof InsufficientCreditsError) {
+        setBookingError(err.message)
+        setInsufficientCredits(true)
       } else {
         setBookingError(err.message || "Kon niet boeken, probeer opnieuw.")
       }
@@ -467,7 +474,14 @@ export default function ClubsPage() {
                     </div>
 
                     {bookingError && (
-                      <div className="text-xs text-red-400 border border-red-500/30 bg-red-500/10 rounded-lg p-2 mb-3">{bookingError}</div>
+                      <div className="text-xs text-red-400 border border-red-500/30 bg-red-500/10 rounded-lg p-2 mb-3">
+                        {bookingError}
+                        {insufficientCredits && (
+                          <Link href="/betalen" className="block underline mt-1 text-red-300 hover:text-red-200">
+                            Credits bijkopen →
+                          </Link>
+                        )}
+                      </div>
                     )}
 
                     {(() => {
