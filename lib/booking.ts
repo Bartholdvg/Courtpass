@@ -412,3 +412,146 @@ export async function cancelBooking(id: string): Promise<void> {
   const { error } = await supabase.from("bookings").update({ status: "cancelled" }).eq("id", id)
   if (error) throw error
 }
+
+/* ================= Admin: profile / access ================= */
+
+export interface Profile {
+  id: string
+  isPlatformAdmin: boolean
+}
+
+export async function fetchMyProfile(): Promise<Profile | null> {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return null
+  const { data, error } = await supabase.from("profiles").select("*").eq("id", user.id).maybeSingle()
+  if (error) throw error
+  return data ? { id: data.id, isPlatformAdmin: data.is_platform_admin } : null
+}
+
+/** Clubs this user is allowed to manage: all of them for a platform admin,
+ * only their own otherwise (RLS enforces the same rule server-side; this
+ * just avoids showing clubs the UI couldn't save edits to anyway). */
+export async function fetchManagedClubs(userId: string, isPlatformAdmin: boolean): Promise<Club[]> {
+  let query = supabase.from("clubs").select("*, courts(*)").order("name")
+  if (!isPlatformAdmin) query = query.eq("owner_id", userId)
+  const { data, error } = await query
+  if (error) throw error
+  return (data ?? []).map(mapClubRow)
+}
+
+/* ================= Admin: clubs & courts ================= */
+
+export interface ClubInput {
+  name: string
+  address: string
+  lat: number
+  lng: number
+  tier: string
+  openFrom: string
+  openTo: string
+  demand: string
+  histOccupancy: string
+}
+
+function clubInputToRow(input: ClubInput) {
+  return {
+    name: input.name,
+    address: input.address,
+    lat: input.lat,
+    lng: input.lng,
+    tier: input.tier,
+    open_from: input.openFrom,
+    open_to: input.openTo,
+    demand: input.demand,
+    hist_occupancy: input.histOccupancy,
+  }
+}
+
+export async function createClub(input: ClubInput, ownerId: string | null): Promise<Club> {
+  const { data, error } = await supabase
+    .from("clubs")
+    .insert({ ...clubInputToRow(input), owner_id: ownerId })
+    .select("*, courts(*)")
+    .single()
+  if (error) throw error
+  return mapClubRow(data)
+}
+
+export async function updateClub(clubId: string, input: ClubInput): Promise<void> {
+  const { error } = await supabase.from("clubs").update(clubInputToRow(input)).eq("id", clubId)
+  if (error) throw error
+}
+
+export async function deleteClub(clubId: string): Promise<void> {
+  const { error } = await supabase.from("clubs").delete().eq("id", clubId)
+  if (error) throw error
+}
+
+export interface CourtInput {
+  name: string
+  indoor: boolean
+  surface: string
+  active: boolean
+}
+
+export async function addCourt(clubId: string, input: CourtInput): Promise<Court> {
+  const { data, error } = await supabase
+    .from("courts")
+    .insert({ club_id: clubId, name: input.name, indoor: input.indoor, surface: input.surface, active: input.active })
+    .select()
+    .single()
+  if (error) throw error
+  return { id: data.id, clubId: data.club_id, name: data.name, indoor: data.indoor, surface: data.surface, active: data.active }
+}
+
+export async function updateCourt(courtId: string, input: CourtInput): Promise<void> {
+  const { error } = await supabase
+    .from("courts")
+    .update({ name: input.name, indoor: input.indoor, surface: input.surface, active: input.active })
+    .eq("id", courtId)
+  if (error) throw error
+}
+
+export async function deleteCourt(courtId: string): Promise<void> {
+  const { error } = await supabase.from("courts").delete().eq("id", courtId)
+  if (error) throw error
+}
+
+/* ================= Admin: pricing model ================= */
+
+export async function updatePricingSettings(settings: PricingModel["settings"]): Promise<void> {
+  const { error } = await supabase
+    .from("pricing_settings")
+    .update({
+      base_price: settings.basePrice,
+      min_price: settings.minPrice,
+      max_price: settings.maxPrice,
+      radius_km: settings.radiusKm,
+      euro_per_credit: settings.euroPerCredit,
+      rain_forecast: settings.rainForecast,
+      booking_horizon_days: settings.bookingHorizonDays,
+      weather_api: settings.weatherApi,
+    })
+    .eq("id", 1)
+  if (error) throw error
+}
+
+export async function updatePricingWeight(key: string, weight: number): Promise<void> {
+  const { error } = await supabase.from("pricing_weights").update({ weight }).eq("key", key)
+  if (error) throw error
+}
+
+export async function updateScoreRow(tableKey: string, value: string, score: number): Promise<void> {
+  const { error } = await supabase.from("pricing_score_rows").update({ score }).eq("table_key", tableKey).eq("value", value)
+  if (error) throw error
+}
+
+/* ================= Admin: all bookings (RLS scopes this per role) ================= */
+
+export async function fetchAllBookings(): Promise<Booking[]> {
+  const { data, error } = await supabase.from("bookings").select("*").order("created_at", { ascending: false })
+  if (error) throw error
+  return (data ?? []).map(mapBookingRow)
+}
