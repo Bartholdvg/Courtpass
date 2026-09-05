@@ -58,7 +58,9 @@ const CREDIT_AMOUNTS: Record<string, number> = Object.fromEntries(CREDIT_PACKS.m
 function BetalenContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const [tab, setTab] = useState<"abonnementen" | "credits">("abonnementen")
+  const [tab, setTab] = useState<"abonnementen" | "credits">(
+    searchParams?.get("tab") === "credits" ? "credits" : "abonnementen",
+  )
 
   const startCheckout = (priceId: string) => {
     const user = loadStoredUser()

@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useState } from "react"
 import Link from "next/link"
 import { motion } from "framer-motion"
-import { getRecoveryParamsFromLocation, requestPasswordReset, signIn, signUp, storeAuthUser, supabase } from "@/lib/supabase"
+import { getCurrentUser, getRecoveryParamsFromLocation, loadStoredUser, requestPasswordReset, signIn, signUp, storeAuthUser, supabase } from "@/lib/supabase"
 import { useRouter, useSearchParams } from "next/navigation"
 
 function LoginForm() {
@@ -59,9 +59,18 @@ function LoginForm() {
         await signUp(email, password, fullName)
       }
 
+      const user = await getCurrentUser().catch(() => null)
+      const existing = loadStoredUser()
+      const resolvedName =
+        user?.user_metadata?.full_name ||
+        fullName ||
+        existing?.name ||
+        email.split("@")[0] ||
+        "Speler"
+
       storeAuthUser({
         email,
-        name: fullName || email.split("@")[0] || "Speler",
+        name: resolvedName,
         points: 120,
         level: "Intermediate",
         location: "Amsterdam",
