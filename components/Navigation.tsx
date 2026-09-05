@@ -2,10 +2,12 @@
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import MobileMenu from "./MobileMenu"
-import { clearStoredUser, getUserDisplayName, loadStoredUser, type CourtPassUser } from "@/lib/supabase"
+import { clearStoredUser, getUserDisplayName, loadStoredUser, signOut, type CourtPassUser } from "@/lib/supabase"
 
 export default function Navigation() {
+  const router = useRouter()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isMounted, setIsMounted] = useState(false)
   const [user, setUser] = useState<CourtPassUser | null>(null)
@@ -37,9 +39,11 @@ export default function Navigation() {
   }, [isMenuOpen])
 
   const handleLogout = () => {
+    signOut().catch(() => undefined)
     clearStoredUser()
     setUser(null)
     setIsMenuOpen(false)
+    router.push("/")
   }
 
   if (!isMounted) return null

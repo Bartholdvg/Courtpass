@@ -29,7 +29,11 @@ export interface RecoveryParams {
   errorDescription?: string | null
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    detectSessionInUrl: false,
+  },
+})
 
 export const getRecoveryParamsFromLocation = (
   location?: Pick<Location, "hash" | "search"> | null,

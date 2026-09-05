@@ -126,11 +126,54 @@ export default function Home() {
               className="hidden md:flex flex-col gap-6"
             >
               <div className="bg-surface border border-border rounded-3xl overflow-hidden">
-                <img
-                  src="https://images.unsplash.com/photo-1547347298-4074fc3086f0?auto=format&fit=crop&w=900&q=80"
-                  alt="Tennisbaan met spelers in de avond"
-                  className="h-56 w-full object-cover"
-                />
+                <svg
+                  className="h-56 w-full"
+                  viewBox="0 0 800 450"
+                  preserveAspectRatio="xMidYMid slice"
+                  role="img"
+                  aria-label="Abstracte illustratie van een tennisbaan van bovenaf"
+                >
+                  <defs>
+                    <radialGradient id="courtGlow" cx="50%" cy="45%" r="75%">
+                      <stop offset="0%" stopColor="#BFEF45" stopOpacity="0.16" />
+                      <stop offset="100%" stopColor="#BFEF45" stopOpacity="0" />
+                    </radialGradient>
+                  </defs>
+
+                  <rect width="800" height="450" fill="#0D1A0F" />
+                  <rect width="800" height="450" fill="url(#courtGlow)" />
+
+                  {/* Playing surface */}
+                  <rect x="100" y="60" width="600" height="330" rx="6" fill="#132015" />
+
+                  {/* Doubles sidelines */}
+                  <rect x="100" y="60" width="600" height="330" rx="6" fill="none" stroke="#BFEF45" strokeWidth="3" opacity="0.85" />
+
+                  {/* Singles sidelines */}
+                  <rect x="100" y="100" width="600" height="250" fill="none" stroke="#BFEF45" strokeWidth="2" opacity="0.45" />
+
+                  {/* Service lines */}
+                  <line x1="280" y1="100" x2="280" y2="350" stroke="#BFEF45" strokeWidth="2" opacity="0.45" />
+                  <line x1="520" y1="100" x2="520" y2="350" stroke="#BFEF45" strokeWidth="2" opacity="0.45" />
+
+                  {/* Center service line */}
+                  <line x1="280" y1="225" x2="378" y2="225" stroke="#BFEF45" strokeWidth="2" opacity="0.45" />
+                  <line x1="422" y1="225" x2="520" y2="225" stroke="#BFEF45" strokeWidth="2" opacity="0.45" />
+
+                  {/* Center marks on baselines */}
+                  <line x1="100" y1="216" x2="112" y2="216" stroke="#BFEF45" strokeWidth="2" opacity="0.45" />
+                  <line x1="100" y1="234" x2="112" y2="234" stroke="#BFEF45" strokeWidth="2" opacity="0.45" />
+                  <line x1="688" y1="216" x2="700" y2="216" stroke="#BFEF45" strokeWidth="2" opacity="0.45" />
+                  <line x1="688" y1="234" x2="700" y2="234" stroke="#BFEF45" strokeWidth="2" opacity="0.45" />
+
+                  {/* Net */}
+                  <line x1="400" y1="45" x2="400" y2="405" stroke="#BFEF45" strokeWidth="5" opacity="0.9" />
+                  <line x1="400" y1="45" x2="400" y2="405" stroke="#0D1A0F" strokeWidth="5" strokeDasharray="1.5 7" opacity="0.6" />
+
+                  {/* Ball accent */}
+                  <circle cx="560" cy="150" r="10" fill="#BFEF45" opacity="0.9" />
+                  <path d="M552 143 Q560 150 552 157 M568 143 Q560 150 568 157" stroke="#0D1A0F" strokeWidth="1.5" fill="none" opacity="0.7" />
+                </svg>
                 <div className="p-6">
                   <div className="flex items-center justify-between gap-3 mb-3">
                     <h3 className="font-playfair text-xl font-bold text-text">CourtPass — Tennis zonder binding</h3>
@@ -284,7 +327,7 @@ export default function Home() {
                     ))}
                   </ul>
                   <Link
-                    href="/login?tab=register"
+                    href="/betalen"
                     className={`w-full py-3 rounded-lg font-bold text-sm transition-all block text-center ${
                       plan.popular
                         ? "bg-lime text-dark hover:opacity-90"
