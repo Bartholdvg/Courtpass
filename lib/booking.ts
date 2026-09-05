@@ -342,13 +342,86 @@ function generateBookingCode(): string {
 }
 
 export class BookingUnavailableError extends Error {}
+export class InsufficientCreditsError extends Error {}
+
+/* ================= Pending credit purchase (sandbox-only crediting) =================
+ * There is no payment webhook (this is a static-hosted site with no server
+ * to receive one), so a Stripe purchase can't be verified server-side. As a
+ * stand-in for testing, /betalen records what was about to be bought right
+ * before sending the browser to Stripe, and /betaal-succes credits the
+ * account for it on return. This is NOT secure — nothing stops a signed-in
+ * user from visiting /betaal-succes directly and granting themselves
+ * credits without paying — it only proves the credits flow end-to-end for
+ * demo/testing. A real launch needs a server-verified webhook instead. */
+
+const PENDING_PURCHASE_KEY = "courtpass-pending-purchase"
+const PENDING_PURCHASE_MAX_AGE_MS = 30 * 60 * 1000
+
+interface PendingPurchase {
+  priceId: string
+  credits: number
+  ts: number
+}
+
+export function savePendingCreditPurchase(priceId: string, credits: number): void {
+  if (typeof window === "undefined") return
+  const purchase: PendingPurchase = { priceId, credits, ts: Date.now() }
+  window.localStorage.setItem(PENDING_PURCHASE_KEY, JSON.stringify(purchase))
+}
+
+/** Reads and clears the pending purchase, returning the credits to grant,
+ * or null if there wasn't one (or it's stale). */
+export function consumePendingCreditPurchase(): number | null {
+  if (typeof window === "undefined") return null
+  const raw = window.localStorage.getItem(PENDING_PURCHASE_KEY)
+  window.localStorage.removeItem(PENDING_PURCHASE_KEY)
+  if (!raw) return null
+  try {
+    const purchase = JSON.parse(raw) as PendingPurchase
+    if (Date.now() - purchase.ts > PENDING_PURCHASE_MAX_AGE_MS) return null
+    return purchase.credits
+  } catch {
+    return null
+  }
+}
+
+/* ================= Credits (dummy / sandbox) =================
+ * Adjusted exclusively through the adjust_my_credits() Postgres function:
+ * it scopes every change to the caller's own row and refuses to go
+ * negative, so this is safe to call directly from the client. */
+
+export async function fetchMyCreditsBalance(): Promise<number> {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return 0
+  const { data, error } = await supabase.from("profiles").select("credits_balance").eq("id", user.id).maybeSingle()
+  if (error) throw error
+  return data ? Number(data.credits_balance) : 0
+}
+
+/** delta > 0 adds credits, delta < 0 spends them (throws InsufficientCreditsError if it would go negative). */
+export async function adjustMyCredits(delta: number): Promise<number> {
+  const { data, error } = await supabase.rpc("adjust_my_credits", { delta })
+  if (error) {
+    if (error.message?.includes("Insufficient credits")) {
+      throw new InsufficientCreditsError("Niet genoeg credits voor deze boeking.")
+    }
+    throw error
+  }
+  return Number(data)
+}
 
 /** Creates a booking WITH a frozen pricing audit trail. The price and every
  * input that produced it are stored on the row, never recalculated later —
  * so a pricing-model change afterwards cannot rewrite what a customer paid.
  * The database's partial unique index is the real guard against double
  * booking; a 23505 violation here means someone else booked this exact
- * court/date/time a moment earlier. */
+ * court/date/time a moment earlier.
+ *
+ * Credits are spent BEFORE the booking is inserted (so a customer without
+ * enough balance never reaches a "confirmed" booking); if the insert then
+ * fails for any reason, the spent credits are refunded. */
 export async function createBooking(
   club: Club,
   court: Court,
@@ -362,6 +435,9 @@ export async function createBooking(
   } = await supabase.auth.getUser()
   if (!user) throw new Error("Je moet ingelogd zijn om te boeken.")
   if (price.error || !price.inputs) throw new Error(price.error || "Kon de prijs niet berekenen.")
+
+  const spendAmount = +price.finalPrice.toFixed(2)
+  await adjustMyCredits(-spendAmount)
 
   const endTime = (parseInt(time, 10) + 1).toString().padStart(2, "0") + ":00"
   const snapshot: PricingSnapshot = {
@@ -392,7 +468,7 @@ export async function createBooking(
       date: dateStr,
       start_time: time,
       end_time: endTime,
-      price_credits: +price.finalPrice.toFixed(2),
+      price_credits: spendAmount,
       price_euro: +price.euro.toFixed(2),
       pricing_snapshot: snapshot,
     })
@@ -400,6 +476,7 @@ export async function createBooking(
     .single()
 
   if (error) {
+    await adjustMyCredits(spendAmount).catch(() => undefined)
     if (error.code === "23505") {
       throw new BookingUnavailableError("Deze baan is net door iemand anders geboekt. Kies een andere tijd of baan.")
     }
@@ -439,6 +516,32 @@ export async function fetchManagedClubs(userId: string, isPlatformAdmin: boolean
   const { data, error } = await query
   if (error) throw error
   return (data ?? []).map(mapClubRow)
+}
+
+/** Resolves an email to a user id, for a platform admin assigning club
+ * ownership. Returns null when no account exists with that email. Only
+ * works for a platform admin (RLS only lets them read every profile). */
+export async function findUserIdByEmail(email: string): Promise<string | null> {
+  const { data, error } = await supabase.from("profiles").select("id").ilike("email", email.trim()).maybeSingle()
+  if (error) throw error
+  return data ? data.id : null
+}
+
+export async function assignClubOwner(clubId: string, ownerId: string | null): Promise<void> {
+  const { error } = await supabase.from("clubs").update({ owner_id: ownerId }).eq("id", clubId)
+  if (error) throw error
+}
+
+/** id -> email, for showing who owns a club. Only returns rows the caller
+ * is allowed to see (their own profile, or every profile if platform admin). */
+export async function fetchProfileEmails(ids: string[]): Promise<Record<string, string>> {
+  const uniqueIds = [...new Set(ids)].filter(Boolean)
+  if (uniqueIds.length === 0) return {}
+  const { data, error } = await supabase.from("profiles").select("id, email").in("id", uniqueIds)
+  if (error) throw error
+  const map: Record<string, string> = {}
+  for (const row of data ?? []) if (row.email) map[row.id] = row.email
+  return map
 }
 
 /* ================= Admin: clubs & courts ================= */

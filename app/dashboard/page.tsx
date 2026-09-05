@@ -5,7 +5,7 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import ScrollObserver from "@/components/ScrollObserver"
 import { getCurrentUser, getUserDisplayName, loadStoredUser } from "@/lib/supabase"
-import { fetchMyBookings, cancelBooking, type Booking } from "@/lib/booking"
+import { fetchMyBookings, fetchMyCreditsBalance, cancelBooking, type Booking } from "@/lib/booking"
 
 function todayISO(): string {
   const d = new Date()
@@ -16,6 +16,7 @@ export default function DashboardPage() {
   const router = useRouter()
   const [loading, setLoading] = useState(true)
   const [bookings, setBookings] = useState<Booking[]>([])
+  const [credits, setCredits] = useState(0)
   const [error, setError] = useState("")
   const [cancellingId, setCancellingId] = useState<string | null>(null)
   const displayName = getUserDisplayName(loadStoredUser())
@@ -27,8 +28,9 @@ export default function DashboardPage() {
       return
     }
     try {
-      const data = await fetchMyBookings(user.id)
+      const [data, balance] = await Promise.all([fetchMyBookings(user.id), fetchMyCreditsBalance()])
       setBookings(data)
+      setCredits(balance)
     } catch (err: any) {
       setError(err.message || "Kon je boekingen niet laden.")
     } finally {
@@ -75,9 +77,15 @@ export default function DashboardPage() {
       <section className="section-padding">
         <div className="container-max px-4 md:px-6">
           <ScrollObserver delay={0}>
-            <div className="mb-8">
-              <p className="text-sm uppercase tracking-[0.2em] text-lime">Welkom terug</p>
-              <h1 className="font-playfair text-4xl md:text-5xl font-bold">{displayName}</h1>
+            <div className="mb-8 flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+              <div>
+                <p className="text-sm uppercase tracking-[0.2em] text-lime">Welkom terug</p>
+                <h1 className="font-playfair text-4xl md:text-5xl font-bold">{displayName}</h1>
+              </div>
+              <div className="rounded-2xl border border-lime/30 bg-lime/10 px-5 py-3">
+                <p className="text-[10px] uppercase tracking-wider text-text3 font-bold mb-0.5">Credits</p>
+                <p className="font-mono text-2xl font-bold text-lime">{Math.round(credits)}</p>
+              </div>
             </div>
           </ScrollObserver>
 
