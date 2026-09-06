@@ -78,7 +78,7 @@ function BetalenContent() {
     setTopupError("")
     setTopupMessage("")
     try {
-      const newBalance = await adjustMyCredits(amount)
+      const newBalance = await adjustMyCredits(amount, "topup", "Sandbox-snelkoppeling (geen echte betaling)")
       setTopupMessage(`+${amount} credits toegevoegd. Nieuw saldo: ${Math.round(newBalance)} credits.`)
     } catch (err: any) {
       setTopupError(err.message || "Kon geen credits toevoegen.")
