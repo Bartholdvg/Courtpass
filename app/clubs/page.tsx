@@ -477,7 +477,7 @@ export default function ClubsPage() {
                       <div className="text-xs text-red-400 border border-red-500/30 bg-red-500/10 rounded-lg p-2 mb-3">
                         {bookingError}
                         {insufficientCredits && (
-                          <Link href="/betalen" className="block underline mt-1 text-red-300 hover:text-red-200">
+                          <Link href="/betalen?tab=credits" className="block underline mt-1 text-red-300 hover:text-red-200">
                             Credits bijkopen →
                           </Link>
                         )}

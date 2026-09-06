@@ -948,6 +948,15 @@ function BookingsSection({
   const [openId, setOpenId] = useState<string | null>(null)
   const [gridClubId, setGridClubId] = useState<string>(clubs[0]?.id || "")
   const [gridDate, setGridDate] = useState<string>(todayISO())
+  const [bookerEmails, setBookerEmails] = useState<Record<string, string>>({})
+
+  useEffect(() => {
+    const userIds = bookings.map((b) => b.userId)
+    if (userIds.length === 0) return
+    fetchProfileEmails(userIds)
+      .then(setBookerEmails)
+      .catch(() => {})
+  }, [bookings])
 
   const gridClub = clubs.find((c) => c.id === gridClubId) || clubs[0] || null
   const timeSlots = gridClub ? getTimeSlots(gridClub, model) : []
@@ -1067,6 +1076,9 @@ function BookingsSection({
                   <span className="font-semibold">
                     {openBooking.courtName} · {openBooking.startTime}–{openBooking.endTime}
                   </span>
+                  <span className="text-text3 text-xs">
+                    Geboekt door {bookerEmails[openBooking.userId] || openBooking.userId}
+                  </span>
                   <span className="ml-auto font-mono text-lime">{Math.round(openBooking.priceCredits)} cr</span>
                   <button onClick={() => handleCancel(openBooking.id)} className="text-xs border border-red-500/30 text-red-400 rounded-lg px-3 py-1.5 hover:bg-red-500/10">
                     Annuleren
@@ -1092,6 +1104,7 @@ function BookingsSection({
                 <span className="text-text3">
                   {b.courtName} · {b.date} · {b.startTime}–{b.endTime}
                 </span>
+                <span className="text-text3 text-xs">{bookerEmails[b.userId] || b.userId}</span>
                 <span className="ml-auto font-mono text-lime">{Math.round(b.priceCredits)} cr</span>
                 <button onClick={() => setOpenId(openId === b.id ? null : b.id)} className="text-xs border border-border rounded-lg px-3 py-1.5 hover:border-lime/50">
                   {openId === b.id ? "Verbergen" : "Waarom deze prijs?"}
