@@ -5,57 +5,21 @@ import { useRouter, useSearchParams } from "next/navigation"
 import ScrollObserver from "@/components/ScrollObserver"
 import { getCurrentUser, loadStoredUser } from "@/lib/supabase"
 import { adjustMyCredits, savePendingCreditPurchase } from "@/lib/booking"
+import {
+  cancelMySubscription,
+  effectivePriceCents,
+  fetchActiveCreditPacks,
+  fetchActiveSubscriptionPlans,
+  fetchMySubscription,
+  formatEuros,
+  savePendingSubscriptionPurchase,
+  subscribeToPlan,
+  type CreditPack,
+  type SubscriptionPlan,
+  type UserSubscription,
+} from "@/lib/billing"
 
 const SANDBOX_TOPUPS = [100, 500, 3000]
-
-const PAYMENT_LINKS: Record<string, string> = {
-  price_1TCxrjFgp1PZQf1VtYsHjD8u: "https://buy.stripe.com/test_fZuaEXflj4Nk3ot9O34sE00",
-  price_1TCxt3Fgp1PZQf1V4loQwqLk: "https://buy.stripe.com/test_3cI6oH2yxfrY5wB9O34sE01",
-  price_1TCxwwFgp1PZQf1VaiuY1KBl: "https://buy.stripe.com/test_6oU5kDehfenU3ot4tJ4sE02",
-  price_1TCyAlFgp1PZQf1VA8igAUtg: "https://buy.stripe.com/test_fZucN5ddb4Nk6AF8JZ4sE06",
-  price_1TCyFjFgp1PZQf1VOMgg3qJx: "https://buy.stripe.com/test_14AdR93CBcfMcZ31hx4sE03",
-  price_1TCyBEFgp1PZQf1V2OlIDgoK: "https://buy.stripe.com/test_4gM5kD4GF93A0ch1hx4sE05",
-  price_1TCyBZFgp1PZQf1VMwmrEdRx: "https://buy.stripe.com/test_28EdR93CB93A7EJ0dt4sE04",
-}
-
-const PLANS = [
-  {
-    name: "Starter",
-    price: "€49",
-    period: "/maand",
-    credits: "4 credits per maand",
-    priceId: "price_1TCxrjFgp1PZQf1VtYsHjD8u",
-    features: ["Toegang tot alle clubs", "Reserveren tot 48u van tevoren", "Maandelijks opzeggen"],
-  },
-  {
-    name: "Popular",
-    price: "€79",
-    period: "/maand",
-    credits: "10 credits per maand",
-    priceId: "price_1TCxt3Fgp1PZQf1V4loQwqLk",
-    features: ["Toegang tot alle clubs", "Reserveren tot 48u van tevoren", "Voorrangstoegang", "Community forum"],
-    popular: true,
-  },
-  {
-    name: "Pro",
-    price: "€119",
-    period: "/maand",
-    credits: "14 credits per maand",
-    priceId: "price_1TCxwwFgp1PZQf1VaiuY1KBl",
-    features: ["Alle clubs incl. privébanen", "Prioriteit bij reserveren", "Gratis gastcredits", "20% korting op coaching"],
-  },
-]
-
-const CREDIT_PACKS = [
-  { amount: 1, label: "credit", price: "€19,99", per: "€19,99 per credit", priceId: "price_1TCyAlFgp1PZQf1VA8igAUtg" },
-  { amount: 2, label: "credits", price: "€37,49", per: "€18,75 per credit", priceId: "price_1TCyFjFgp1PZQf1VOMgg3qJx" },
-  { amount: 4, label: "credits", price: "€74,99", per: "€18,75 per credit", priceId: "price_1TCyBEFgp1PZQf1V2OlIDgoK", bestValue: true },
-  { amount: 8, label: "credits", price: "€119,99", per: "€15,00 per credit", priceId: "price_1TCyBZFgp1PZQf1VMwmrEdRx" },
-]
-
-// price_id -> credits, for the one-time credit packs only (subscriptions
-// renew monthly and need real webhook-driven top-ups, out of scope for now).
-const CREDIT_AMOUNTS: Record<string, number> = Object.fromEntries(CREDIT_PACKS.map((p) => [p.priceId, p.amount]))
 
 function BetalenContent() {
   const router = useRouter()
@@ -63,9 +27,40 @@ function BetalenContent() {
   const [tab, setTab] = useState<"abonnementen" | "credits">(
     searchParams?.get("tab") === "credits" ? "credits" : "abonnementen",
   )
+  const [plans, setPlans] = useState<SubscriptionPlan[]>([])
+  const [packs, setPacks] = useState<CreditPack[]>([])
+  const [mySubscription, setMySubscription] = useState<UserSubscription | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [actionError, setActionError] = useState("")
+  const [actionMessage, setActionMessage] = useState("")
+  const [planLoading, setPlanLoading] = useState<string | null>(null)
+  const [cancelLoading, setCancelLoading] = useState(false)
+
   const [topupLoading, setTopupLoading] = useState<number | null>(null)
   const [topupMessage, setTopupMessage] = useState("")
   const [topupError, setTopupError] = useState("")
+
+  async function load() {
+    try {
+      const [plansData, packsData] = await Promise.all([fetchActiveSubscriptionPlans(), fetchActiveCreditPacks()])
+      setPlans(plansData)
+      setPacks(packsData)
+    } catch (err: any) {
+      setActionError(err.message || "Kon abonnementen/credits niet laden.")
+    }
+    const user = await getCurrentUser().catch(() => null)
+    if (user) {
+      fetchMySubscription()
+        .then(setMySubscription)
+        .catch(() => setMySubscription(null))
+    }
+    setLoading(false)
+  }
+
+  useEffect(() => {
+    load()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const handleSandboxTopup = async (amount: number) => {
     const user = await getCurrentUser()
@@ -87,26 +82,80 @@ function BetalenContent() {
     }
   }
 
-  const startCheckout = (priceId: string) => {
+  async function startPackCheckout(pack: CreditPack) {
     const user = loadStoredUser()
     if (!user?.email) {
-      router.push(`/login?redirect=/betalen&price=${priceId}`)
+      router.push(`/login?redirect=/betalen&packId=${pack.id}`)
+      return
+    }
+    if (!pack.paymentLink) {
+      setActionError(`"${pack.name}" is nog niet te koop — er is nog geen betaallink ingesteld.`)
+      return
+    }
+    savePendingCreditPurchase(pack.id, pack.credits)
+    window.location.href = `${pack.paymentLink}?prefilled_email=${encodeURIComponent(user.email)}`
+  }
+
+  async function startPlanCheckout(plan: SubscriptionPlan) {
+    setActionError("")
+    setActionMessage("")
+    const user = await getCurrentUser()
+    if (!user) {
+      router.push(`/login?redirect=/betalen&planId=${plan.id}`)
       return
     }
 
-    const link = PAYMENT_LINKS[priceId]
-    if (link) {
-      const credits = CREDIT_AMOUNTS[priceId]
-      if (credits) savePendingCreditPurchase(priceId, credits)
-      window.location.href = `${link}?prefilled_email=${encodeURIComponent(user.email)}`
+    const price = effectivePriceCents(plan)
+    if (price === 0) {
+      setPlanLoading(plan.id)
+      try {
+        await subscribeToPlan(plan.id, false)
+        setMySubscription(await fetchMySubscription())
+        setActionMessage(`Je bent overgestapt naar ${plan.name}.`)
+      } catch (err: any) {
+        setActionError(err.message || "Kon niet overstappen naar dit plan.")
+      } finally {
+        setPlanLoading(null)
+      }
+      return
+    }
+
+    if (!plan.paymentLink) {
+      setActionError(`"${plan.name}" is nog niet af te sluiten — er is nog geen betaallink ingesteld.`)
+      return
+    }
+    const storedUser = loadStoredUser()
+    savePendingSubscriptionPurchase(plan.id, false)
+    window.location.href = `${plan.paymentLink}?prefilled_email=${encodeURIComponent(storedUser?.email || user.email || "")}`
+  }
+
+  async function handleCancelSubscription() {
+    if (!confirm("Abonnement opzeggen? Al toegekende credits blijven bruikbaar tot ze verlopen.")) return
+    setCancelLoading(true)
+    try {
+      await cancelMySubscription()
+      setMySubscription(await fetchMySubscription())
+      setActionMessage("Abonnement opgezegd.")
+    } catch (err: any) {
+      setActionError(err.message || "Opzeggen mislukt.")
+    } finally {
+      setCancelLoading(false)
     }
   }
 
   useEffect(() => {
-    const priceId = searchParams?.get("price")
-    if (priceId) startCheckout(priceId)
+    if (loading) return
+    const packId = searchParams?.get("packId")
+    const planId = searchParams?.get("planId")
+    if (packId) {
+      const pack = packs.find((p) => p.id === packId)
+      if (pack) startPackCheckout(pack)
+    } else if (planId) {
+      const plan = plans.find((p) => p.id === planId)
+      if (plan) startPlanCheckout(plan)
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [loading])
 
   return (
     <main className="min-h-screen pt-20 pb-16">
@@ -122,7 +171,7 @@ function BetalenContent() {
             </div>
           </ScrollObserver>
 
-          <div className="flex justify-center gap-2 mb-12">
+          <div className="flex justify-center gap-2 mb-8">
             <button
               onClick={() => setTab("abonnementen")}
               className={`px-5 py-2 rounded-full text-sm font-bold transition-all ${
@@ -141,77 +190,101 @@ function BetalenContent() {
             </button>
           </div>
 
-          {tab === "abonnementen" ? (
-            <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
-              {PLANS.map((plan) => (
-                <ScrollObserver key={plan.name} delay={0.05}>
-                  <div
-                    className={`relative border rounded-2xl p-6 transition-all h-full flex flex-col ${
-                      plan.popular
-                        ? "border-lime/50 bg-surface2 ring-1 ring-lime/20 transform md:scale-105"
-                        : "border-border hover:border-muted"
-                    }`}
-                  >
-                    {plan.popular && (
-                      <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-lime text-dark px-3 py-1 rounded-full text-xs font-bold uppercase">
-                        POPULAIR
-                      </div>
-                    )}
-                    <h3 className="text-xs text-text3 uppercase tracking-widest font-bold mb-4">{plan.name}</h3>
-                    <div className="mb-2">
-                      <span className="font-playfair text-4xl font-bold text-text">{plan.price}</span>
-                      <span className="text-text2 text-sm">{plan.period}</span>
-                    </div>
-                    <div className="text-lime font-bold mb-6">{plan.credits}</div>
-                    <ul className="space-y-3 mb-8 flex-1">
-                      {plan.features.map((feature, j) => (
-                        <li key={j} className="text-sm text-text2 flex gap-2">
-                          <span className="text-lime text-lg leading-none">✓</span>
-                          {feature}
-                        </li>
-                      ))}
-                    </ul>
-                    <button
-                      onClick={() => startCheckout(plan.priceId)}
-                      className={`w-full py-3 rounded-lg font-bold text-sm transition-all ${
-                        plan.popular
-                          ? "bg-lime text-dark hover:opacity-90"
-                          : "border border-muted text-text2 hover:text-text hover:border-text"
+          {actionMessage && (
+            <p className="max-w-xl mx-auto text-center text-sm text-lime mb-4 rounded-lg border border-lime/20 bg-lime/10 p-3">
+              {actionMessage}
+            </p>
+          )}
+          {actionError && (
+            <p className="max-w-xl mx-auto text-center text-sm text-red-400 mb-4 rounded-lg border border-red-500/20 bg-red-500/10 p-3">
+              {actionError}
+            </p>
+          )}
+
+          {loading ? (
+            <p className="text-center text-text2 text-sm">Laden…</p>
+          ) : tab === "abonnementen" ? (
+            <div className="grid md:grid-cols-3 lg:grid-cols-5 gap-6 max-w-6xl mx-auto">
+              {plans.map((plan) => {
+                const price = effectivePriceCents(plan)
+                const onSale = price < plan.priceCents
+                const isCurrent = mySubscription?.planId === plan.id
+                return (
+                  <ScrollObserver key={plan.id} delay={0.05}>
+                    <div
+                      className={`relative border rounded-2xl p-6 transition-all h-full flex flex-col ${
+                        plan.mostChosen
+                          ? "border-lime/50 bg-surface2 ring-1 ring-lime/20 transform md:scale-105"
+                          : isCurrent
+                            ? "border-lime/40"
+                            : "border-border hover:border-muted"
                       }`}
                     >
-                      Kies plan
-                    </button>
-                  </div>
-                </ScrollObserver>
-              ))}
+                      {plan.mostChosen && (
+                        <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-lime text-dark px-3 py-1 rounded-full text-xs font-bold uppercase">
+                          POPULAIR
+                        </div>
+                      )}
+                      <h3 className="text-xs text-text3 uppercase tracking-widest font-bold mb-4">{plan.name}</h3>
+                      <div className="mb-1">
+                        {onSale && <span className="text-text3 line-through text-sm mr-2">{formatEuros(plan.priceCents)}</span>}
+                        <span className="font-playfair text-3xl font-bold text-text">{price === 0 ? "Gratis" : formatEuros(price)}</span>
+                        {price > 0 && <span className="text-text2 text-sm">/maand</span>}
+                      </div>
+                      <div className="text-lime font-bold mb-6 text-sm">
+                        {plan.creditsPerMonth > 0 ? `${plan.creditsPerMonth} credits per maand` : "Geen maandelijkse credits"}
+                      </div>
+                      <div className="flex-1" />
+                      {isCurrent ? (
+                        <button
+                          onClick={handleCancelSubscription}
+                          disabled={cancelLoading}
+                          className="w-full py-3 rounded-lg font-bold text-sm border border-red-500/30 text-red-400 hover:bg-red-500/10 disabled:opacity-50"
+                        >
+                          {cancelLoading ? "Bezig…" : "Huidig plan · opzeggen"}
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => startPlanCheckout(plan)}
+                          disabled={planLoading === plan.id}
+                          className={`w-full py-3 rounded-lg font-bold text-sm transition-all disabled:opacity-50 ${
+                            plan.mostChosen
+                              ? "bg-lime text-dark hover:opacity-90"
+                              : "border border-muted text-text2 hover:text-text hover:border-text"
+                          }`}
+                        >
+                          {planLoading === plan.id ? "Bezig…" : "Kies plan"}
+                        </button>
+                      )}
+                    </div>
+                  </ScrollObserver>
+                )
+              })}
             </div>
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto">
-              {CREDIT_PACKS.map((pack) => (
-                <ScrollObserver key={pack.amount} delay={0.05}>
-                  <div
-                    className={`relative border rounded-2xl p-5 text-center h-full flex flex-col ${
-                      pack.bestValue ? "border-lime/50 bg-surface2 ring-1 ring-lime/20" : "border-border"
-                    }`}
-                  >
-                    {pack.bestValue && (
-                      <span className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-lime text-dark px-3 py-1 rounded-full text-[10px] font-bold uppercase">
-                        Beste waarde
-                      </span>
-                    )}
-                    <div className="font-playfair text-3xl font-bold text-text mt-2">{pack.amount}</div>
-                    <div className="text-xs text-text3 uppercase tracking-wider mb-3">{pack.label}</div>
-                    <div className="text-lime font-bold text-lg mb-1">{pack.price}</div>
-                    <div className="text-text3 text-xs mb-5">{pack.per}</div>
-                    <button
-                      onClick={() => startCheckout(pack.priceId)}
-                      className="mt-auto w-full py-2.5 rounded-lg font-bold text-sm border border-muted text-text2 hover:text-text hover:border-text transition-all"
-                    >
-                      Kopen
-                    </button>
-                  </div>
-                </ScrollObserver>
-              ))}
+              {packs.map((pack) => {
+                const price = effectivePriceCents(pack)
+                const onSale = price < pack.priceCents
+                const perCredit = price / 100 / pack.credits
+                return (
+                  <ScrollObserver key={pack.id} delay={0.05}>
+                    <div className="relative border rounded-2xl p-5 text-center h-full flex flex-col border-border">
+                      <div className="font-playfair text-3xl font-bold text-text mt-2">{pack.credits}</div>
+                      <div className="text-xs text-text3 uppercase tracking-wider mb-3">credits</div>
+                      {onSale && <div className="text-text3 line-through text-xs">{formatEuros(pack.priceCents)}</div>}
+                      <div className="text-lime font-bold text-lg mb-1">{formatEuros(price)}</div>
+                      <div className="text-text3 text-xs mb-5">€{perCredit.toFixed(2).replace(".", ",")} per credit</div>
+                      <button
+                        onClick={() => startPackCheckout(pack)}
+                        className="mt-auto w-full py-2.5 rounded-lg font-bold text-sm border border-muted text-text2 hover:text-text hover:border-text transition-all"
+                      >
+                        Kopen
+                      </button>
+                    </div>
+                  </ScrollObserver>
+                )
+              })}
             </div>
           )}
 

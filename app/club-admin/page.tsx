@@ -33,8 +33,27 @@ import {
   type LedgerEntry,
 } from "@/lib/booking"
 import { calculatePrice, type PricingModel, type PricingInputs } from "@/lib/pricing"
+import {
+  fetchAllCreditPacks,
+  fetchAllSubscriptionPlans,
+  fetchAllSubscriptions,
+  createCreditPack,
+  updateCreditPack,
+  deleteCreditPack,
+  createSubscriptionPlan,
+  updateSubscriptionPlan,
+  deleteSubscriptionPlan,
+  adminSimulateRenewal,
+  effectivePriceCents,
+  formatEuros,
+  type CreditPack,
+  type SubscriptionPlan,
+  type UserSubscription,
+  type CreditPackInput,
+  type SubscriptionPlanInput,
+} from "@/lib/billing"
 
-type Section = "overzicht" | "clubs" | "prijsmodel" | "simulator" | "boekingen" | "wallets"
+type Section = "overzicht" | "clubs" | "prijsmodel" | "simulator" | "boekingen" | "wallets" | "producten"
 const SURFACES = ["Clay", "Hard court", "Grass", "Carpet", "Artificial grass"]
 
 interface CourtDraft extends CourtInput {
@@ -179,6 +198,7 @@ export default function ClubAdminPage() {
     { id: "simulator", label: "🧮 Simulator", adminOnly: true },
     { id: "boekingen", label: "📅 Boekingen" },
     { id: "wallets", label: "💳 Wallets", adminOnly: true },
+    { id: "producten", label: "🏷️ Producten", adminOnly: true },
   ]
 
   return (
@@ -218,6 +238,7 @@ export default function ClubAdminPage() {
             <BookingsSection bookings={bookings} clubs={clubs} model={model} onChanged={() => reloadBookings()} showToast={showToast} />
           )}
           {section === "wallets" && profile.isPlatformAdmin && <WalletsSection showToast={showToast} />}
+          {section === "producten" && profile.isPlatformAdmin && <ProductsSection showToast={showToast} />}
         </div>
       </div>
 
@@ -1262,6 +1283,487 @@ function WalletsSection({ showToast }: { showToast: (m: string) => void }) {
             )}
           </div>
         ))}
+      </div>
+    </div>
+  )
+}
+
+function emptyPackInput(): CreditPackInput {
+  return { name: "", credits: 100, priceCents: 0, salePriceCents: null, saleUntil: null, paymentLink: null, active: true, sortOrder: 0 }
+}
+
+function packToInput(p: CreditPack): CreditPackInput {
+  return {
+    name: p.name,
+    credits: p.credits,
+    priceCents: p.priceCents,
+    salePriceCents: p.salePriceCents,
+    saleUntil: p.saleUntil,
+    paymentLink: p.paymentLink,
+    active: p.active,
+    sortOrder: p.sortOrder,
+  }
+}
+
+function emptyPlanInput(): SubscriptionPlanInput {
+  return { name: "", creditsPerMonth: 100, priceCents: 0, salePriceCents: null, saleUntil: null, paymentLink: null, active: true, mostChosen: false, sortOrder: 0 }
+}
+
+function planToInput(p: SubscriptionPlan): SubscriptionPlanInput {
+  return {
+    name: p.name,
+    creditsPerMonth: p.creditsPerMonth,
+    priceCents: p.priceCents,
+    salePriceCents: p.salePriceCents,
+    saleUntil: p.saleUntil,
+    paymentLink: p.paymentLink,
+    active: p.active,
+    mostChosen: p.mostChosen,
+    sortOrder: p.sortOrder,
+  }
+}
+
+function euroInput(cents: number, onChange: (cents: number) => void, className: string) {
+  return (
+    <input
+      type="number"
+      step="0.01"
+      min={0}
+      value={cents / 100}
+      onChange={(e) => onChange(Math.round(Number(e.target.value) * 100))}
+      className={className}
+    />
+  )
+}
+
+function ProductsSection({ showToast }: { showToast: (m: string) => void }) {
+  const [tab, setTab] = useState<"packs" | "plans" | "subscriptions">("packs")
+  const [packs, setPacks] = useState<CreditPack[] | null>(null)
+  const [plans, setPlans] = useState<SubscriptionPlan[] | null>(null)
+  const [subscriptions, setSubscriptions] = useState<UserSubscription[] | null>(null)
+  const [subscriberEmails, setSubscriberEmails] = useState<Record<string, string>>({})
+  const [planNames, setPlanNames] = useState<Record<string, string>>({})
+  const [simulatingId, setSimulatingId] = useState<string | null>(null)
+
+  const [editingPackId, setEditingPackId] = useState<string | null>(null)
+  const [packDraft, setPackDraft] = useState<CreditPackInput | null>(null)
+  const [editingPlanId, setEditingPlanId] = useState<string | null>(null)
+  const [planDraft, setPlanDraft] = useState<SubscriptionPlanInput | null>(null)
+  const [saving, setSaving] = useState(false)
+
+  const field = "bg-dark border border-border rounded-lg px-3 py-2 text-sm w-full focus:border-lime focus:outline-none"
+
+  async function reloadPacks() {
+    const data = await fetchAllCreditPacks()
+    setPacks(data)
+    return data
+  }
+  async function reloadPlans() {
+    const data = await fetchAllSubscriptionPlans()
+    setPlans(data)
+    return data
+  }
+  async function reloadSubscriptions() {
+    const data = await fetchAllSubscriptions()
+    setSubscriptions(data)
+    if (data.length > 0) {
+      fetchProfileEmails(data.map((s) => s.userId)).then(setSubscriberEmails).catch(() => {})
+    }
+    return data
+  }
+
+  useEffect(() => {
+    reloadPacks().catch((err) => showToast(err.message || "Kon packs niet laden"))
+    reloadPlans()
+      .then((data) => {
+        const map: Record<string, string> = {}
+        for (const p of data) map[p.id] = p.name
+        setPlanNames(map)
+      })
+      .catch((err) => showToast(err.message || "Kon abonnementen niet laden"))
+    reloadSubscriptions().catch((err) => showToast(err.message || "Kon abonnees niet laden"))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const cheapestPlanPerCredit = (plans ?? [])
+    .filter((p) => p.active && p.creditsPerMonth > 0)
+    .map((p) => effectivePriceCents(p) / p.creditsPerMonth)
+    .reduce((min, v) => Math.min(min, v), Infinity)
+
+  const underpricedPacks = (packs ?? []).filter(
+    (p) => p.active && cheapestPlanPerCredit !== Infinity && effectivePriceCents(p) / p.credits < cheapestPlanPerCredit,
+  )
+
+  function startEditPack(pack: CreditPack | null) {
+    setEditingPackId(pack ? pack.id : "__new__")
+    setPackDraft(pack ? packToInput(pack) : emptyPackInput())
+  }
+
+  async function savePack() {
+    if (!packDraft) return
+    setSaving(true)
+    try {
+      if (editingPackId === "__new__") {
+        await createCreditPack(packDraft)
+        showToast("Pack toegevoegd")
+      } else if (editingPackId) {
+        await updateCreditPack(editingPackId, packDraft)
+        showToast("Pack opgeslagen")
+      }
+      await reloadPacks()
+      setEditingPackId(null)
+      setPackDraft(null)
+    } catch (err: any) {
+      showToast(err.message || "Opslaan mislukt")
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function removePack(id: string) {
+    if (!confirm("Deze credit pack verwijderen?")) return
+    try {
+      await deleteCreditPack(id)
+      await reloadPacks()
+      showToast("Pack verwijderd")
+    } catch (err: any) {
+      showToast(err.message || "Verwijderen mislukt")
+    }
+  }
+
+  function startEditPlan(plan: SubscriptionPlan | null) {
+    setEditingPlanId(plan ? plan.id : "__new__")
+    setPlanDraft(plan ? planToInput(plan) : emptyPlanInput())
+  }
+
+  async function savePlan() {
+    if (!planDraft) return
+    setSaving(true)
+    try {
+      if (editingPlanId === "__new__") {
+        await createSubscriptionPlan(planDraft)
+        showToast("Abonnement toegevoegd")
+      } else if (editingPlanId) {
+        await updateSubscriptionPlan(editingPlanId, planDraft)
+        showToast("Abonnement opgeslagen")
+      }
+      await reloadPlans()
+      setEditingPlanId(null)
+      setPlanDraft(null)
+    } catch (err: any) {
+      showToast(err.message || "Opslaan mislukt")
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function removePlan(id: string) {
+    if (!confirm("Dit abonnement verwijderen?")) return
+    try {
+      await deleteSubscriptionPlan(id)
+      await reloadPlans()
+      showToast("Abonnement verwijderd")
+    } catch (err: any) {
+      showToast(err.message || "Verwijderen mislukt")
+    }
+  }
+
+  async function handleSimulateRenewal(subscriptionId: string) {
+    setSimulatingId(subscriptionId)
+    try {
+      const newBalance = await adminSimulateRenewal(subscriptionId)
+      showToast(`Vernieuwing gesimuleerd — nieuw saldo: ${Math.round(newBalance)} credits`)
+      await reloadSubscriptions()
+    } catch (err: any) {
+      showToast(err.message || "Simuleren mislukt")
+    } finally {
+      setSimulatingId(null)
+    }
+  }
+
+  return (
+    <div>
+      <h1 className="font-playfair text-3xl font-bold mb-1">Producten</h1>
+      <p className="text-text2 text-sm mb-6">
+        Credit packs en abonnementen die klanten op /betalen zien. Prijs of aanbod aanpassen is hier direct
+        zichtbaar — geen code nodig.
+      </p>
+
+      <div className="flex gap-2 mb-5">
+        <button onClick={() => setTab("packs")} className={`text-sm px-4 py-2 rounded-lg font-semibold ${tab === "packs" ? "bg-lime text-dark" : "border border-border text-text2 hover:text-text"}`}>
+          Credit packs
+        </button>
+        <button onClick={() => setTab("plans")} className={`text-sm px-4 py-2 rounded-lg font-semibold ${tab === "plans" ? "bg-lime text-dark" : "border border-border text-text2 hover:text-text"}`}>
+          Abonnementen
+        </button>
+        <button onClick={() => setTab("subscriptions")} className={`text-sm px-4 py-2 rounded-lg font-semibold ${tab === "subscriptions" ? "bg-lime text-dark" : "border border-border text-text2 hover:text-text"}`}>
+          Actieve abonnees
+        </button>
+      </div>
+
+      {underpricedPacks.length > 0 && (
+        <div className="mb-5 rounded-lg border border-yellow-500/30 bg-yellow-500/10 p-3 text-sm text-yellow-400">
+          Let op: {underpricedPacks.map((p) => p.name).join(", ")} {underpricedPacks.length === 1 ? "is" : "zijn"} per
+          credit goedkoper dan het goedkoopste actieve abonnement. Dat nodigt uit om alleen packs te kopen in
+          plaats van te abonneren.
+        </div>
+      )}
+
+      {tab === "packs" &&
+        (!packs ? (
+          <p className="text-sm text-text2">Laden…</p>
+        ) : (
+          <div className="space-y-2">
+            {packs.map((pack) => (
+              <div key={pack.id} className="border border-border rounded-2xl bg-surface2 overflow-hidden">
+                <button onClick={() => (editingPackId === pack.id ? setEditingPackId(null) : startEditPack(pack))} className="w-full flex flex-wrap items-center gap-3 px-4 py-3 text-left hover:bg-surface transition-colors">
+                  <span className="font-medium">{pack.name}</span>
+                  <span className="text-xs text-text3">{pack.credits} credits</span>
+                  <span className="text-xs text-text3">{formatEuros(effectivePriceCents(pack))}</span>
+                  {!pack.active && <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-surface text-text3">Inactief</span>}
+                  {pack.salePriceCents != null && pack.saleUntil && new Date(pack.saleUntil) > new Date() && (
+                    <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-lime/10 text-lime">Actie</span>
+                  )}
+                  {!pack.paymentLink && <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-red-500/10 text-red-400">Geen betaallink</span>}
+                </button>
+                {editingPackId === pack.id && packDraft && (
+                  <PackForm draft={packDraft} setDraft={setPackDraft} field={field} onSave={savePack} onCancel={() => setEditingPackId(null)} onDelete={() => removePack(pack.id)} saving={saving} />
+                )}
+              </div>
+            ))}
+
+            {editingPackId === "__new__" && packDraft ? (
+              <div className="border border-lime/40 rounded-2xl bg-surface2 overflow-hidden">
+                <PackForm draft={packDraft} setDraft={setPackDraft} field={field} onSave={savePack} onCancel={() => setEditingPackId(null)} saving={saving} isNew />
+              </div>
+            ) : (
+              <button onClick={() => startEditPack(null)} className="w-full border border-dashed border-border rounded-2xl py-3 text-sm text-text2 hover:text-text hover:border-lime/40">
+                + Nieuwe credit pack
+              </button>
+            )}
+          </div>
+        ))}
+
+      {tab === "plans" &&
+        (!plans ? (
+          <p className="text-sm text-text2">Laden…</p>
+        ) : (
+          <div className="space-y-2">
+            {plans.map((plan) => (
+              <div key={plan.id} className="border border-border rounded-2xl bg-surface2 overflow-hidden">
+                <button onClick={() => (editingPlanId === plan.id ? setEditingPlanId(null) : startEditPlan(plan))} className="w-full flex flex-wrap items-center gap-3 px-4 py-3 text-left hover:bg-surface transition-colors">
+                  <span className="font-medium">{plan.name}</span>
+                  <span className="text-xs text-text3">{plan.creditsPerMonth} credits/mnd</span>
+                  <span className="text-xs text-text3">{effectivePriceCents(plan) === 0 ? "Gratis" : formatEuros(effectivePriceCents(plan))}</span>
+                  {plan.mostChosen && <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-lime/10 text-lime">Populair</span>}
+                  {!plan.active && <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-surface text-text3">Inactief</span>}
+                  {plan.priceCents > 0 && !plan.paymentLink && <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-red-500/10 text-red-400">Geen betaallink</span>}
+                </button>
+                {editingPlanId === plan.id && planDraft && (
+                  <PlanForm draft={planDraft} setDraft={setPlanDraft} field={field} onSave={savePlan} onCancel={() => setEditingPlanId(null)} onDelete={() => removePlan(plan.id)} saving={saving} />
+                )}
+              </div>
+            ))}
+
+            {editingPlanId === "__new__" && planDraft ? (
+              <div className="border border-lime/40 rounded-2xl bg-surface2 overflow-hidden">
+                <PlanForm draft={planDraft} setDraft={setPlanDraft} field={field} onSave={savePlan} onCancel={() => setEditingPlanId(null)} saving={saving} isNew />
+              </div>
+            ) : (
+              <button onClick={() => startEditPlan(null)} className="w-full border border-dashed border-border rounded-2xl py-3 text-sm text-text2 hover:text-text hover:border-lime/40">
+                + Nieuw abonnement
+              </button>
+            )}
+          </div>
+        ))}
+
+      {tab === "subscriptions" &&
+        (!subscriptions ? (
+          <p className="text-sm text-text2">Laden…</p>
+        ) : subscriptions.length === 0 ? (
+          <p className="text-sm text-text3">Nog geen abonnees.</p>
+        ) : (
+          <div className="space-y-2">
+            {subscriptions.map((s) => (
+              <div key={s.id} className="flex flex-wrap items-center gap-3 border border-border rounded-xl bg-surface2 px-4 py-3 text-sm">
+                <span className="font-medium">{subscriberEmails[s.userId] || s.userId}</span>
+                <span className="text-text3">{planNames[s.planId] || s.planId}</span>
+                <span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded-full ${s.status === "active" ? "bg-lime/10 text-lime" : "bg-red-500/10 text-red-400"}`}>
+                  {s.status === "active" ? "Actief" : "Opgezegd"}
+                </span>
+                <span className="text-text3 text-xs">Volgende vernieuwing: {new Date(s.renewsAt).toLocaleDateString("nl-NL")}</span>
+                {s.status === "active" && (
+                  <button
+                    onClick={() => handleSimulateRenewal(s.id)}
+                    disabled={simulatingId === s.id}
+                    className="ml-auto text-xs border border-border rounded-lg px-3 py-1.5 hover:border-lime/50 disabled:opacity-50"
+                  >
+                    {simulatingId === s.id ? "Bezig…" : "Simuleer volgende vernieuwing"}
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+        ))}
+    </div>
+  )
+}
+
+function PackForm({
+  draft,
+  setDraft,
+  field,
+  onSave,
+  onCancel,
+  onDelete,
+  saving,
+  isNew,
+}: {
+  draft: CreditPackInput
+  setDraft: (d: CreditPackInput) => void
+  field: string
+  onSave: () => void
+  onCancel: () => void
+  onDelete?: () => void
+  saving: boolean
+  isNew?: boolean
+}) {
+  return (
+    <div className="border-t border-border p-4 bg-dark/40 space-y-3">
+      <div className="grid sm:grid-cols-2 gap-3">
+        <div>
+          <label className="block text-xs text-text3 mb-1">Naam</label>
+          <input type="text" value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} className={field} />
+        </div>
+        <div>
+          <label className="block text-xs text-text3 mb-1">Credits</label>
+          <input type="number" min={1} value={draft.credits} onChange={(e) => setDraft({ ...draft, credits: Number(e.target.value) })} className={field} />
+        </div>
+        <div>
+          <label className="block text-xs text-text3 mb-1">Prijs (€)</label>
+          {euroInput(draft.priceCents, (cents) => setDraft({ ...draft, priceCents: cents }), field)}
+        </div>
+        <div>
+          <label className="block text-xs text-text3 mb-1">Actieprijs (€, optioneel)</label>
+          {euroInput(draft.salePriceCents ?? 0, (cents) => setDraft({ ...draft, salePriceCents: cents }), field)}
+        </div>
+        <div>
+          <label className="block text-xs text-text3 mb-1">Actie geldig tot</label>
+          <input
+            type="date"
+            value={draft.saleUntil ? draft.saleUntil.slice(0, 10) : ""}
+            onChange={(e) => setDraft({ ...draft, saleUntil: e.target.value ? `${e.target.value}T23:59:59Z` : null })}
+            className={field}
+          />
+        </div>
+        <div>
+          <label className="block text-xs text-text3 mb-1">Sortering</label>
+          <input type="number" value={draft.sortOrder} onChange={(e) => setDraft({ ...draft, sortOrder: Number(e.target.value) })} className={field} />
+        </div>
+        <div className="sm:col-span-2">
+          <label className="block text-xs text-text3 mb-1">Stripe Payment Link</label>
+          <input type="text" value={draft.paymentLink ?? ""} onChange={(e) => setDraft({ ...draft, paymentLink: e.target.value || null })} placeholder="https://buy.stripe.com/..." className={field} />
+        </div>
+      </div>
+      <label className="flex items-center gap-2 text-sm text-text2">
+        <input type="checkbox" checked={draft.active} onChange={(e) => setDraft({ ...draft, active: e.target.checked })} />
+        Actief (zichtbaar op /betalen)
+      </label>
+      <div className="flex gap-2">
+        <button onClick={onSave} disabled={saving} className="bg-lime text-dark px-4 py-2 rounded-lg font-bold text-sm hover:opacity-90 disabled:opacity-50">
+          {saving ? "Bezig…" : "Opslaan"}
+        </button>
+        <button onClick={onCancel} className="border border-border px-4 py-2 rounded-lg text-sm text-text2">
+          Annuleren
+        </button>
+        {!isNew && onDelete && (
+          <button onClick={onDelete} className="ml-auto text-xs border border-red-500/30 text-red-400 rounded-lg px-3 py-2 hover:bg-red-500/10">
+            Verwijderen
+          </button>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function PlanForm({
+  draft,
+  setDraft,
+  field,
+  onSave,
+  onCancel,
+  onDelete,
+  saving,
+  isNew,
+}: {
+  draft: SubscriptionPlanInput
+  setDraft: (d: SubscriptionPlanInput) => void
+  field: string
+  onSave: () => void
+  onCancel: () => void
+  onDelete?: () => void
+  saving: boolean
+  isNew?: boolean
+}) {
+  return (
+    <div className="border-t border-border p-4 bg-dark/40 space-y-3">
+      <div className="grid sm:grid-cols-2 gap-3">
+        <div>
+          <label className="block text-xs text-text3 mb-1">Naam</label>
+          <input type="text" value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} className={field} />
+        </div>
+        <div>
+          <label className="block text-xs text-text3 mb-1">Credits per maand</label>
+          <input type="number" min={0} value={draft.creditsPerMonth} onChange={(e) => setDraft({ ...draft, creditsPerMonth: Number(e.target.value) })} className={field} />
+        </div>
+        <div>
+          <label className="block text-xs text-text3 mb-1">Prijs per maand (€)</label>
+          {euroInput(draft.priceCents, (cents) => setDraft({ ...draft, priceCents: cents }), field)}
+        </div>
+        <div>
+          <label className="block text-xs text-text3 mb-1">Actieprijs (€, optioneel)</label>
+          {euroInput(draft.salePriceCents ?? 0, (cents) => setDraft({ ...draft, salePriceCents: cents }), field)}
+        </div>
+        <div>
+          <label className="block text-xs text-text3 mb-1">Actie geldig tot</label>
+          <input
+            type="date"
+            value={draft.saleUntil ? draft.saleUntil.slice(0, 10) : ""}
+            onChange={(e) => setDraft({ ...draft, saleUntil: e.target.value ? `${e.target.value}T23:59:59Z` : null })}
+            className={field}
+          />
+        </div>
+        <div>
+          <label className="block text-xs text-text3 mb-1">Sortering</label>
+          <input type="number" value={draft.sortOrder} onChange={(e) => setDraft({ ...draft, sortOrder: Number(e.target.value) })} className={field} />
+        </div>
+        <div className="sm:col-span-2">
+          <label className="block text-xs text-text3 mb-1">Stripe Payment Link (leeg laten als gratis)</label>
+          <input type="text" value={draft.paymentLink ?? ""} onChange={(e) => setDraft({ ...draft, paymentLink: e.target.value || null })} placeholder="https://buy.stripe.com/..." className={field} />
+        </div>
+      </div>
+      <div className="flex flex-wrap gap-4">
+        <label className="flex items-center gap-2 text-sm text-text2">
+          <input type="checkbox" checked={draft.active} onChange={(e) => setDraft({ ...draft, active: e.target.checked })} />
+          Actief (zichtbaar op /betalen)
+        </label>
+        <label className="flex items-center gap-2 text-sm text-text2">
+          <input type="checkbox" checked={draft.mostChosen} onChange={(e) => setDraft({ ...draft, mostChosen: e.target.checked })} />
+          Als &ldquo;populair&rdquo; markeren
+        </label>
+      </div>
+      <div className="flex gap-2">
+        <button onClick={onSave} disabled={saving} className="bg-lime text-dark px-4 py-2 rounded-lg font-bold text-sm hover:opacity-90 disabled:opacity-50">
+          {saving ? "Bezig…" : "Opslaan"}
+        </button>
+        <button onClick={onCancel} className="border border-border px-4 py-2 rounded-lg text-sm text-text2">
+          Annuleren
+        </button>
+        {!isNew && onDelete && (
+          <button onClick={onDelete} className="ml-auto text-xs border border-red-500/30 text-red-400 rounded-lg px-3 py-2 hover:bg-red-500/10">
+            Verwijderen
+          </button>
+        )}
       </div>
     </div>
   )

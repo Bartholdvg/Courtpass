@@ -4,23 +4,33 @@ import { useEffect, useState } from "react"
 import Link from "next/link"
 import { motion } from "framer-motion"
 import { adjustMyCredits, consumePendingCreditPurchase } from "@/lib/booking"
+import { consumePendingSubscriptionPurchase, subscribeToPlan } from "@/lib/billing"
 
 export default function BetaaldPage() {
-  const [status, setStatus] = useState<"working" | "credited" | "plain" | "error">("working")
+  const [status, setStatus] = useState<"working" | "credited" | "subscribed" | "plain" | "error">("working")
   const [creditsAdded, setCreditsAdded] = useState(0)
 
   useEffect(() => {
     const credits = consumePendingCreditPurchase()
-    if (!credits) {
-      setStatus("plain")
+    if (credits) {
+      adjustMyCredits(credits, "topup", "Credits gekocht via Stripe (sandbox)")
+        .then(() => {
+          setCreditsAdded(credits)
+          setStatus("credited")
+        })
+        .catch(() => setStatus("error"))
       return
     }
-    adjustMyCredits(credits, "topup", "Credits gekocht via Stripe (sandbox)")
-      .then(() => {
-        setCreditsAdded(credits)
-        setStatus("credited")
-      })
-      .catch(() => setStatus("error"))
+
+    const pendingSubscription = consumePendingSubscriptionPurchase()
+    if (pendingSubscription) {
+      subscribeToPlan(pendingSubscription.planId, pendingSubscription.isAnnual)
+        .then(() => setStatus("subscribed"))
+        .catch(() => setStatus("error"))
+      return
+    }
+
+    setStatus("plain")
   }, [])
 
   return (
@@ -37,8 +47,10 @@ export default function BetaaldPage() {
           <p className="text-text2 mb-2 max-w-md mx-auto">
             <span className="text-lime font-bold">+{creditsAdded} credits</span> zijn aan je account toegevoegd.
           </p>
+        ) : status === "subscribed" ? (
+          <p className="text-text2 mb-2 max-w-md mx-auto">Je abonnement is geactiveerd en de eerste credits staan al op je account.</p>
         ) : status === "error" ? (
-          <p className="text-red-400 mb-2 max-w-md mx-auto">Bedankt voor je betaling — de credits konden niet automatisch worden bijgeschreven.</p>
+          <p className="text-red-400 mb-2 max-w-md mx-auto">Bedankt voor je betaling — dit kon niet automatisch worden verwerkt.</p>
         ) : (
           <p className="text-text2 mb-2 max-w-md mx-auto">Bedankt voor je betaling. Je account is geactiveerd en je kunt nu gaan spelen!</p>
         )}
