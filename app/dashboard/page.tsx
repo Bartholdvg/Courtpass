@@ -32,6 +32,7 @@ export default function DashboardPage() {
   const [ledger, setLedger] = useState<LedgerEntry[]>([])
   const [error, setError] = useState("")
   const [cancellingId, setCancellingId] = useState<string | null>(null)
+  const [historySort, setHistorySort] = useState<"playDate" | "bookedDate">("playDate")
   const storedUser = loadStoredUser()
   const displayName = getUserDisplayName(storedUser)
   const rank = storedUser?.rank || getRankFromPoints(storedUser?.points ?? 0)
@@ -88,7 +89,11 @@ export default function DashboardPage() {
     .sort((a, b) => (a.date + a.startTime).localeCompare(b.date + b.startTime))
   const history = bookings
     .filter((b) => b.status === "cancelled" || b.date < today)
-    .sort((a, b) => (b.date + b.startTime).localeCompare(a.date + a.startTime))
+    .sort((a, b) =>
+      historySort === "bookedDate"
+        ? b.createdAt.localeCompare(a.createdAt)
+        : (b.date + b.startTime).localeCompare(a.date + a.startTime),
+    )
 
   if (loading) {
     return (
@@ -156,6 +161,9 @@ export default function DashboardPage() {
                             <p className="text-sm text-text2">
                               {b.courtName} · {new Date(b.date + "T12:00:00").toLocaleDateString("nl-NL", { weekday: "short", day: "numeric", month: "short" })} · {b.startTime}–{b.endTime}
                             </p>
+                            <p className="text-xs text-text3 mt-0.5">
+                              Geboekt op {new Date(b.createdAt).toLocaleDateString("nl-NL", { day: "numeric", month: "short", year: "numeric" })}
+                            </p>
                           </div>
                           <div className="ml-auto flex items-center gap-3 flex-none">
                             <span className="font-mono font-bold text-lime">{Math.round(b.priceCredits)} cr</span>
@@ -176,7 +184,26 @@ export default function DashboardPage() {
 
               <ScrollObserver delay={0.15}>
                 <div className="border border-border rounded-2xl p-6">
-                  <h2 className="font-bold text-lg mb-4">Eerdere boekingen</h2>
+                  <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
+                    <h2 className="font-bold text-lg">Eerdere boekingen</h2>
+                    {history.length > 0 && (
+                      <div className="flex items-center gap-1.5 text-xs">
+                        <span className="text-text3">Sorteer op</span>
+                        <button
+                          onClick={() => setHistorySort("playDate")}
+                          className={`px-2.5 py-1 rounded-full font-medium transition-colors ${historySort === "playDate" ? "bg-lime text-dark" : "border border-border text-text2 hover:text-text"}`}
+                        >
+                          Speeldatum
+                        </button>
+                        <button
+                          onClick={() => setHistorySort("bookedDate")}
+                          className={`px-2.5 py-1 rounded-full font-medium transition-colors ${historySort === "bookedDate" ? "bg-lime text-dark" : "border border-border text-text2 hover:text-text"}`}
+                        >
+                          Boekingsdatum
+                        </button>
+                      </div>
+                    )}
+                  </div>
                   {history.length === 0 ? (
                     <p className="text-sm text-text2">Nog geen geschiedenis.</p>
                   ) : (
@@ -188,6 +215,7 @@ export default function DashboardPage() {
                           </span>
                           <span className="text-text2 min-w-0 truncate">
                             {b.clubName} · {b.courtName} · {b.date}
+                            <span className="text-text3"> · geboekt op {new Date(b.createdAt).toLocaleDateString("nl-NL", { day: "numeric", month: "short", year: "numeric" })}</span>
                           </span>
                           <span className="ml-auto font-mono text-text3 flex-none">{Math.round(b.priceCredits)} cr</span>
                         </div>
