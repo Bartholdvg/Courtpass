@@ -79,9 +79,11 @@ function LoginForm() {
       })
 
       const redirect = searchParams?.get("redirect")
-      const price = searchParams?.get("price")
       if (redirect) {
-        router.push(price ? `${redirect}?price=${price}` : redirect)
+        const extraParams = new URLSearchParams(searchParams?.toString())
+        extraParams.delete("redirect")
+        const qs = extraParams.toString()
+        router.push(qs ? `${redirect}?${qs}` : redirect)
       } else {
         router.push("/dashboard")
       }
