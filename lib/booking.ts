@@ -498,7 +498,11 @@ export async function createBooking(
 
   const spendAmount = +price.finalPrice.toFixed(2)
   const bookingId = crypto.randomUUID()
-  await adjustMyCredits(-spendAmount, "booking_charge", `${club.name} · ${court.name} · ${dateStr} ${time}`, bookingId)
+  // No bookingId here: the booking row doesn't exist yet at this point (it's
+  // inserted below, only after the charge succeeds), and credit_ledger.booking_id
+  // has a foreign key into bookings — passing it here would violate that
+  // constraint. The description carries enough context without the link.
+  await adjustMyCredits(-spendAmount, "booking_charge", `${club.name} · ${court.name} · ${dateStr} ${time}`)
 
   const endTime = (parseInt(time, 10) + 1).toString().padStart(2, "0") + ":00"
   const snapshot: PricingSnapshot = {
@@ -538,7 +542,9 @@ export async function createBooking(
     .single()
 
   if (error) {
-    await adjustMyCredits(spendAmount, "booking_refund", "Boeking mislukt — automatisch terugbetaald", bookingId).catch(
+    // No bookingId here either: the insert above failed, so no row with this
+    // id exists to satisfy credit_ledger's foreign key.
+    await adjustMyCredits(spendAmount, "booking_refund", "Boeking mislukt — automatisch terugbetaald").catch(
       () => undefined,
     )
     if (error.code === "23505") {
