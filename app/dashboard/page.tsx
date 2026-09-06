@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import ScrollObserver from "@/components/ScrollObserver"
-import { getCurrentUser, getUserDisplayName, loadStoredUser } from "@/lib/supabase"
+import { getCurrentUser, getRankFromPoints, getUserDisplayName, loadStoredUser } from "@/lib/supabase"
 import { fetchMyBookings, fetchMyCreditsBalance, cancelBooking, type Booking } from "@/lib/booking"
 
 function todayISO(): string {
@@ -22,7 +22,7 @@ export default function DashboardPage() {
   const [cancellingId, setCancellingId] = useState<string | null>(null)
   const storedUser = loadStoredUser()
   const displayName = getUserDisplayName(storedUser)
-  const rank = storedUser?.rank
+  const rank = storedUser?.rank || getRankFromPoints(storedUser?.points ?? 0)
 
   async function load() {
     const user = await getCurrentUser()

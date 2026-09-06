@@ -3,8 +3,10 @@
 import { Suspense, useEffect, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import ScrollObserver from "@/components/ScrollObserver"
-import { loadStoredUser } from "@/lib/supabase"
-import { savePendingCreditPurchase } from "@/lib/booking"
+import { getCurrentUser, loadStoredUser } from "@/lib/supabase"
+import { adjustMyCredits, savePendingCreditPurchase } from "@/lib/booking"
+
+const SANDBOX_TOPUPS = [100, 500, 3000]
 
 const PAYMENT_LINKS: Record<string, string> = {
   price_1TCxrjFgp1PZQf1VtYsHjD8u: "https://buy.stripe.com/test_fZuaEXflj4Nk3ot9O34sE00",
@@ -61,6 +63,29 @@ function BetalenContent() {
   const [tab, setTab] = useState<"abonnementen" | "credits">(
     searchParams?.get("tab") === "credits" ? "credits" : "abonnementen",
   )
+  const [topupLoading, setTopupLoading] = useState<number | null>(null)
+  const [topupMessage, setTopupMessage] = useState("")
+  const [topupError, setTopupError] = useState("")
+
+  const handleSandboxTopup = async (amount: number) => {
+    const user = await getCurrentUser()
+    if (!user) {
+      router.push(`/login?redirect=/betalen&tab=credits`)
+      return
+    }
+
+    setTopupLoading(amount)
+    setTopupError("")
+    setTopupMessage("")
+    try {
+      const newBalance = await adjustMyCredits(amount)
+      setTopupMessage(`+${amount} credits toegevoegd. Nieuw saldo: ${Math.round(newBalance)} credits.`)
+    } catch (err: any) {
+      setTopupError(err.message || "Kon geen credits toevoegen.")
+    } finally {
+      setTopupLoading(null)
+    }
+  }
 
   const startCheckout = (priceId: string) => {
     const user = loadStoredUser()
@@ -188,6 +213,32 @@ function BetalenContent() {
                 </ScrollObserver>
               ))}
             </div>
+          )}
+
+          {tab === "credits" && (
+            <ScrollObserver delay={0.1}>
+              <div className="max-w-md mx-auto mt-10 rounded-2xl border border-lime/20 bg-lime/5 p-5">
+                <p className="text-xs uppercase tracking-wider text-lime font-bold mb-1">Sandbox-snelkoppeling</p>
+                <p className="text-text2 text-sm mb-4">
+                  Geen zin om een testbetaling via Stripe af te ronden? Voeg dummy credits direct toe aan je
+                  account — er wordt niets echt betaald, dit is puur voor testen.
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {SANDBOX_TOPUPS.map((amount) => (
+                    <button
+                      key={amount}
+                      onClick={() => handleSandboxTopup(amount)}
+                      disabled={topupLoading !== null}
+                      className="flex-1 min-w-[90px] py-2.5 rounded-lg font-bold text-sm border border-lime/40 text-lime hover:bg-lime/10 transition-colors disabled:opacity-50"
+                    >
+                      {topupLoading === amount ? "Bezig…" : `+${amount}`}
+                    </button>
+                  ))}
+                </div>
+                {topupMessage && <p className="text-sm text-lime mt-3">{topupMessage}</p>}
+                {topupError && <p className="text-sm text-red-400 mt-3">{topupError}</p>}
+              </div>
+            </ScrollObserver>
           )}
 
           <p className="text-center text-text3 text-xs mt-10">
