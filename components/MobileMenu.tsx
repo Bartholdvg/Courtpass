@@ -7,11 +7,12 @@ import { getUserDisplayName, type CourtPassUser } from "@/lib/supabase"
 
 interface MobileMenuProps {
   user: CourtPassUser | null
+  hasAdminAccess?: boolean
   onClose: () => void
   onLogout: () => void
 }
 
-export default function MobileMenu({ user, onClose, onLogout }: MobileMenuProps) {
+export default function MobileMenu({ user, hasAdminAccess, onClose, onLogout }: MobileMenuProps) {
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
       const target = e.target as HTMLElement
@@ -74,6 +75,13 @@ export default function MobileMenu({ user, onClose, onLogout }: MobileMenuProps)
                 Dashboard · {getUserDisplayName(user)}
               </Link>
             </motion.div>
+            {hasAdminAccess && (
+              <motion.div custom={4.5} variants={menuItemVariants} initial="hidden" animate="visible">
+                <Link href="/club-admin" className="block px-5 py-3 text-text2 hover:text-text hover:bg-surface transition-colors text-sm border-b border-border/30" onClick={onClose}>
+                  Admin
+                </Link>
+              </motion.div>
+            )}
             <motion.div custom={5} variants={menuItemVariants} initial="hidden" animate="visible" className="px-3 py-2">
               <button onClick={onLogout} className="block w-full border border-border text-text2 py-3 rounded-xl text-sm">
                 Uitloggen

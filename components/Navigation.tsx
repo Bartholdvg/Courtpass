@@ -5,12 +5,14 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import MobileMenu from "./MobileMenu"
 import { AUTH_CHANGED_EVENT, clearStoredUser, getUserDisplayName, loadStoredUser, signOut, type CourtPassUser } from "@/lib/supabase"
+import { fetchManagedClubs, fetchMyProfile } from "@/lib/booking"
 
 export default function Navigation() {
   const router = useRouter()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isMounted, setIsMounted] = useState(false)
   const [user, setUser] = useState<CourtPassUser | null>(null)
+  const [hasAdminAccess, setHasAdminAccess] = useState(false)
 
   useEffect(() => {
     setIsMounted(true)
@@ -23,6 +25,29 @@ export default function Navigation() {
       window.removeEventListener(AUTH_CHANGED_EVENT, syncUser)
     }
   }, [])
+
+  useEffect(() => {
+    if (!user) {
+      setHasAdminAccess(false)
+      return
+    }
+
+    let cancelled = false
+    ;(async () => {
+      try {
+        const profile = await fetchMyProfile()
+        if (!profile) return
+        const access = profile.isPlatformAdmin || (await fetchManagedClubs(profile.id, false)).length > 0
+        if (!cancelled) setHasAdminAccess(access)
+      } catch {
+        if (!cancelled) setHasAdminAccess(false)
+      }
+    })()
+
+    return () => {
+      cancelled = true
+    }
+  }, [user])
 
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
@@ -84,6 +109,11 @@ export default function Navigation() {
           <li className="flex gap-3 items-center ml-3">
             {user ? (
               <>
+                {hasAdminAccess && (
+                  <Link href="/club-admin" className="text-text2 hover:text-text transition-colors text-sm">
+                    Admin
+                  </Link>
+                )}
                 <Link href="/dashboard" className="border border-lime/40 text-lime px-4 py-2 rounded-full transition-all text-sm flex items-center gap-2">
                   <span className="w-6 h-6 rounded-full bg-lime/15 flex items-center justify-center text-[11px] font-bold">
                     {getUserDisplayName(user).slice(0, 2).toUpperCase()}
@@ -121,7 +151,9 @@ export default function Navigation() {
       </nav>
 
       {/* Mobile Menu */}
-      {isMenuOpen && <MobileMenu user={user} onClose={() => setIsMenuOpen(false)} onLogout={handleLogout} />}
+      {isMenuOpen && (
+        <MobileMenu user={user} hasAdminAccess={hasAdminAccess} onClose={() => setIsMenuOpen(false)} onLogout={handleLogout} />
+      )}
 
       {/* Overlay */}
       {isMenuOpen && (
