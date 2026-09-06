@@ -26,10 +26,15 @@ import {
   findUserIdByEmail,
   assignClubOwner,
   fetchProfileEmails,
+  fetchAllWalletsSummary,
+  fetchUserLedger,
+  adminAdjustCredits,
+  type WalletSummary,
+  type LedgerEntry,
 } from "@/lib/booking"
 import { calculatePrice, type PricingModel, type PricingInputs } from "@/lib/pricing"
 
-type Section = "overzicht" | "clubs" | "prijsmodel" | "simulator" | "boekingen"
+type Section = "overzicht" | "clubs" | "prijsmodel" | "simulator" | "boekingen" | "wallets"
 const SURFACES = ["Clay", "Hard court", "Grass", "Carpet", "Artificial grass"]
 
 interface CourtDraft extends CourtInput {
@@ -173,6 +178,7 @@ export default function ClubAdminPage() {
     { id: "prijsmodel", label: "⚙️ Prijsmodel", adminOnly: true },
     { id: "simulator", label: "🧮 Simulator", adminOnly: true },
     { id: "boekingen", label: "📅 Boekingen" },
+    { id: "wallets", label: "💳 Wallets", adminOnly: true },
   ]
 
   return (
@@ -211,6 +217,7 @@ export default function ClubAdminPage() {
           {section === "boekingen" && (
             <BookingsSection bookings={bookings} clubs={clubs} model={model} onChanged={() => reloadBookings()} showToast={showToast} />
           )}
+          {section === "wallets" && profile.isPlatformAdmin && <WalletsSection showToast={showToast} />}
         </div>
       </div>
 
@@ -1100,6 +1107,149 @@ function BookingsSection({
           ))}
         </div>
       )}
+    </div>
+  )
+}
+
+function WalletsSection({ showToast }: { showToast: (m: string) => void }) {
+  const [wallets, setWallets] = useState<WalletSummary[] | null>(null)
+  const [loadError, setLoadError] = useState("")
+  const [openUserId, setOpenUserId] = useState<string | null>(null)
+  const [ledger, setLedger] = useState<LedgerEntry[]>([])
+  const [ledgerLoading, setLedgerLoading] = useState(false)
+  const [adjustAmount, setAdjustAmount] = useState("")
+  const [adjustReason, setAdjustReason] = useState("")
+  const [adjusting, setAdjusting] = useState(false)
+
+  async function reload() {
+    try {
+      const data = await fetchAllWalletsSummary()
+      setWallets(data)
+      setLoadError("")
+    } catch (err: any) {
+      setLoadError(err.message || "Kon wallets niet laden.")
+    }
+  }
+
+  useEffect(() => {
+    reload()
+  }, [])
+
+  async function openWallet(userId: string) {
+    if (openUserId === userId) {
+      setOpenUserId(null)
+      return
+    }
+    setOpenUserId(userId)
+    setLedgerLoading(true)
+    try {
+      const data = await fetchUserLedger(userId)
+      setLedger(data)
+    } catch (err: any) {
+      showToast(err.message || "Kon ledger niet laden.")
+    } finally {
+      setLedgerLoading(false)
+    }
+  }
+
+  async function handleAdjust(userId: string) {
+    const delta = Number(adjustAmount)
+    if (!delta || !adjustReason.trim()) {
+      showToast("Vul een aantal en een reden in")
+      return
+    }
+    setAdjusting(true)
+    try {
+      await adminAdjustCredits(userId, delta, adjustReason.trim())
+      showToast("Saldo aangepast")
+      setAdjustAmount("")
+      setAdjustReason("")
+      await reload()
+      const data = await fetchUserLedger(userId)
+      setLedger(data)
+    } catch (err: any) {
+      showToast(err.message || "Aanpassen mislukt")
+    } finally {
+      setAdjusting(false)
+    }
+  }
+
+  if (loadError) return <p className="text-red-400 text-sm">{loadError}</p>
+  if (!wallets) return <p className="text-text2 text-sm">Laden…</p>
+
+  const field = "bg-dark border border-border rounded-lg px-3 py-2 text-sm w-full focus:border-lime focus:outline-none"
+
+  return (
+    <div>
+      <h1 className="font-playfair text-3xl font-bold mb-1">Wallets</h1>
+      <p className="text-text2 text-sm mb-6">Creditsaldo per gebruiker, met de volledige mutatiegeschiedenis (ledger).</p>
+
+      <div className="space-y-2">
+        {wallets.map((w) => (
+          <div key={w.userId} className="border border-border rounded-2xl bg-surface2 overflow-hidden">
+            <button
+              onClick={() => openWallet(w.userId)}
+              className="w-full flex flex-wrap items-center gap-3 px-4 py-3 text-left hover:bg-surface transition-colors"
+            >
+              <span className="font-medium truncate">{w.email || w.userId}</span>
+              <span className="ml-auto text-xs text-text3">
+                totaal gekocht {Math.round(w.lifetimeTopUp)} · besteed {Math.round(w.lifetimeSpent)}
+              </span>
+              <span className="font-mono font-bold text-lime">{Math.round(w.balance)} cr</span>
+            </button>
+
+            {openUserId === w.userId && (
+              <div className="border-t border-border p-4 bg-dark/40">
+                <h3 className="text-sm font-bold mb-2">Ledger</h3>
+                {ledgerLoading ? (
+                  <p className="text-sm text-text2">Laden…</p>
+                ) : ledger.length === 0 ? (
+                  <p className="text-sm text-text2">Nog geen mutaties.</p>
+                ) : (
+                  <div className="space-y-1 mb-4 max-h-64 overflow-y-auto">
+                    {ledger.map((entry) => (
+                      <div key={entry.id} className="flex items-center gap-3 text-xs border-b border-border/30 pb-1 last:border-b-0">
+                        <span className="text-text3 flex-none">{new Date(entry.createdAt).toLocaleString("nl-NL")}</span>
+                        <span className="flex-1 truncate">{entry.type}{entry.description ? ` — ${entry.description}` : ""}</span>
+                        <span className={`font-mono flex-none ${entry.credits >= 0 ? "text-lime" : "text-text2"}`}>
+                          {entry.credits >= 0 ? "+" : ""}
+                          {Math.round(entry.credits)}
+                        </span>
+                        <span className="font-mono text-text3 flex-none">→ {Math.round(entry.balanceAfter)}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <h3 className="text-sm font-bold mb-2">Handmatige aanpassing</h3>
+                <div className="flex flex-wrap gap-2">
+                  <input
+                    type="number"
+                    value={adjustAmount}
+                    onChange={(e) => setAdjustAmount(e.target.value)}
+                    placeholder="bv. 50 of -20"
+                    className={`${field} max-w-[140px]`}
+                  />
+                  <input
+                    type="text"
+                    value={adjustReason}
+                    onChange={(e) => setAdjustReason(e.target.value)}
+                    placeholder="Reden (verplicht)"
+                    className={`${field} flex-1 min-w-[200px]`}
+                  />
+                  <button
+                    onClick={() => handleAdjust(w.userId)}
+                    disabled={adjusting}
+                    className="bg-lime text-dark px-4 py-2 rounded-lg font-bold text-sm hover:opacity-90 disabled:opacity-50"
+                  >
+                    {adjusting ? "Bezig…" : "Toepassen"}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
     </div>
   )
 }

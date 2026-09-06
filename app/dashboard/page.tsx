@@ -5,7 +5,18 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import ScrollObserver from "@/components/ScrollObserver"
 import { getCurrentUser, getRankFromPoints, getUserDisplayName, loadStoredUser } from "@/lib/supabase"
-import { fetchMyBookings, fetchMyCreditsBalance, cancelBooking, type Booking } from "@/lib/booking"
+import { fetchMyBookings, fetchMyCreditsBalance, fetchMyLedger, cancelBooking, type Booking, type LedgerEntry } from "@/lib/booking"
+
+const LEDGER_LABELS: Record<string, string> = {
+  topup: "Credits gekocht",
+  subscription_grant: "Abonnement toekenning",
+  booking_charge: "Baan geboekt",
+  booking_refund: "Terugbetaling",
+  split_received: "Ontvangen (gesplitst)",
+  split_paid: "Betaald (gesplitst)",
+  rollover_expiry: "Vervallen credits",
+  adjustment: "Aanpassing",
+}
 
 function todayISO(): string {
   const d = new Date()
@@ -18,6 +29,7 @@ export default function DashboardPage() {
   const [bookings, setBookings] = useState<Booking[]>([])
   const [credits, setCredits] = useState(0)
   const [creditsError, setCreditsError] = useState(false)
+  const [ledger, setLedger] = useState<LedgerEntry[]>([])
   const [error, setError] = useState("")
   const [cancellingId, setCancellingId] = useState<string | null>(null)
   const storedUser = loadStoredUser()
@@ -46,6 +58,10 @@ export default function DashboardPage() {
     } finally {
       setLoading(false)
     }
+
+    fetchMyLedger(8)
+      .then(setLedger)
+      .catch(() => setLedger([]))
   }
 
   useEffect(() => {
@@ -196,6 +212,30 @@ export default function DashboardPage() {
                     Abonnement beheren
                   </Link>
                 </div>
+              </div>
+            </ScrollObserver>
+
+            <ScrollObserver delay={0.25}>
+              <div className="border border-border rounded-2xl p-6 mt-6">
+                <h2 className="font-bold text-lg mb-4">Credits geschiedenis</h2>
+                {ledger.length === 0 ? (
+                  <p className="text-sm text-text2">Nog geen mutaties.</p>
+                ) : (
+                  <div className="space-y-2">
+                    {ledger.map((entry) => (
+                      <div key={entry.id} className="flex items-center gap-2 text-sm border-b border-border/30 pb-2 last:border-b-0 last:pb-0">
+                        <div className="min-w-0 flex-1">
+                          <p className="text-text truncate">{LEDGER_LABELS[entry.type] || entry.type}</p>
+                          <p className="text-xs text-text3">{new Date(entry.createdAt).toLocaleDateString("nl-NL", { day: "numeric", month: "short" })}</p>
+                        </div>
+                        <span className={`font-mono font-bold flex-none ${entry.credits >= 0 ? "text-lime" : "text-text2"}`}>
+                          {entry.credits >= 0 ? "+" : ""}
+                          {Math.round(entry.credits)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </ScrollObserver>
           </div>

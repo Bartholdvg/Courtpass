@@ -15,7 +15,7 @@ export default function BetaaldPage() {
       setStatus("plain")
       return
     }
-    adjustMyCredits(credits)
+    adjustMyCredits(credits, "topup", "Credits gekocht via Stripe (sandbox)")
       .then(() => {
         setCreditsAdded(credits)
         setStatus("credited")

@@ -400,9 +400,53 @@ export async function fetchMyCreditsBalance(): Promise<number> {
   return data ? Number(data.credits_balance) : 0
 }
 
-/** delta > 0 adds credits, delta < 0 spends them (throws InsufficientCreditsError if it would go negative). */
-export async function adjustMyCredits(delta: number): Promise<number> {
-  const { data, error } = await supabase.rpc("adjust_my_credits", { delta })
+export type LedgerType =
+  | "topup"
+  | "subscription_grant"
+  | "booking_charge"
+  | "booking_refund"
+  | "split_received"
+  | "split_paid"
+  | "rollover_expiry"
+  | "adjustment"
+
+export interface LedgerEntry {
+  id: string
+  type: LedgerType
+  credits: number
+  description: string | null
+  bookingId: string | null
+  createdAt: string
+  balanceAfter: number
+}
+
+function mapLedgerRow(row: any): LedgerEntry {
+  return {
+    id: row.id,
+    type: row.type,
+    credits: Number(row.credits),
+    description: row.description,
+    bookingId: row.booking_id,
+    createdAt: row.created_at,
+    balanceAfter: Number(row.balance_after),
+  }
+}
+
+/** delta > 0 adds credits, delta < 0 spends them (throws InsufficientCreditsError if it would go negative).
+ * Every call writes an entry to credit_ledger — pass a type/description (and a
+ * bookingId when relevant) so that audit trail stays meaningful. */
+export async function adjustMyCredits(
+  delta: number,
+  type: LedgerType = "adjustment",
+  description?: string,
+  bookingId?: string,
+): Promise<number> {
+  const { data, error } = await supabase.rpc("adjust_my_credits", {
+    delta,
+    p_type: type,
+    p_description: description ?? null,
+    p_booking_id: bookingId ?? null,
+  })
   if (error) {
     if (error.message?.includes("Insufficient credits")) {
       throw new InsufficientCreditsError("Niet genoeg credits voor deze boeking.")
@@ -410,6 +454,22 @@ export async function adjustMyCredits(delta: number): Promise<number> {
     throw error
   }
   return Number(data)
+}
+
+/** My own credit ledger, most recent first. */
+export async function fetchMyLedger(limit = 50): Promise<LedgerEntry[]> {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return []
+  const { data, error } = await supabase
+    .from("credit_ledger")
+    .select("*")
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: false })
+    .limit(limit)
+  if (error) throw error
+  return (data ?? []).map(mapLedgerRow)
 }
 
 /** Creates a booking WITH a frozen pricing audit trail. The price and every
@@ -437,7 +497,8 @@ export async function createBooking(
   if (price.error || !price.inputs) throw new Error(price.error || "Kon de prijs niet berekenen.")
 
   const spendAmount = +price.finalPrice.toFixed(2)
-  await adjustMyCredits(-spendAmount)
+  const bookingId = crypto.randomUUID()
+  await adjustMyCredits(-spendAmount, "booking_charge", `${club.name} · ${court.name} · ${dateStr} ${time}`, bookingId)
 
   const endTime = (parseInt(time, 10) + 1).toString().padStart(2, "0") + ":00"
   const snapshot: PricingSnapshot = {
@@ -457,6 +518,7 @@ export async function createBooking(
   const { data, error } = await supabase
     .from("bookings")
     .insert({
+      id: bookingId,
       booking_code: generateBookingCode(),
       user_id: user.id,
       club_id: club.id,
@@ -476,7 +538,9 @@ export async function createBooking(
     .single()
 
   if (error) {
-    await adjustMyCredits(spendAmount).catch(() => undefined)
+    await adjustMyCredits(spendAmount, "booking_refund", "Boeking mislukt — automatisch terugbetaald", bookingId).catch(
+      () => undefined,
+    )
     if (error.code === "23505") {
       throw new BookingUnavailableError("Deze baan is net door iemand anders geboekt. Kies een andere tijd of baan.")
     }
@@ -485,8 +549,10 @@ export async function createBooking(
   return mapBookingRow(data)
 }
 
+/** Cancels a confirmed booking and refunds its credits atomically (see
+ * cancel_my_booking in the DB) — so a booking can never be refunded twice. */
 export async function cancelBooking(id: string): Promise<void> {
-  const { error } = await supabase.from("bookings").update({ status: "cancelled" }).eq("id", id)
+  const { error } = await supabase.rpc("cancel_my_booking", { p_booking_id: id })
   if (error) throw error
 }
 
@@ -542,6 +608,68 @@ export async function fetchProfileEmails(ids: string[]): Promise<Record<string, 
   const map: Record<string, string> = {}
   for (const row of data ?? []) if (row.email) map[row.id] = row.email
   return map
+}
+
+/* ================= Admin: wallets ================= */
+
+export interface WalletSummary {
+  userId: string
+  email: string | null
+  balance: number
+  lifetimeTopUp: number
+  lifetimeSpent: number
+}
+
+/** Platform-admin only (RLS: is_platform_admin lets them read every profile
+ * and every ledger row). Aggregates the ledger client-side — there's no
+ * separate view for this, it's just two selects and a reduce. */
+export async function fetchAllWalletsSummary(): Promise<WalletSummary[]> {
+  const [{ data: profiles, error: profilesError }, { data: ledger, error: ledgerError }] = await Promise.all([
+    supabase.from("profiles").select("id, email, credits_balance"),
+    supabase.from("credit_ledger").select("user_id, type, credits"),
+  ])
+  if (profilesError) throw profilesError
+  if (ledgerError) throw ledgerError
+
+  const topUpByUser = new Map<string, number>()
+  const spentByUser = new Map<string, number>()
+  for (const row of ledger ?? []) {
+    if (row.type === "topup" || row.type === "subscription_grant") {
+      topUpByUser.set(row.user_id, (topUpByUser.get(row.user_id) ?? 0) + Number(row.credits))
+    } else if (row.type === "booking_charge") {
+      spentByUser.set(row.user_id, (spentByUser.get(row.user_id) ?? 0) + Math.abs(Number(row.credits)))
+    }
+  }
+
+  return (profiles ?? [])
+    .map((p) => ({
+      userId: p.id,
+      email: p.email,
+      balance: Number(p.credits_balance),
+      lifetimeTopUp: topUpByUser.get(p.id) ?? 0,
+      lifetimeSpent: spentByUser.get(p.id) ?? 0,
+    }))
+    .sort((a, b) => b.balance - a.balance)
+}
+
+/** Platform-admin only. */
+export async function fetchUserLedger(userId: string, limit = 100): Promise<LedgerEntry[]> {
+  const { data, error } = await supabase
+    .from("credit_ledger")
+    .select("*")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(limit)
+  if (error) throw error
+  return (data ?? []).map(mapLedgerRow)
+}
+
+/** Platform-admin only manual correction — always requires a reason, and is
+ * itself scoped/validated server-side by admin_adjust_credits (see 0004). */
+export async function adminAdjustCredits(userId: string, delta: number, reason: string): Promise<number> {
+  const { data, error } = await supabase.rpc("admin_adjust_credits", { target_user: userId, delta, reason })
+  if (error) throw error
+  return Number(data)
 }
 
 /* ================= Admin: clubs & courts ================= */
