@@ -1,8 +1,10 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import { motion } from "framer-motion"
 import ScrollObserver from "@/components/ScrollObserver"
+import { effectivePriceCents, fetchActiveSubscriptionPlans, formatEuros, type SubscriptionPlan } from "@/lib/billing"
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -25,6 +27,14 @@ const itemVariants = {
 }
 
 export default function Home() {
+  const [plans, setPlans] = useState<SubscriptionPlan[]>([])
+
+  useEffect(() => {
+    fetchActiveSubscriptionPlans()
+      .then(setPlans)
+      .catch(() => setPlans([]))
+  }, [])
+
   return (
     <main className="min-h-screen pt-20">
       {/* Hero Section */}
@@ -274,72 +284,52 @@ export default function Home() {
             </div>
           </ScrollObserver>
 
-          <div className="grid md:grid-cols-3 gap-6 max-w-5xl mx-auto">
-            {[
-              {
-                name: "Starter",
-                price: "€49",
-                period: "/maand",
-                sessions: "4 sessies/maand",
-                features: ["Toegang tot alle clubs", "Reserveren tot 48u van tevoren", "Maandelijks opzeggen"],
-              },
-              {
-                name: "Popular",
-                price: "€79",
-                period: "/maand",
-                sessions: "8 sessies/maand",
-                features: ["Toegang tot alle clubs", "Reserveren tot 48u van tevoren", "Voorrangstoegang", "Community forum"],
-                popular: true,
-              },
-              {
-                name: "Pro",
-                price: "€119",
-                period: "/maand",
-                sessions: "Onbeperkt",
-                features: ["Alle clubs incl. privébanen", "Prioriteit bij reserveren", "Gratis gastcredits", "20% korting op coaching"],
-              },
-            ].map((plan, i) => (
-              <ScrollObserver key={i} delay={i * 0.1}>
-                <div
-                  className={`relative border rounded-2xl p-6 transition-all ${
-                    plan.popular
-                      ? "border-lime/50 bg-surface2 ring-1 ring-lime/20 transform md:scale-105"
-                      : "border-border hover:border-muted"
-                  }`}
-                >
-                  {plan.popular && (
-                    <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-lime text-dark px-3 py-1 rounded-full text-xs font-bold uppercase">
-                      POPULAIR
+          {plans.length === 0 ? (
+            <p className="text-center text-text2 text-sm">Laden…</p>
+          ) : (
+            <div className="grid md:grid-cols-3 lg:grid-cols-5 gap-6 max-w-6xl mx-auto">
+              {plans.map((plan, i) => {
+                const price = effectivePriceCents(plan)
+                const onSale = price < plan.priceCents
+                return (
+                  <ScrollObserver key={plan.id} delay={i * 0.1}>
+                    <div
+                      className={`relative border rounded-2xl p-6 transition-all h-full flex flex-col ${
+                        plan.mostChosen
+                          ? "border-lime/50 bg-surface2 ring-1 ring-lime/20 transform md:scale-105"
+                          : "border-border hover:border-muted"
+                      }`}
+                    >
+                      {plan.mostChosen && (
+                        <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-lime text-dark px-3 py-1 rounded-full text-xs font-bold uppercase">
+                          POPULAIR
+                        </div>
+                      )}
+                      <h3 className="text-xs text-text3 uppercase tracking-widest font-bold mb-4">{plan.name}</h3>
+                      <div className="mb-2">
+                        {onSale && <span className="text-text3 line-through text-sm mr-2">{formatEuros(plan.priceCents)}</span>}
+                        <span className="font-playfair text-3xl font-bold text-text">{price === 0 ? "Gratis" : formatEuros(price)}</span>
+                        {price > 0 && <span className="text-text2 text-sm">/maand</span>}
+                      </div>
+                      <div className="text-lime font-bold mb-6 text-sm flex-1">
+                        {plan.creditsPerMonth > 0 ? `${plan.creditsPerMonth} credits per maand` : "Geen maandelijkse credits"}
+                      </div>
+                      <Link
+                        href="/betalen"
+                        className={`w-full py-3 rounded-lg font-bold text-sm transition-all block text-center ${
+                          plan.mostChosen
+                            ? "bg-lime text-dark hover:opacity-90"
+                            : "border border-muted text-text2 hover:text-text hover:border-text"
+                        }`}
+                      >
+                        Kies plan
+                      </Link>
                     </div>
-                  )}
-                  <h3 className="text-xs text-text3 uppercase tracking-widest font-bold mb-4">{plan.name}</h3>
-                  <div className="mb-6">
-                    <span className="font-playfair text-4xl font-bold text-text">{plan.price}</span>
-                    <span className="text-text2 text-sm">{plan.period}</span>
-                  </div>
-                  <div className="text-lime font-bold mb-6">{plan.sessions}</div>
-                  <ul className="space-y-3 mb-8">
-                    {plan.features.map((feature, j) => (
-                      <li key={j} className="text-sm text-text2 flex gap-2">
-                        <span className="text-lime text-lg leading-none">✓</span>
-                        {feature}
-                      </li>
-                    ))}
-                  </ul>
-                  <Link
-                    href="/betalen"
-                    className={`w-full py-3 rounded-lg font-bold text-sm transition-all block text-center ${
-                      plan.popular
-                        ? "bg-lime text-dark hover:opacity-90"
-                        : "border border-muted text-text2 hover:text-text hover:border-text"
-                    }`}
-                  >
-                    Kies plan
-                  </Link>
-                </div>
-              </ScrollObserver>
-            ))}
-          </div>
+                  </ScrollObserver>
+                )
+              })}
+            </div>
+          )}
         </div>
       </section>
 
