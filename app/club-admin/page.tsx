@@ -52,6 +52,7 @@ import {
   type CreditPackInput,
   type SubscriptionPlanInput,
 } from "@/lib/billing"
+import { adminForceCaptureSplit, fetchBookingSplits, type BookingSplit } from "@/lib/splits"
 
 type Section = "overzicht" | "clubs" | "prijsmodel" | "simulator" | "boekingen" | "wallets" | "producten"
 const SURFACES = ["Clay", "Hard court", "Grass", "Carpet", "Artificial grass"]
@@ -927,6 +928,73 @@ function SimulatorSection({ model }: { model: PricingModel }) {
   )
 }
 
+const SPLIT_STATUS_LABEL: Record<string, string> = {
+  pending: "Openstaand",
+  paid: "Betaald",
+  covered_by_booker: "Gedekt door boeker",
+}
+
+function SplitBreakdown({ bookingId, bookerEmail, showToast }: { bookingId: string; bookerEmail: string; showToast: (m: string) => void }) {
+  const [splits, setSplits] = useState<BookingSplit[] | null>(null)
+  const [emails, setEmails] = useState<Record<string, string>>({})
+  const [capturingId, setCapturingId] = useState<string | null>(null)
+
+  useEffect(() => {
+    fetchBookingSplits(bookingId)
+      .then((data) => {
+        setSplits(data)
+        const ids = data.map((s) => s.userId).filter((id): id is string => !!id)
+        if (ids.length) fetchProfileEmails(ids).then(setEmails).catch(() => {})
+      })
+      .catch((err) => showToast(err.message || "Kon split niet laden"))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bookingId])
+
+  async function handleForceCapture(splitId: string) {
+    setCapturingId(splitId)
+    try {
+      await adminForceCaptureSplit(splitId)
+      setSplits(await fetchBookingSplits(bookingId))
+      showToast("Deadline gesimuleerd")
+    } catch (err: any) {
+      showToast(err.message || "Mislukt")
+    } finally {
+      setCapturingId(null)
+    }
+  }
+
+  if (!splits || splits.length <= 1) return null
+
+  return (
+    <div className="border-t border-border p-4 text-sm space-y-1.5">
+      <h4 className="text-xs font-bold text-text3 uppercase tracking-wider mb-1">Verdeling ({splits.length} spelers)</h4>
+      {splits.map((s) => (
+        <div key={s.id} className="flex items-center gap-2">
+          <span className="min-w-0 flex-1 truncate">{s.guestName ? `${s.guestName} (gast)` : s.userId ? emails[s.userId] || s.userId : "?"}</span>
+          <span className="font-mono flex-none">{Math.round(s.credits)} cr</span>
+          <span
+            className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded-full flex-none ${
+              s.status === "paid" ? "bg-lime/10 text-lime" : s.status === "covered_by_booker" ? "bg-surface2 text-text3" : "bg-yellow-500/10 text-yellow-400"
+            }`}
+          >
+            {SPLIT_STATUS_LABEL[s.status]}
+          </span>
+          {s.status === "pending" && (
+            <button
+              onClick={() => handleForceCapture(s.id)}
+              disabled={capturingId === s.id}
+              className="text-[10px] border border-border rounded-full px-2 py-0.5 hover:border-lime/50 disabled:opacity-50 flex-none"
+            >
+              {capturingId === s.id ? "…" : "Simuleer deadline"}
+            </button>
+          )}
+        </div>
+      ))}
+      <p className="text-[10px] text-text3 pt-1">Boeker: {bookerEmail}</p>
+    </div>
+  )
+}
+
 function BookingAuditBox({ booking }: { booking: Booking }) {
   return (
     <div className="border-t border-border p-4 bg-dark/40 text-sm space-y-1">
@@ -1105,6 +1173,7 @@ function BookingsSection({
                     Annuleren
                   </button>
                 </div>
+                <SplitBreakdown bookingId={openBooking.id} bookerEmail={bookerEmails[openBooking.userId] || openBooking.userId} showToast={showToast} />
                 <BookingAuditBox booking={openBooking} />
               </div>
             )}
@@ -1136,7 +1205,12 @@ function BookingsSection({
                   </button>
                 )}
               </div>
-              {openId === b.id && <BookingAuditBox booking={b} />}
+              {openId === b.id && (
+                <>
+                  <SplitBreakdown bookingId={b.id} bookerEmail={bookerEmails[b.userId] || b.userId} showToast={showToast} />
+                  <BookingAuditBox booking={b} />
+                </>
+              )}
             </div>
           ))}
         </div>

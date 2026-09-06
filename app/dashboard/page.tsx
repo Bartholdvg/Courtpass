@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation"
 import ScrollObserver from "@/components/ScrollObserver"
 import { getCurrentUser, getRankFromPoints, getUserDisplayName, loadStoredUser } from "@/lib/supabase"
 import { fetchMyBookings, fetchMyCreditsBalance, fetchMyLedger, cancelBooking, type Booking, type LedgerEntry } from "@/lib/booking"
+import { fetchMyOwedSplits, fetchSplitsForMyBookings, payMySplitShare, type BookingSplit, type OwedSplit } from "@/lib/splits"
 
 const LEDGER_LABELS: Record<string, string> = {
   topup: "Credits gekocht",
@@ -33,6 +34,9 @@ export default function DashboardPage() {
   const [error, setError] = useState("")
   const [cancellingId, setCancellingId] = useState<string | null>(null)
   const [historySort, setHistorySort] = useState<"playDate" | "bookedDate">("playDate")
+  const [owedSplits, setOwedSplits] = useState<OwedSplit[]>([])
+  const [mySplits, setMySplits] = useState<Record<string, BookingSplit[]>>({})
+  const [payingSplitId, setPayingSplitId] = useState<string | null>(null)
   const storedUser = loadStoredUser()
   const displayName = getUserDisplayName(storedUser)
   const rank = storedUser?.rank || getRankFromPoints(storedUser?.points ?? 0)
@@ -63,6 +67,26 @@ export default function DashboardPage() {
     fetchMyLedger(8)
       .then(setLedger)
       .catch(() => setLedger([]))
+
+    fetchMyOwedSplits()
+      .then(setOwedSplits)
+      .catch(() => setOwedSplits([]))
+
+    fetchSplitsForMyBookings()
+      .then(setMySplits)
+      .catch(() => setMySplits({}))
+  }
+
+  async function handlePaySplit(splitId: string) {
+    setPayingSplitId(splitId)
+    try {
+      await payMySplitShare(splitId)
+      await load()
+    } catch (err: any) {
+      setError(err.message || "Betalen mislukt.")
+    } finally {
+      setPayingSplitId(null)
+    }
   }
 
   useEffect(() => {
@@ -140,6 +164,35 @@ export default function DashboardPage() {
             </div>
           )}
 
+          {owedSplits.length > 0 && (
+            <ScrollObserver delay={0.05}>
+              <div className="mb-6 rounded-2xl border border-lime/30 bg-lime/5 p-5">
+                <h2 className="font-bold text-lg mb-1">Openstaande verzoeken</h2>
+                <p className="text-text2 text-sm mb-4">Iemand heeft een baan voor je geboekt — jouw aandeel:</p>
+                <div className="space-y-2">
+                  {owedSplits.map((s) => (
+                    <div key={s.id} className="flex flex-wrap items-center gap-3 rounded-xl border border-border/70 bg-dark/60 p-3 text-sm">
+                      <span className="min-w-0">
+                        <span className="block font-semibold text-text truncate">{s.clubName} · {s.courtName}</span>
+                        <span className="block text-text3 text-xs">
+                          {new Date(s.date + "T12:00:00").toLocaleDateString("nl-NL", { day: "numeric", month: "short" })} · {s.startTime}
+                        </span>
+                      </span>
+                      <span className="ml-auto font-mono font-bold text-lime">{Math.round(s.credits)} cr</span>
+                      <button
+                        onClick={() => handlePaySplit(s.id)}
+                        disabled={payingSplitId === s.id}
+                        className="bg-lime text-dark px-3 py-1.5 rounded-full text-xs font-bold hover:opacity-90 disabled:opacity-50"
+                      >
+                        {payingSplitId === s.id ? "Bezig…" : "Betalen"}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </ScrollObserver>
+          )}
+
           <div className="grid lg:grid-cols-[1.4fr_0.6fr] gap-6">
             <div>
               <ScrollObserver delay={0.1}>
@@ -164,6 +217,16 @@ export default function DashboardPage() {
                             <p className="text-xs text-text3 mt-0.5">
                               Geboekt op {new Date(b.createdAt).toLocaleDateString("nl-NL", { day: "numeric", month: "short", year: "numeric" })}
                             </p>
+                            {(() => {
+                              const splits = mySplits[b.id]
+                              if (!splits || splits.length <= 1) return null
+                              const paid = splits.filter((s) => s.status !== "pending").length
+                              return (
+                                <p className="text-xs text-lime mt-0.5">
+                                  Gesplitst · {paid}/{splits.length} betaald
+                                </p>
+                              )
+                            })()}
                           </div>
                           <div className="ml-auto flex items-center gap-3 flex-none">
                             <span className="font-mono font-bold text-lime">{Math.round(b.priceCredits)} cr</span>

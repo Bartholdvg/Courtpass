@@ -25,6 +25,24 @@ import {
 import { fetchForecast, getRainBucket, isForecastLive } from "@/lib/weather"
 import { haversineKm, type PricingModel } from "@/lib/pricing"
 import { AUTH_CHANGED_EVENT, getCurrentUser } from "@/lib/supabase"
+import { createBookingSplit, resolveUserIdByEmail } from "@/lib/splits"
+
+interface ParticipantInput {
+  mode: "email" | "guest"
+  value: string
+  credits: number
+}
+
+/** Splits `total` credits across `n` players in whole cents, remainder to
+ * index 0 (the booker) — so the shares always sum exactly to `total`. */
+function equalShares(total: number, n: number): number[] {
+  const cents = Math.round(total * 100)
+  const base = Math.floor(cents / n)
+  const remainder = cents - base * n
+  const shares = Array(n).fill(base)
+  shares[0] += remainder
+  return shares.map((c) => c / 100)
+}
 
 const BookingMap = dynamic(() => import("@/components/BookingMap"), { ssr: false })
 
@@ -63,6 +81,10 @@ export default function ClubsPage() {
   const [bookingError, setBookingError] = useState("")
   const [insufficientCredits, setInsufficientCredits] = useState(false)
   const [isBooking, setIsBooking] = useState(false)
+  const [playerCount, setPlayerCount] = useState(1)
+  const [participants, setParticipants] = useState<ParticipantInput[]>([])
+  const [splitError, setSplitError] = useState("")
+  const [splitSummary, setSplitSummary] = useState<{ credits: number; label: string }[] | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -156,6 +178,19 @@ export default function ClubsPage() {
     setSelectedTime(null)
     setSelectedCourtId(null)
     setBookingError("")
+    setPlayerCount(1)
+    setParticipants([])
+    setSplitError("")
+  }
+
+  function setPlayers(n: number) {
+    setPlayerCount(n)
+    setParticipants((prev) => {
+      const next = [...prev]
+      while (next.length < n - 1) next.push({ mode: "email", value: "", credits: 0 })
+      return next.slice(0, n - 1)
+    })
+    setSplitError("")
   }
 
   function backToClubs() {
@@ -176,13 +211,51 @@ export default function ClubsPage() {
     setIsBooking(true)
     setBookingError("")
     setInsufficientCredits(false)
+    setSplitError("")
     try {
       const weatherBucket = getRainBucket(selectedClub.id, selectedDate, model.settings.rainForecast)
       const price = getPrice(selectedClub, clubs, daySlots, selectedDate, selectedTime, model, weatherBucket)
       if (price.error) throw new Error(price.error)
+
+      let resolvedParticipants: { userId: string | null; guestName: string | null; credits: number; label: string }[] | null = null
+      if (playerCount > 1) {
+        const others: { userId: string | null; guestName: string | null; credits: number; label: string }[] = []
+        for (const p of participants) {
+          if (!p.value.trim()) throw new Error("Vul voor elke medespeler een e-mailadres of gastnaam in.")
+          if (p.mode === "email") {
+            const userId = await resolveUserIdByEmail(p.value)
+            if (!userId) throw new Error(`Geen account gevonden met e-mailadres "${p.value}".`)
+            others.push({ userId, guestName: null, credits: p.credits, label: p.value })
+          } else {
+            others.push({ userId: null, guestName: p.value.trim(), credits: p.credits, label: `${p.value.trim()} (gast)` })
+          }
+        }
+        const othersTotal = others.reduce((s, o) => s + o.credits, 0)
+        const bookerShare = +(price.finalPrice - othersTotal).toFixed(2)
+        if (bookerShare < 0) {
+          throw new Error("De opgetelde bedragen van je medespelers zijn hoger dan de totaalprijs. Pas de bedragen aan.")
+        }
+        resolvedParticipants = [{ userId: currentUser.id, guestName: null, credits: bookerShare, label: "Jij" }, ...others]
+      }
+
       const weatherSource = isForecastLive(selectedClub.id, selectedDate) ? "forecast API" : "admin fallback"
       const result = await createBooking(selectedClub, selectedCourt, selectedDate, selectedTime, price, weatherSource)
       setBooking(result)
+
+      if (resolvedParticipants) {
+        try {
+          await createBookingSplit(
+            result.id,
+            resolvedParticipants.map((p) => ({ userId: p.userId, guestName: p.guestName, credits: p.credits })),
+          )
+          setSplitSummary(resolvedParticipants.map((p) => ({ credits: p.credits, label: p.label })))
+        } catch (splitErr: any) {
+          setSplitError(
+            "De boeking is gelukt, maar het splitsen van de kosten is mislukt: " + (splitErr.message || "onbekende fout") +
+              ". Je hebt de volledige prijs betaald.",
+          )
+        }
+      }
     } catch (err: any) {
       if (err instanceof BookingUnavailableError) {
         setBookingError(err.message)
@@ -205,6 +278,10 @@ export default function ClubsPage() {
     setSelectedDate(null)
     setSelectedTime(null)
     setSelectedCourtId(null)
+    setPlayerCount(1)
+    setParticipants([])
+    setSplitError("")
+    setSplitSummary(null)
   }
 
   if (loading) {
@@ -237,9 +314,22 @@ export default function ClubsPage() {
             {booking.startTime}–{booking.endTime}
           </p>
           <p className="font-mono text-lime text-xs mb-6">{booking.bookingCode}</p>
-          <div className="font-mono text-3xl font-bold text-lime mb-8">
+          <div className="font-mono text-3xl font-bold text-lime mb-4">
             {Math.round(booking.priceCredits)} <span className="text-sm text-text2 font-normal">credits</span>
           </div>
+          {splitSummary && (
+            <div className="text-left border border-border rounded-xl p-4 mb-6 text-sm">
+              <p className="font-bold mb-2">Verdeeld over {splitSummary.length} spelers</p>
+              {splitSummary.map((s, i) => (
+                <div key={i} className="flex justify-between text-text2">
+                  <span>{s.label}</span>
+                  <span className="font-mono">{Math.round(s.credits)} cr</span>
+                </div>
+              ))}
+              <p className="text-text3 text-xs mt-2">De anderen zien een openstaand verzoek op hun dashboard.</p>
+            </div>
+          )}
+          {splitError && <p className="text-yellow-400 text-sm mb-6 max-w-sm">{splitError}</p>}
           <button onClick={resetAfterBooking} className="bg-lime text-dark px-6 py-3 rounded-lg font-bold hover:opacity-90 transition-opacity">
             Boek nog een baan
           </button>
@@ -488,8 +578,84 @@ export default function ClubsPage() {
                       const weatherBucket = getRainBucket(selectedClub.id, selectedDate, model.settings.rainForecast)
                       const price = getPrice(selectedClub, clubs, daySlots, selectedDate, selectedTime, model, weatherBucket)
                       const loggedIn = isAuthenticated === true
+                      const othersTotal = participants.reduce((s, p) => s + (Number(p.credits) || 0), 0)
+                      const myShare = price.error ? 0 : +(price.finalPrice - othersTotal).toFixed(2)
+
+                      function updateParticipant(i: number, patch: Partial<ParticipantInput>) {
+                        setParticipants((prev) => prev.map((p, j) => (j === i ? { ...p, ...patch } : p)))
+                      }
+
                       return (
                         <>
+                          {loggedIn && (
+                            <div className="border-t border-dashed border-border pt-3 mb-1">
+                              <div className="flex items-center justify-between mb-2">
+                                <span className="text-xs font-bold text-text2">Met hoeveel spelers?</span>
+                                <div className="flex gap-1">
+                                  {[1, 2, 3, 4].map((n) => (
+                                    <button
+                                      key={n}
+                                      onClick={() => {
+                                        setPlayers(n)
+                                        if (!price.error && n > 1) {
+                                          const shares = equalShares(price.finalPrice, n)
+                                          setParticipants((prev) =>
+                                            Array.from({ length: n - 1 }, (_, i) => ({
+                                              mode: prev[i]?.mode ?? "email",
+                                              value: prev[i]?.value ?? "",
+                                              credits: shares[i + 1] ?? 0,
+                                            })),
+                                          )
+                                        }
+                                      }}
+                                      className={`w-8 h-8 rounded-lg text-sm font-bold ${
+                                        playerCount === n ? "bg-lime text-dark" : "border border-border text-text2"
+                                      }`}
+                                    >
+                                      {n}
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+
+                              {playerCount > 1 && (
+                                <div className="space-y-2 mb-2">
+                                  {participants.map((p, i) => (
+                                    <div key={i} className="flex items-center gap-1.5">
+                                      <select
+                                        value={p.mode}
+                                        onChange={(e) => updateParticipant(i, { mode: e.target.value as "email" | "guest" })}
+                                        className="bg-dark border border-border rounded-lg px-1.5 py-1.5 text-[11px]"
+                                      >
+                                        <option value="email">Account</option>
+                                        <option value="guest">Gast</option>
+                                      </select>
+                                      <input
+                                        type="text"
+                                        value={p.value}
+                                        onChange={(e) => updateParticipant(i, { value: e.target.value })}
+                                        placeholder={p.mode === "email" ? "e-mail" : "naam"}
+                                        className="flex-1 min-w-0 bg-dark border border-border rounded-lg px-2 py-1.5 text-xs"
+                                      />
+                                      <input
+                                        type="number"
+                                        min={0}
+                                        step="0.01"
+                                        value={p.credits}
+                                        onChange={(e) => updateParticipant(i, { credits: Number(e.target.value) })}
+                                        className="w-16 bg-dark border border-border rounded-lg px-2 py-1.5 text-xs font-mono text-right"
+                                      />
+                                    </div>
+                                  ))}
+                                  <div className={`flex justify-between text-xs ${myShare < 0 ? "text-red-400" : "text-text2"}`}>
+                                    <span>Jouw aandeel</span>
+                                    <span className="font-mono font-bold">{myShare} cr</span>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          )}
+
                           <div className="flex items-baseline justify-between border-t border-dashed border-border pt-3">
                             <span className="text-sm font-bold">Dynamische prijs</span>
                             <span className="font-mono font-bold text-lime text-lg">
@@ -498,10 +664,14 @@ export default function ClubsPage() {
                           </div>
                           <button
                             onClick={handleBook}
-                            disabled={isBooking || !!price.error}
+                            disabled={isBooking || !!price.error || (playerCount > 1 && myShare < 0)}
                             className="w-full mt-4 bg-lime text-dark py-3 rounded-lg font-bold hover:opacity-90 transition-opacity disabled:opacity-50"
                           >
-                            {isBooking ? "Bezig…" : loggedIn ? `Boek baan · ${price.error ? "—" : Math.round(price.finalPrice)} credits` : "Log in om te boeken"}
+                            {isBooking
+                              ? "Bezig…"
+                              : loggedIn
+                                ? `Boek baan · ${price.error ? "—" : Math.round(playerCount > 1 ? myShare : price.finalPrice)} credits`
+                                : "Log in om te boeken"}
                           </button>
                         </>
                       )
