@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase"
+import { mapBookingRow, type Booking } from "@/lib/booking"
 
 export type SplitStatus = "pending" | "paid" | "covered_by_booker"
 
@@ -64,6 +65,7 @@ export interface OwedSplit extends BookingSplit {
   courtName: string
   date: string
   startTime: string
+  endTime: string
   bookerId: string
 }
 
@@ -77,7 +79,7 @@ export async function fetchMyOwedSplits(): Promise<OwedSplit[]> {
   if (!user) return []
   const { data, error } = await supabase
     .from("booking_splits")
-    .select("*, bookings(user_id, club_name, court_name, date, start_time)")
+    .select("*, bookings(user_id, club_name, court_name, date, start_time, end_time)")
     .eq("user_id", user.id)
     .eq("status", "pending")
   if (error) throw error
@@ -87,8 +89,23 @@ export async function fetchMyOwedSplits(): Promise<OwedSplit[]> {
     courtName: row.bookings?.court_name ?? "",
     date: row.bookings?.date ?? "",
     startTime: row.bookings?.start_time ?? "",
+    endTime: row.bookings?.end_time ?? "",
     bookerId: row.bookings?.user_id ?? "",
   }))
+}
+
+/** Bookings where I'm a split participant (any status, including ones I
+ * paid or that got covered by the booker) — e.g. someone else booked and
+ * added me. Combine with fetchMyBookings() for the full "these are all
+ * the courts I'm playing on" picture, since a booking with no split at
+ * all never shows up here. */
+export async function fetchBookingsImPlayingIn(userId: string): Promise<Booking[]> {
+  const { data, error } = await supabase.from("booking_splits").select("bookings(*)").eq("user_id", userId)
+  if (error) throw error
+  return (data ?? [])
+    .map((row: any) => row.bookings)
+    .filter(Boolean)
+    .map(mapBookingRow)
 }
 
 /** Every split row for a set of bookings, grouped by booking id — used to
@@ -98,25 +115,6 @@ export async function fetchMyOwedSplits(): Promise<OwedSplit[]> {
 export async function fetchSplitsForBookings(bookingIds: string[]): Promise<Record<string, BookingSplit[]>> {
   if (bookingIds.length === 0) return {}
   const { data, error } = await supabase.from("booking_splits").select("*").in("booking_id", bookingIds)
-  if (error) throw error
-  const byBooking: Record<string, BookingSplit[]> = {}
-  for (const row of data ?? []) {
-    const split = mapSplitRow(row)
-    const list = byBooking[split.bookingId] ?? (byBooking[split.bookingId] = [])
-    list.push(split)
-  }
-  return byBooking
-}
-
-/** Every split row across all of MY bookings (I'm the booker), grouped by
- * booking id — for showing "2 van 4 betaald" on the dashboard without an
- * extra query per booking. */
-export async function fetchSplitsForMyBookings(): Promise<Record<string, BookingSplit[]>> {
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) return {}
-  const { data, error } = await supabase.from("booking_splits").select("*, bookings!inner(user_id)").eq("bookings.user_id", user.id)
   if (error) throw error
   const byBooking: Record<string, BookingSplit[]> = {}
   for (const row of data ?? []) {

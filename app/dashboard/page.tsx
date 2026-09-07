@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation"
 import ScrollObserver from "@/components/ScrollObserver"
 import { getCurrentUser, getRankFromPoints, getUserDisplayName, loadStoredUser } from "@/lib/supabase"
 import { fetchMyBookings, fetchMyCreditsBalance, fetchMyLedger, fetchProfileEmails, cancelBooking, type Booking, type LedgerEntry } from "@/lib/booking"
-import { fetchMyOwedSplits, fetchSplitsForBookings, fetchSplitsForMyBookings, payMySplitShare, type BookingSplit, type OwedSplit } from "@/lib/splits"
+import { fetchBookingsImPlayingIn, fetchMyOwedSplits, fetchSplitsForBookings, payMySplitShare, type BookingSplit, type OwedSplit } from "@/lib/splits"
 
 const LEDGER_LABELS: Record<string, string> = {
   topup: "Credits gekocht",
@@ -39,6 +39,7 @@ export default function DashboardPage() {
   const [mySplits, setMySplits] = useState<Record<string, BookingSplit[]>>({})
   const [splitEmails, setSplitEmails] = useState<Record<string, string>>({})
   const [payingSplitId, setPayingSplitId] = useState<string | null>(null)
+  const [myUserId, setMyUserId] = useState<string | null>(null)
   const storedUser = loadStoredUser()
   const displayName = getUserDisplayName(storedUser)
   const rank = storedUser?.rank || getRankFromPoints(storedUser?.points ?? 0)
@@ -49,9 +50,26 @@ export default function DashboardPage() {
       router.replace("/login?redirect=/dashboard")
       return
     }
+    setMyUserId(user.id)
+
     try {
-      const data = await fetchMyBookings(user.id)
-      setBookings(data)
+      const [mine, playingIn] = await Promise.all([fetchMyBookings(user.id), fetchBookingsImPlayingIn(user.id)])
+      const merged = new Map<string, Booking>()
+      for (const b of [...mine, ...playingIn]) merged.set(b.id, b)
+      const allBookings = [...merged.values()]
+      setBookings(allBookings)
+
+      const bookingIds = allBookings.map((b) => b.id)
+      fetchSplitsForBookings(bookingIds)
+        .then((splits) => {
+          setMySplits(splits)
+          const userIds = Object.values(splits)
+            .flat()
+            .map((s) => s.userId)
+            .filter((id): id is string => !!id && id !== user.id)
+          if (userIds.length) fetchProfileEmails(userIds).then((m) => setSplitEmails((prev) => ({ ...prev, ...m }))).catch(() => {})
+        })
+        .catch(() => setMySplits({}))
     } catch (err: any) {
       setError(err.message || "Kon je boekingen niet laden.")
     }
@@ -86,17 +104,6 @@ export default function DashboardPage() {
         if (ids.size) fetchProfileEmails([...ids]).then((m) => setSplitEmails((prev) => ({ ...prev, ...m }))).catch(() => {})
       })
       .catch(() => setOwedSplits([]))
-
-    fetchSplitsForMyBookings()
-      .then((splits) => {
-        setMySplits(splits)
-        const userIds = Object.values(splits)
-          .flat()
-          .map((s) => s.userId)
-          .filter((id): id is string => !!id && id !== user.id)
-        if (userIds.length) fetchProfileEmails(userIds).then((m) => setSplitEmails((prev) => ({ ...prev, ...m }))).catch(() => {})
-      })
-      .catch(() => setMySplits({}))
   }
 
   async function handlePaySplit(splitId: string) {
@@ -202,7 +209,7 @@ export default function DashboardPage() {
                         <span className="min-w-0">
                           <span className="block font-semibold text-text truncate">{s.clubName} · {s.courtName}</span>
                           <span className="block text-text3 text-xs">
-                            {new Date(s.date + "T12:00:00").toLocaleDateString("nl-NL", { day: "numeric", month: "short" })} · {s.startTime}
+                            {new Date(s.date + "T12:00:00").toLocaleDateString("nl-NL", { day: "numeric", month: "short" })} · {s.startTime}–{s.endTime}
                           </span>
                           <span className="block text-text3 text-xs mt-0.5">Geboekt door {bookerLabel}</span>
                           {others.length > 0 && <span className="block text-text3 text-xs">Ook mee: {others.join(", ")}</span>}
@@ -238,8 +245,9 @@ export default function DashboardPage() {
                   ) : (
                     <div className="space-y-3">
                       {upcoming.map((b) => {
+                        const isBooker = b.userId === myUserId
                         const startsAt = new Date(`${b.date}T${b.startTime}`)
-                        const canCancel = startsAt.getTime() - Date.now() > 12 * 60 * 60 * 1000
+                        const canCancel = isBooker && startsAt.getTime() - Date.now() > 12 * 60 * 60 * 1000
                         return (
                           <div key={b.id} className="flex flex-wrap items-center gap-3 rounded-2xl border border-border/70 bg-dark/60 p-4">
                             <div className="min-w-0">
@@ -247,10 +255,14 @@ export default function DashboardPage() {
                               <p className="text-sm text-text2">
                                 {b.courtName} · {new Date(b.date + "T12:00:00").toLocaleDateString("nl-NL", { weekday: "short", day: "numeric", month: "short" })} · {b.startTime}–{b.endTime}
                               </p>
-                              <p className="text-xs text-text3 mt-0.5">
-                                Geboekt op {new Date(b.createdAt).toLocaleDateString("nl-NL", { day: "numeric", month: "short", year: "numeric" })}
-                              </p>
-                              {!canCancel && <p className="text-xs text-yellow-400 mt-0.5">Annuleren kan niet meer (binnen 12 uur voor starttijd)</p>}
+                              {isBooker ? (
+                                <p className="text-xs text-text3 mt-0.5">
+                                  Geboekt op {new Date(b.createdAt).toLocaleDateString("nl-NL", { day: "numeric", month: "short", year: "numeric" })}
+                                </p>
+                              ) : (
+                                <p className="text-xs text-text3 mt-0.5">Geboekt door {splitEmails[b.userId] || "iemand anders"}</p>
+                              )}
+                              {isBooker && !canCancel && <p className="text-xs text-yellow-400 mt-0.5">Annuleren kan niet meer (binnen 12 uur voor starttijd)</p>}
                             </div>
                             <div className="ml-auto flex items-center gap-3 flex-none">
                               <span className="font-mono font-bold text-lime">{Math.round(b.priceCredits)} cr</span>
