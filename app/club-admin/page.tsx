@@ -1152,6 +1152,29 @@ function BookingsSection({
               />
             </div>
 
+            {/* Rendered here (right above the grid) rather than below the full
+                table — the grid can run from 07:00 to 22:00, so placing this
+                after it meant scrolling past a mostly-empty table to ever see
+                who booked a slot or the cancel button. */}
+            {openBooking && (
+              <div className="border border-border rounded-2xl bg-surface2 overflow-hidden mb-4">
+                <div className="flex flex-wrap items-center gap-3 p-3 text-sm">
+                  <span className="font-semibold">
+                    {openBooking.courtName} · {openBooking.startTime}–{openBooking.endTime}
+                  </span>
+                  <span className="text-text3 text-xs">
+                    Geboekt door {bookerEmails[openBooking.userId] || openBooking.userId} · <span className="font-mono">{openBooking.bookingCode}</span>
+                  </span>
+                  <span className="ml-auto font-mono text-lime">{Math.round(openBooking.priceCredits)} cr</span>
+                  <button onClick={() => handleCancel(openBooking)} className="text-xs border border-red-500/30 text-red-400 rounded-lg px-3 py-1.5 hover:bg-red-500/10">
+                    Annuleren
+                  </button>
+                </div>
+                <SplitBreakdown bookingId={openBooking.id} bookerEmail={bookerEmails[openBooking.userId] || openBooking.userId} showToast={showToast} />
+                <BookingAuditBox booking={openBooking} />
+              </div>
+            )}
+
             <div className="overflow-x-auto border border-border rounded-2xl">
               <table className="w-full text-sm border-collapse min-w-[480px]">
                 <thead>
@@ -1195,24 +1218,6 @@ function BookingsSection({
               </table>
             </div>
 
-            {openBooking && (
-              <div className="border border-border rounded-2xl bg-surface2 overflow-hidden mt-4">
-                <div className="flex flex-wrap items-center gap-3 p-3 text-sm">
-                  <span className="font-semibold">
-                    {openBooking.courtName} · {openBooking.startTime}–{openBooking.endTime}
-                  </span>
-                  <span className="text-text3 text-xs">
-                    Geboekt door {bookerEmails[openBooking.userId] || openBooking.userId} · <span className="font-mono">{openBooking.bookingCode}</span>
-                  </span>
-                  <span className="ml-auto font-mono text-lime">{Math.round(openBooking.priceCredits)} cr</span>
-                  <button onClick={() => handleCancel(openBooking)} className="text-xs border border-red-500/30 text-red-400 rounded-lg px-3 py-1.5 hover:bg-red-500/10">
-                    Annuleren
-                  </button>
-                </div>
-                <SplitBreakdown bookingId={openBooking.id} bookerEmail={bookerEmails[openBooking.userId] || openBooking.userId} showToast={showToast} />
-                <BookingAuditBox booking={openBooking} />
-              </div>
-            )}
             <p className="text-[10px] text-text3 mt-3">Klik op een geboekte baan voor de prijsberekening.</p>
           </div>
         )
