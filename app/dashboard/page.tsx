@@ -5,7 +5,7 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import ScrollObserver from "@/components/ScrollObserver"
 import { getCurrentUser, getRankFromPoints, getUserDisplayName, loadStoredUser } from "@/lib/supabase"
-import { fetchMyBookings, fetchMyCreditsBalance, fetchMyLedger, cancelBooking, type Booking, type LedgerEntry } from "@/lib/booking"
+import { fetchMyBookings, fetchMyCreditsBalance, fetchMyLedger, fetchProfileEmails, cancelBooking, type Booking, type LedgerEntry } from "@/lib/booking"
 import { fetchMyOwedSplits, fetchSplitsForMyBookings, payMySplitShare, type BookingSplit, type OwedSplit } from "@/lib/splits"
 
 const LEDGER_LABELS: Record<string, string> = {
@@ -36,6 +36,7 @@ export default function DashboardPage() {
   const [historySort, setHistorySort] = useState<"playDate" | "bookedDate">("playDate")
   const [owedSplits, setOwedSplits] = useState<OwedSplit[]>([])
   const [mySplits, setMySplits] = useState<Record<string, BookingSplit[]>>({})
+  const [splitEmails, setSplitEmails] = useState<Record<string, string>>({})
   const [payingSplitId, setPayingSplitId] = useState<string | null>(null)
   const storedUser = loadStoredUser()
   const displayName = getUserDisplayName(storedUser)
@@ -73,7 +74,14 @@ export default function DashboardPage() {
       .catch(() => setOwedSplits([]))
 
     fetchSplitsForMyBookings()
-      .then(setMySplits)
+      .then((splits) => {
+        setMySplits(splits)
+        const userIds = Object.values(splits)
+          .flat()
+          .map((s) => s.userId)
+          .filter((id): id is string => !!id && id !== user.id)
+        if (userIds.length) fetchProfileEmails(userIds).then(setSplitEmails).catch(() => {})
+      })
       .catch(() => setMySplits({}))
   }
 
@@ -220,16 +228,6 @@ export default function DashboardPage() {
                               <p className="text-xs text-text3 mt-0.5">
                                 Geboekt op {new Date(b.createdAt).toLocaleDateString("nl-NL", { day: "numeric", month: "short", year: "numeric" })}
                               </p>
-                              {(() => {
-                                const splits = mySplits[b.id]
-                                if (!splits || splits.length <= 1) return null
-                                const paid = splits.filter((s) => s.status !== "pending").length
-                                return (
-                                  <p className="text-xs text-lime mt-0.5">
-                                    Gesplitst · {paid}/{splits.length} betaald
-                                  </p>
-                                )
-                              })()}
                               {!canCancel && <p className="text-xs text-yellow-400 mt-0.5">Annuleren kan niet meer (binnen 12 uur voor starttijd)</p>}
                             </div>
                             <div className="ml-auto flex items-center gap-3 flex-none">
@@ -244,6 +242,35 @@ export default function DashboardPage() {
                                 </button>
                               )}
                             </div>
+                            {(() => {
+                              const splits = mySplits[b.id]
+                              if (!splits || splits.length <= 1) return null
+                              return (
+                                <div className="w-full border-t border-border/50 mt-1 pt-2 space-y-1">
+                                  {splits.map((s) => {
+                                    const pct = Math.round((s.credits / b.priceCredits) * 100)
+                                    const label = s.guestName ? `${s.guestName} (gast)` : !s.userId ? "?" : splitEmails[s.userId] || "Jij"
+                                    return (
+                                      <div key={s.id} className="flex items-center gap-2 text-xs">
+                                        <span className="min-w-0 flex-1 truncate text-text2">{label}</span>
+                                        <span className="font-mono text-text3">{pct}% · {Math.round(s.credits)} cr</span>
+                                        <span
+                                          className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded-full flex-none ${
+                                            s.status === "paid"
+                                              ? "bg-lime/10 text-lime"
+                                              : s.status === "covered_by_booker"
+                                                ? "bg-surface2 text-text3"
+                                                : "bg-yellow-500/10 text-yellow-400"
+                                          }`}
+                                        >
+                                          {s.status === "paid" ? "Betaald" : s.status === "covered_by_booker" ? "Door jou gedekt" : "Wacht op betaling"}
+                                        </span>
+                                      </div>
+                                    )
+                                  })}
+                                </div>
+                              )
+                            })()}
                           </div>
                         )
                       })}
