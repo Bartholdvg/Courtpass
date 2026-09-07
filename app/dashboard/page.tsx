@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation"
 import ScrollObserver from "@/components/ScrollObserver"
 import { getCurrentUser, getRankFromPoints, getUserDisplayName, loadStoredUser } from "@/lib/supabase"
 import { fetchMyBookings, fetchMyCreditsBalance, fetchMyLedger, fetchProfileEmails, cancelBooking, type Booking, type LedgerEntry } from "@/lib/booking"
-import { fetchMyOwedSplits, fetchSplitsForMyBookings, payMySplitShare, type BookingSplit, type OwedSplit } from "@/lib/splits"
+import { fetchMyOwedSplits, fetchSplitsForBookings, fetchSplitsForMyBookings, payMySplitShare, type BookingSplit, type OwedSplit } from "@/lib/splits"
 
 const LEDGER_LABELS: Record<string, string> = {
   topup: "Credits gekocht",
@@ -35,6 +35,7 @@ export default function DashboardPage() {
   const [cancellingId, setCancellingId] = useState<string | null>(null)
   const [historySort, setHistorySort] = useState<"playDate" | "bookedDate">("playDate")
   const [owedSplits, setOwedSplits] = useState<OwedSplit[]>([])
+  const [owedCompanions, setOwedCompanions] = useState<Record<string, BookingSplit[]>>({})
   const [mySplits, setMySplits] = useState<Record<string, BookingSplit[]>>({})
   const [splitEmails, setSplitEmails] = useState<Record<string, string>>({})
   const [payingSplitId, setPayingSplitId] = useState<string | null>(null)
@@ -70,7 +71,20 @@ export default function DashboardPage() {
       .catch(() => setLedger([]))
 
     fetchMyOwedSplits()
-      .then(setOwedSplits)
+      .then(async (owed) => {
+        setOwedSplits(owed)
+        const bookingIds = [...new Set(owed.map((o) => o.bookingId))]
+        const companions = await fetchSplitsForBookings(bookingIds).catch(() => ({}))
+        setOwedCompanions(companions)
+
+        const ids = new Set<string>()
+        owed.forEach((o) => o.bookerId && ids.add(o.bookerId))
+        Object.values(companions)
+          .flat()
+          .forEach((s) => s.userId && ids.add(s.userId))
+        ids.delete(user.id)
+        if (ids.size) fetchProfileEmails([...ids]).then((m) => setSplitEmails((prev) => ({ ...prev, ...m }))).catch(() => {})
+      })
       .catch(() => setOwedSplits([]))
 
     fetchSplitsForMyBookings()
@@ -80,7 +94,7 @@ export default function DashboardPage() {
           .flat()
           .map((s) => s.userId)
           .filter((id): id is string => !!id && id !== user.id)
-        if (userIds.length) fetchProfileEmails(userIds).then(setSplitEmails).catch(() => {})
+        if (userIds.length) fetchProfileEmails(userIds).then((m) => setSplitEmails((prev) => ({ ...prev, ...m }))).catch(() => {})
       })
       .catch(() => setMySplits({}))
   }
@@ -178,24 +192,32 @@ export default function DashboardPage() {
                 <h2 className="font-bold text-lg mb-1">Openstaande verzoeken</h2>
                 <p className="text-text2 text-sm mb-4">Iemand heeft een baan voor je geboekt — jouw aandeel:</p>
                 <div className="space-y-2">
-                  {owedSplits.map((s) => (
-                    <div key={s.id} className="flex flex-wrap items-center gap-3 rounded-xl border border-border/70 bg-dark/60 p-3 text-sm">
-                      <span className="min-w-0">
-                        <span className="block font-semibold text-text truncate">{s.clubName} · {s.courtName}</span>
-                        <span className="block text-text3 text-xs">
-                          {new Date(s.date + "T12:00:00").toLocaleDateString("nl-NL", { day: "numeric", month: "short" })} · {s.startTime}
+                  {owedSplits.map((s) => {
+                    const bookerLabel = splitEmails[s.bookerId] || s.bookerId
+                    const others = (owedCompanions[s.bookingId] || [])
+                      .filter((c) => c.id !== s.id && c.userId !== s.bookerId)
+                      .map((c) => (c.guestName ? `${c.guestName} (gast)` : c.userId ? splitEmails[c.userId] || c.userId : "?"))
+                    return (
+                      <div key={s.id} className="flex flex-wrap items-center gap-3 rounded-xl border border-border/70 bg-dark/60 p-3 text-sm">
+                        <span className="min-w-0">
+                          <span className="block font-semibold text-text truncate">{s.clubName} · {s.courtName}</span>
+                          <span className="block text-text3 text-xs">
+                            {new Date(s.date + "T12:00:00").toLocaleDateString("nl-NL", { day: "numeric", month: "short" })} · {s.startTime}
+                          </span>
+                          <span className="block text-text3 text-xs mt-0.5">Geboekt door {bookerLabel}</span>
+                          {others.length > 0 && <span className="block text-text3 text-xs">Ook mee: {others.join(", ")}</span>}
                         </span>
-                      </span>
-                      <span className="ml-auto font-mono font-bold text-lime">{Math.round(s.credits)} cr</span>
-                      <button
-                        onClick={() => handlePaySplit(s.id)}
-                        disabled={payingSplitId === s.id}
-                        className="bg-lime text-dark px-3 py-1.5 rounded-full text-xs font-bold hover:opacity-90 disabled:opacity-50"
-                      >
-                        {payingSplitId === s.id ? "Bezig…" : "Betalen"}
-                      </button>
-                    </div>
-                  ))}
+                        <span className="ml-auto font-mono font-bold text-lime">{Math.round(s.credits)} cr</span>
+                        <button
+                          onClick={() => handlePaySplit(s.id)}
+                          disabled={payingSplitId === s.id}
+                          className="bg-lime text-dark px-3 py-1.5 rounded-full text-xs font-bold hover:opacity-90 disabled:opacity-50"
+                        >
+                          {payingSplitId === s.id ? "Bezig…" : "Betalen"}
+                        </button>
+                      </div>
+                    )
+                  })}
                 </div>
               </div>
             </ScrollObserver>
