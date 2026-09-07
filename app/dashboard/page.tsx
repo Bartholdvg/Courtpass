@@ -207,39 +207,46 @@ export default function DashboardPage() {
                     <p className="text-sm text-text2">Nog geen aankomende boekingen. Reserveer je eerste baan!</p>
                   ) : (
                     <div className="space-y-3">
-                      {upcoming.map((b) => (
-                        <div key={b.id} className="flex flex-wrap items-center gap-3 rounded-2xl border border-border/70 bg-dark/60 p-4">
-                          <div className="min-w-0">
-                            <p className="font-semibold text-text truncate">{b.clubName}</p>
-                            <p className="text-sm text-text2">
-                              {b.courtName} · {new Date(b.date + "T12:00:00").toLocaleDateString("nl-NL", { weekday: "short", day: "numeric", month: "short" })} · {b.startTime}–{b.endTime}
-                            </p>
-                            <p className="text-xs text-text3 mt-0.5">
-                              Geboekt op {new Date(b.createdAt).toLocaleDateString("nl-NL", { day: "numeric", month: "short", year: "numeric" })}
-                            </p>
-                            {(() => {
-                              const splits = mySplits[b.id]
-                              if (!splits || splits.length <= 1) return null
-                              const paid = splits.filter((s) => s.status !== "pending").length
-                              return (
-                                <p className="text-xs text-lime mt-0.5">
-                                  Gesplitst · {paid}/{splits.length} betaald
-                                </p>
-                              )
-                            })()}
+                      {upcoming.map((b) => {
+                        const startsAt = new Date(`${b.date}T${b.startTime}`)
+                        const canCancel = startsAt.getTime() - Date.now() > 12 * 60 * 60 * 1000
+                        return (
+                          <div key={b.id} className="flex flex-wrap items-center gap-3 rounded-2xl border border-border/70 bg-dark/60 p-4">
+                            <div className="min-w-0">
+                              <p className="font-semibold text-text truncate">{b.clubName}</p>
+                              <p className="text-sm text-text2">
+                                {b.courtName} · {new Date(b.date + "T12:00:00").toLocaleDateString("nl-NL", { weekday: "short", day: "numeric", month: "short" })} · {b.startTime}–{b.endTime}
+                              </p>
+                              <p className="text-xs text-text3 mt-0.5">
+                                Geboekt op {new Date(b.createdAt).toLocaleDateString("nl-NL", { day: "numeric", month: "short", year: "numeric" })}
+                              </p>
+                              {(() => {
+                                const splits = mySplits[b.id]
+                                if (!splits || splits.length <= 1) return null
+                                const paid = splits.filter((s) => s.status !== "pending").length
+                                return (
+                                  <p className="text-xs text-lime mt-0.5">
+                                    Gesplitst · {paid}/{splits.length} betaald
+                                  </p>
+                                )
+                              })()}
+                              {!canCancel && <p className="text-xs text-yellow-400 mt-0.5">Annuleren kan niet meer (binnen 12 uur voor starttijd)</p>}
+                            </div>
+                            <div className="ml-auto flex items-center gap-3 flex-none">
+                              <span className="font-mono font-bold text-lime">{Math.round(b.priceCredits)} cr</span>
+                              {canCancel && (
+                                <button
+                                  onClick={() => handleCancel(b.id)}
+                                  disabled={cancellingId === b.id}
+                                  className="text-xs border border-red-500/30 text-red-400 rounded-full px-3 py-1.5 hover:bg-red-500/10 disabled:opacity-50"
+                                >
+                                  {cancellingId === b.id ? "Bezig…" : "Annuleren"}
+                                </button>
+                              )}
+                            </div>
                           </div>
-                          <div className="ml-auto flex items-center gap-3 flex-none">
-                            <span className="font-mono font-bold text-lime">{Math.round(b.priceCredits)} cr</span>
-                            <button
-                              onClick={() => handleCancel(b.id)}
-                              disabled={cancellingId === b.id}
-                              className="text-xs border border-red-500/30 text-red-400 rounded-full px-3 py-1.5 hover:bg-red-500/10 disabled:opacity-50"
-                            >
-                              {cancellingId === b.id ? "Bezig…" : "Annuleren"}
-                            </button>
-                          </div>
-                        </div>
-                      ))}
+                        )
+                      })}
                     </div>
                   )}
                 </div>
