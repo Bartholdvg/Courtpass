@@ -1081,13 +1081,17 @@ function BookingsSection({
   const dayBookings = bookings.filter((b) => b.clubId === (gridClub?.id ?? "__none__") && b.date === gridDate && b.status === "confirmed")
   const openBooking = bookings.find((b) => b.id === openId) || null
 
-  async function handleCancel(id: string) {
+  async function handleCancel(booking: Booking) {
     if (!confirm("Deze boeking annuleren?")) return
-    const refund = confirm(
-      "Credits terugbetalen aan de boeker/deelnemers?\n\nOK = annuleren mét terugbetaling\nAnnuleren (knop) = annuleren zonder terugbetaling",
-    )
+    const startsAt = new Date(`${booking.date}T${booking.startTime}`)
+    const withinCancellationWindow = startsAt.getTime() - Date.now() <= 12 * 60 * 60 * 1000
+    // More than 12h out, this is a routine cancellation — always refund, no
+    // extra question. Within 12h it's the last-minute/no-show case, so ask.
+    const refund = !withinCancellationWindow
+      ? true
+      : confirm("Credits terugbetalen aan de boeker/deelnemers?\n\nOK = annuleren mét terugbetaling\nAnnuleren (knop) = annuleren zonder terugbetaling")
     try {
-      await cancelBooking(id, refund)
+      await cancelBooking(booking.id, refund)
       await onChanged()
       showToast(refund ? "Boeking geannuleerd (met terugbetaling)" : "Boeking geannuleerd (zonder terugbetaling)")
     } catch (err: any) {
@@ -1201,7 +1205,7 @@ function BookingsSection({
                     Geboekt door {bookerEmails[openBooking.userId] || openBooking.userId} · <span className="font-mono">{openBooking.bookingCode}</span>
                   </span>
                   <span className="ml-auto font-mono text-lime">{Math.round(openBooking.priceCredits)} cr</span>
-                  <button onClick={() => handleCancel(openBooking.id)} className="text-xs border border-red-500/30 text-red-400 rounded-lg px-3 py-1.5 hover:bg-red-500/10">
+                  <button onClick={() => handleCancel(openBooking)} className="text-xs border border-red-500/30 text-red-400 rounded-lg px-3 py-1.5 hover:bg-red-500/10">
                     Annuleren
                   </button>
                 </div>
@@ -1234,7 +1238,7 @@ function BookingsSection({
                   {openId === b.id ? "Verbergen" : "Waarom deze prijs?"}
                 </button>
                 {b.status === "confirmed" && (
-                  <button onClick={() => handleCancel(b.id)} className="text-xs border border-red-500/30 text-red-400 rounded-lg px-3 py-1.5 hover:bg-red-500/10">
+                  <button onClick={() => handleCancel(b)} className="text-xs border border-red-500/30 text-red-400 rounded-lg px-3 py-1.5 hover:bg-red-500/10">
                     Annuleren
                   </button>
                 )}

@@ -155,9 +155,11 @@ export default function Navigation() {
         <MobileMenu user={user} hasAdminAccess={hasAdminAccess} onClose={() => setIsMenuOpen(false)} onLogout={handleLogout} />
       )}
 
-      {/* Overlay */}
+      {/* Overlay — must stack BELOW the menu (z-40) or it swallows every tap on
+          the menu itself, since equal z-index falls back to DOM order and this
+          renders after MobileMenu. */}
       {isMenuOpen && (
-        <div className="fixed inset-0 bg-black/30 z-40 md:hidden" onClick={() => setIsMenuOpen(false)} />
+        <div className="fixed inset-0 bg-black/30 z-30 md:hidden" onClick={() => setIsMenuOpen(false)} />
       )}
     </>
   )
