@@ -197,7 +197,7 @@ export async function fetchClubBookings(clubId: string): Promise<Booking[]> {
   return (data ?? []).map(mapBookingRow)
 }
 
-function mapBookingRow(row: any): Booking {
+export function mapBookingRow(row: any): Booking {
   return {
     id: row.id,
     bookingCode: row.booking_code,
