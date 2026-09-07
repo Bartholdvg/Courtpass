@@ -563,8 +563,11 @@ export async function createBooking(
 
 /** Cancels a confirmed booking and refunds its credits atomically (see
  * cancel_my_booking in the DB) — so a booking can never be refunded twice. */
-export async function cancelBooking(id: string): Promise<void> {
-  const { error } = await supabase.rpc("cancel_my_booking", { p_booking_id: id })
+/** refund only matters for a staff cancellation of someone else's booking —
+ * the server always refunds a customer cancelling their own booking,
+ * regardless of what's passed here. */
+export async function cancelBooking(id: string, refund: boolean = true): Promise<void> {
+  const { error } = await supabase.rpc("cancel_my_booking", { p_booking_id: id, p_refund: refund })
   if (error) throw error
 }
 

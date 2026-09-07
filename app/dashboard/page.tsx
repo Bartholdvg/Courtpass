@@ -257,10 +257,12 @@ export default function DashboardPage() {
                               </p>
                               {isBooker ? (
                                 <p className="text-xs text-text3 mt-0.5">
-                                  Geboekt op {new Date(b.createdAt).toLocaleDateString("nl-NL", { day: "numeric", month: "short", year: "numeric" })}
+                                  Geboekt op {new Date(b.createdAt).toLocaleDateString("nl-NL", { day: "numeric", month: "short", year: "numeric" })} · <span className="font-mono">{b.bookingCode}</span>
                                 </p>
                               ) : (
-                                <p className="text-xs text-text3 mt-0.5">Geboekt door {splitEmails[b.userId] || "iemand anders"}</p>
+                                <p className="text-xs text-text3 mt-0.5">
+                                  Geboekt door {splitEmails[b.userId] || "iemand anders"} · <span className="font-mono">{b.bookingCode}</span>
+                                </p>
                               )}
                               {isBooker && !canCancel && <p className="text-xs text-yellow-400 mt-0.5">Annuleren kan niet meer (binnen 12 uur voor starttijd)</p>}
                             </div>

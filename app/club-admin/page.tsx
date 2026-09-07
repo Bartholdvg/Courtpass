@@ -112,6 +112,7 @@ export default function ClubAdminPage() {
   const [bookings, setBookings] = useState<Booking[]>([])
   const [section, setSection] = useState<Section>("overzicht")
   const [toast, setToast] = useState("")
+  const [activeClubId, setActiveClubId] = useState<string>("")
 
   function showToast(msg: string) {
     setToast(msg)
@@ -202,8 +203,28 @@ export default function ClubAdminPage() {
     { id: "producten", label: "🏷️ Producten", adminOnly: true },
   ]
 
+  const scopedClubs = activeClubId ? clubs.filter((c) => c.id === activeClubId) : clubs
+  const scopedBookings = activeClubId ? bookings.filter((b) => b.clubId === activeClubId) : bookings
+
   return (
     <main className="pt-20 min-h-screen">
+      {clubs.length > 1 && (
+        <div className="border-b border-border bg-surface2 px-5 md:px-8 py-2.5 flex items-center gap-2">
+          <span className="text-[10px] uppercase tracking-wider text-text3 font-bold">Club</span>
+          <select
+            value={activeClubId}
+            onChange={(e) => setActiveClubId(e.target.value)}
+            className="bg-dark border border-border rounded-lg px-3 py-1.5 text-sm"
+          >
+            <option value="">Alle clubs</option>
+            {clubs.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
       <div className="grid grid-cols-1 lg:grid-cols-[220px_1fr]">
         <nav className="border-b lg:border-b-0 lg:border-r border-border bg-surface flex lg:flex-col gap-1 p-3 overflow-x-auto lg:overflow-visible">
           {sections
@@ -222,7 +243,7 @@ export default function ClubAdminPage() {
         </nav>
 
         <div className="p-5 md:p-8 max-w-4xl">
-          {section === "overzicht" && <OverviewSection clubs={clubs} bookings={bookings} />}
+          {section === "overzicht" && <OverviewSection clubs={scopedClubs} bookings={scopedBookings} />}
           {section === "clubs" && (
             <ClubsSection
               clubs={clubs}
@@ -236,7 +257,7 @@ export default function ClubAdminPage() {
           )}
           {section === "simulator" && profile.isPlatformAdmin && <SimulatorSection model={model} />}
           {section === "boekingen" && (
-            <BookingsSection bookings={bookings} clubs={clubs} model={model} onChanged={() => reloadBookings()} showToast={showToast} />
+            <BookingsSection bookings={scopedBookings} clubs={scopedClubs} model={model} onChanged={() => reloadBookings()} showToast={showToast} />
           )}
           {section === "wallets" && profile.isPlatformAdmin && <WalletsSection showToast={showToast} />}
           {section === "producten" && profile.isPlatformAdmin && <ProductsSection showToast={showToast} />}
@@ -419,7 +440,9 @@ function ClubsSection({
 
       let clubId = expandedId
       if (isNew) {
-        const created = await createClub(clubInput, profile.isPlatformAdmin ? null : profile.id)
+        // Only a platform admin reaches this path (the "+ Club toevoegen" button is admin-only),
+        // so the new club starts unowned; the admin assigns an owner via the section below.
+        const created = await createClub(clubInput, null)
         clubId = created.id
       } else if (clubId) {
         await updateClub(clubId, clubInput)
@@ -480,9 +503,11 @@ function ClubsSection({
                 <button onClick={() => (expandedId === club.id ? close() : expand(club))} className="text-xs border border-border rounded-lg px-3 py-1.5 hover:border-lime/50">
                   {expandedId === club.id ? "Sluiten" : "Bewerken"}
                 </button>
-                <button onClick={() => remove(club.id)} className="text-xs border border-red-500/30 text-red-400 rounded-lg px-3 py-1.5 hover:bg-red-500/10">
-                  Verwijderen
-                </button>
+                {profile.isPlatformAdmin && (
+                  <button onClick={() => remove(club.id)} className="text-xs border border-red-500/30 text-red-400 rounded-lg px-3 py-1.5 hover:bg-red-500/10">
+                    Verwijderen
+                  </button>
+                )}
               </div>
             </div>
 
@@ -532,15 +557,19 @@ function ClubsSection({
         ))}
       </div>
 
-      {expandedId === "__new__" && draft ? (
-        <div className="border border-lime/40 rounded-2xl bg-surface2 overflow-hidden">
-          <div className="p-4 font-semibold text-sm">Nieuwe club</div>
-          <ClubEditForm draft={draft} setDraft={setDraft} updateCourt={updateCourtDraft} addCourt={addCourtDraft} removeCourt={removeCourtDraft} onSave={save} saving={saving} />
-        </div>
+      {profile.isPlatformAdmin ? (
+        expandedId === "__new__" && draft ? (
+          <div className="border border-lime/40 rounded-2xl bg-surface2 overflow-hidden">
+            <div className="p-4 font-semibold text-sm">Nieuwe club</div>
+            <ClubEditForm draft={draft} setDraft={setDraft} updateCourt={updateCourtDraft} addCourt={addCourtDraft} removeCourt={removeCourtDraft} onSave={save} saving={saving} />
+          </div>
+        ) : (
+          <button onClick={startNewClub} className="bg-lime text-dark px-4 py-2.5 rounded-lg font-bold text-sm hover:opacity-90">
+            + Club toevoegen
+          </button>
+        )
       ) : (
-        <button onClick={startNewClub} className="bg-lime text-dark px-4 py-2.5 rounded-lg font-bold text-sm hover:opacity-90">
-          + Club toevoegen
-        </button>
+        <p className="text-xs text-text3">Nieuwe clubs aanmaken of verwijderen gaat via het platform-team.</p>
       )}
     </div>
   )
@@ -1054,10 +1083,13 @@ function BookingsSection({
 
   async function handleCancel(id: string) {
     if (!confirm("Deze boeking annuleren?")) return
+    const refund = confirm(
+      "Credits terugbetalen aan de boeker/deelnemers?\n\nOK = annuleren mét terugbetaling\nAnnuleren (knop) = annuleren zonder terugbetaling",
+    )
     try {
-      await cancelBooking(id)
+      await cancelBooking(id, refund)
       await onChanged()
-      showToast("Boeking geannuleerd")
+      showToast(refund ? "Boeking geannuleerd (met terugbetaling)" : "Boeking geannuleerd (zonder terugbetaling)")
     } catch (err: any) {
       showToast(err.message || "Annuleren mislukt")
     }
@@ -1166,7 +1198,7 @@ function BookingsSection({
                     {openBooking.courtName} · {openBooking.startTime}–{openBooking.endTime}
                   </span>
                   <span className="text-text3 text-xs">
-                    Geboekt door {bookerEmails[openBooking.userId] || openBooking.userId}
+                    Geboekt door {bookerEmails[openBooking.userId] || openBooking.userId} · <span className="font-mono">{openBooking.bookingCode}</span>
                   </span>
                   <span className="ml-auto font-mono text-lime">{Math.round(openBooking.priceCredits)} cr</span>
                   <button onClick={() => handleCancel(openBooking.id)} className="text-xs border border-red-500/30 text-red-400 rounded-lg px-3 py-1.5 hover:bg-red-500/10">
@@ -1194,7 +1226,9 @@ function BookingsSection({
                 <span className="text-text3">
                   {b.courtName} · {b.date} · {b.startTime}–{b.endTime}
                 </span>
-                <span className="text-text3 text-xs">{bookerEmails[b.userId] || b.userId}</span>
+                <span className="text-text3 text-xs">
+                  {bookerEmails[b.userId] || b.userId} · <span className="font-mono">{b.bookingCode}</span>
+                </span>
                 <span className="ml-auto font-mono text-lime">{Math.round(b.priceCredits)} cr</span>
                 <button onClick={() => setOpenId(openId === b.id ? null : b.id)} className="text-xs border border-border rounded-lg px-3 py-1.5 hover:border-lime/50">
                   {openId === b.id ? "Verbergen" : "Waarom deze prijs?"}
