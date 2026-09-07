@@ -64,6 +64,7 @@ export interface OwedSplit extends BookingSplit {
   courtName: string
   date: string
   startTime: string
+  bookerId: string
 }
 
 /** My own pending payment requests, with just enough booking context to
@@ -76,7 +77,7 @@ export async function fetchMyOwedSplits(): Promise<OwedSplit[]> {
   if (!user) return []
   const { data, error } = await supabase
     .from("booking_splits")
-    .select("*, bookings(club_name, court_name, date, start_time)")
+    .select("*, bookings(user_id, club_name, court_name, date, start_time)")
     .eq("user_id", user.id)
     .eq("status", "pending")
   if (error) throw error
@@ -86,7 +87,25 @@ export async function fetchMyOwedSplits(): Promise<OwedSplit[]> {
     courtName: row.bookings?.court_name ?? "",
     date: row.bookings?.date ?? "",
     startTime: row.bookings?.start_time ?? "",
+    bookerId: row.bookings?.user_id ?? "",
   }))
+}
+
+/** Every split row for a set of bookings, grouped by booking id — used to
+ * show "who else is playing" on an owed request (needs the
+ * "co-participants view all splits of their booking" policy from
+ * migration 0010, otherwise a participant only sees their own row). */
+export async function fetchSplitsForBookings(bookingIds: string[]): Promise<Record<string, BookingSplit[]>> {
+  if (bookingIds.length === 0) return {}
+  const { data, error } = await supabase.from("booking_splits").select("*").in("booking_id", bookingIds)
+  if (error) throw error
+  const byBooking: Record<string, BookingSplit[]> = {}
+  for (const row of data ?? []) {
+    const split = mapSplitRow(row)
+    const list = byBooking[split.bookingId] ?? (byBooking[split.bookingId] = [])
+    list.push(split)
+  }
+  return byBooking
 }
 
 /** Every split row across all of MY bookings (I'm the booker), grouped by
