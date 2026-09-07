@@ -496,7 +496,13 @@ export async function createBooking(
   if (!user) throw new Error("Je moet ingelogd zijn om te boeken.")
   if (price.error || !price.inputs) throw new Error(price.error || "Kon de prijs niet berekenen.")
 
-  const spendAmount = +price.finalPrice.toFixed(2)
+  // Rounded to a whole credit: the dynamic pricing formula interpolates
+  // linearly between min/max price, so it almost never lands on a round
+  // number. Every display in the app already rounds for presentation
+  // (Math.round) — this makes that the actual charged amount too, instead
+  // of a display-only illusion, so splitting a booking never has to deal
+  // with fractional credits.
+  const spendAmount = Math.round(price.finalPrice)
   const bookingId = crypto.randomUUID()
   // No bookingId here: the booking row doesn't exist yet at this point (it's
   // inserted below, only after the charge succeeds), and credit_ledger.booking_id
