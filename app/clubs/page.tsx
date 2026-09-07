@@ -30,18 +30,20 @@ import { createBookingSplit, resolveUserIdByEmail } from "@/lib/splits"
 interface ParticipantInput {
   mode: "email" | "guest"
   value: string
-  credits: number
+  /** Share as a whole percentage (0-100) of the total, easier to reason
+   * about than a credit amount with decimals — credits are always whole
+   * numbers now, but a % is still simpler to adjust by hand. */
+  percent: number
 }
 
-/** Splits `total` credits across `n` players in whole cents, remainder to
- * index 0 (the booker) — so the shares always sum exactly to `total`. */
-function equalShares(total: number, n: number): number[] {
-  const cents = Math.round(total * 100)
-  const base = Math.floor(cents / n)
-  const remainder = cents - base * n
+/** Equal percentage split across `n` players (whole numbers, remainder to
+ * index 0, the booker) — e.g. 3 players -> [34, 33, 33]. */
+function equalPercents(n: number): number[] {
+  const base = Math.floor(100 / n)
+  const remainder = 100 - base * n
   const shares = Array(n).fill(base)
   shares[0] += remainder
-  return shares.map((c) => c / 100)
+  return shares
 }
 
 const BookingMap = dynamic(() => import("@/components/BookingMap"), { ssr: false })
@@ -186,9 +188,12 @@ export default function ClubsPage() {
   function setPlayers(n: number) {
     setPlayerCount(n)
     setParticipants((prev) => {
-      const next = [...prev]
-      while (next.length < n - 1) next.push({ mode: "email", value: "", credits: 0 })
-      return next.slice(0, n - 1)
+      const percents = equalPercents(n)
+      return Array.from({ length: n - 1 }, (_, i) => ({
+        mode: prev[i]?.mode ?? "email",
+        value: prev[i]?.value ?? "",
+        percent: percents[i + 1] ?? 0,
+      }))
     })
     setSplitError("")
   }
@@ -216,24 +221,26 @@ export default function ClubsPage() {
       const weatherBucket = getRainBucket(selectedClub.id, selectedDate, model.settings.rainForecast)
       const price = getPrice(selectedClub, clubs, daySlots, selectedDate, selectedTime, model, weatherBucket)
       if (price.error) throw new Error(price.error)
+      const totalCredits = Math.round(price.finalPrice)
 
       let resolvedParticipants: { userId: string | null; guestName: string | null; credits: number; label: string }[] | null = null
       if (playerCount > 1) {
         const others: { userId: string | null; guestName: string | null; credits: number; label: string }[] = []
         for (const p of participants) {
           if (!p.value.trim()) throw new Error("Vul voor elke medespeler een e-mailadres of gastnaam in.")
+          const credits = Math.round((totalCredits * p.percent) / 100)
           if (p.mode === "email") {
             const userId = await resolveUserIdByEmail(p.value)
             if (!userId) throw new Error(`Geen account gevonden met e-mailadres "${p.value}".`)
-            others.push({ userId, guestName: null, credits: p.credits, label: p.value })
+            others.push({ userId, guestName: null, credits, label: p.value })
           } else {
-            others.push({ userId: null, guestName: p.value.trim(), credits: p.credits, label: `${p.value.trim()} (gast)` })
+            others.push({ userId: null, guestName: p.value.trim(), credits, label: `${p.value.trim()} (gast)` })
           }
         }
         const othersTotal = others.reduce((s, o) => s + o.credits, 0)
-        const bookerShare = +(price.finalPrice - othersTotal).toFixed(2)
+        const bookerShare = totalCredits - othersTotal
         if (bookerShare < 0) {
-          throw new Error("De opgetelde bedragen van je medespelers zijn hoger dan de totaalprijs. Pas de bedragen aan.")
+          throw new Error("De opgetelde percentages van je medespelers zijn hoger dan 100%. Pas ze aan.")
         }
         resolvedParticipants = [{ userId: currentUser.id, guestName: null, credits: bookerShare, label: "Jij" }, ...others]
       }
@@ -578,8 +585,10 @@ export default function ClubsPage() {
                       const weatherBucket = getRainBucket(selectedClub.id, selectedDate, model.settings.rainForecast)
                       const price = getPrice(selectedClub, clubs, daySlots, selectedDate, selectedTime, model, weatherBucket)
                       const loggedIn = isAuthenticated === true
-                      const othersTotal = participants.reduce((s, p) => s + (Number(p.credits) || 0), 0)
-                      const myShare = price.error ? 0 : +(price.finalPrice - othersTotal).toFixed(2)
+                      const totalCredits = price.error ? 0 : Math.round(price.finalPrice)
+                      const othersPercent = participants.reduce((s, p) => s + (Number(p.percent) || 0), 0)
+                      const myPercent = 100 - othersPercent
+                      const myShare = totalCredits - participants.reduce((s, p) => s + Math.round((totalCredits * (Number(p.percent) || 0)) / 100), 0)
 
                       function updateParticipant(i: number, patch: Partial<ParticipantInput>) {
                         setParticipants((prev) => prev.map((p, j) => (j === i ? { ...p, ...patch } : p)))
@@ -595,19 +604,7 @@ export default function ClubsPage() {
                                   {[1, 2, 3, 4].map((n) => (
                                     <button
                                       key={n}
-                                      onClick={() => {
-                                        setPlayers(n)
-                                        if (!price.error && n > 1) {
-                                          const shares = equalShares(price.finalPrice, n)
-                                          setParticipants((prev) =>
-                                            Array.from({ length: n - 1 }, (_, i) => ({
-                                              mode: prev[i]?.mode ?? "email",
-                                              value: prev[i]?.value ?? "",
-                                              credits: shares[i + 1] ?? 0,
-                                            })),
-                                          )
-                                        }
-                                      }}
+                                      onClick={() => setPlayers(n)}
                                       className={`w-8 h-8 rounded-lg text-sm font-bold ${
                                         playerCount === n ? "bg-lime text-dark" : "border border-border text-text2"
                                       }`}
@@ -640,16 +637,22 @@ export default function ClubsPage() {
                                       <input
                                         type="number"
                                         min={0}
-                                        step="0.01"
-                                        value={p.credits}
-                                        onChange={(e) => updateParticipant(i, { credits: Number(e.target.value) })}
-                                        className="w-16 bg-dark border border-border rounded-lg px-2 py-1.5 text-xs font-mono text-right"
+                                        max={100}
+                                        value={p.percent}
+                                        onChange={(e) => updateParticipant(i, { percent: Number(e.target.value) })}
+                                        className="w-14 bg-dark border border-border rounded-lg px-2 py-1.5 text-xs font-mono text-right"
                                       />
+                                      <span className="text-[10px] text-text3 w-4">%</span>
+                                      <span className="text-[10px] text-text3 font-mono w-10 text-right">
+                                        {Math.round((totalCredits * (Number(p.percent) || 0)) / 100)} cr
+                                      </span>
                                     </div>
                                   ))}
-                                  <div className={`flex justify-between text-xs ${myShare < 0 ? "text-red-400" : "text-text2"}`}>
+                                  <div className={`flex justify-between text-xs ${myPercent < 0 ? "text-red-400" : "text-text2"}`}>
                                     <span>Jouw aandeel</span>
-                                    <span className="font-mono font-bold">{myShare} cr</span>
+                                    <span className="font-mono font-bold">
+                                      {myPercent}% · {myShare} cr
+                                    </span>
                                   </div>
                                 </div>
                               )}
@@ -659,7 +662,7 @@ export default function ClubsPage() {
                           <div className="flex items-baseline justify-between border-t border-dashed border-border pt-3">
                             <span className="text-sm font-bold">Dynamische prijs</span>
                             <span className="font-mono font-bold text-lime text-lg">
-                              {price.error ? "—" : Math.round(price.finalPrice)} <small className="text-text3 text-xs font-normal">credits</small>
+                              {price.error ? "—" : totalCredits} <small className="text-text3 text-xs font-normal">credits</small>
                             </span>
                           </div>
                           <button
@@ -670,7 +673,7 @@ export default function ClubsPage() {
                             {isBooking
                               ? "Bezig…"
                               : loggedIn
-                                ? `Boek baan · ${price.error ? "—" : Math.round(playerCount > 1 ? myShare : price.finalPrice)} credits`
+                                ? `Boek baan · ${price.error ? "—" : playerCount > 1 ? myShare : totalCredits} credits`
                                 : "Log in om te boeken"}
                           </button>
                         </>
