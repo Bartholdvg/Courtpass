@@ -46,15 +46,17 @@ import {
   adminSimulateRenewal,
   effectivePriceCents,
   formatEuros,
+  fetchRevenueSummary,
   type CreditPack,
   type SubscriptionPlan,
   type UserSubscription,
   type CreditPackInput,
   type SubscriptionPlanInput,
+  type RevenueSummary,
 } from "@/lib/billing"
 import { adminForceCaptureSplit, fetchBookingSplits, type BookingSplit } from "@/lib/splits"
 
-type Section = "overzicht" | "clubs" | "prijsmodel" | "simulator" | "boekingen" | "wallets" | "producten"
+type Section = "overzicht" | "clubs" | "prijsmodel" | "simulator" | "boekingen" | "wallets" | "producten" | "omzet"
 const SURFACES = ["Clay", "Hard court", "Grass", "Carpet", "Artificial grass"]
 
 interface CourtDraft extends CourtInput {
@@ -201,6 +203,7 @@ export default function ClubAdminPage() {
     { id: "boekingen", label: "📅 Boekingen" },
     { id: "wallets", label: "💳 Wallets", adminOnly: true },
     { id: "producten", label: "🏷️ Producten", adminOnly: true },
+    { id: "omzet", label: "💰 Omzet", adminOnly: true },
   ]
 
   const scopedClubs = activeClubId ? clubs.filter((c) => c.id === activeClubId) : clubs
@@ -261,6 +264,7 @@ export default function ClubAdminPage() {
           )}
           {section === "wallets" && profile.isPlatformAdmin && <WalletsSection showToast={showToast} />}
           {section === "producten" && profile.isPlatformAdmin && <ProductsSection showToast={showToast} />}
+          {section === "omzet" && profile.isPlatformAdmin && <RevenueSection model={model} showToast={showToast} />}
         </div>
       </div>
 
@@ -1401,6 +1405,92 @@ function WalletsSection({ showToast }: { showToast: (m: string) => void }) {
           </div>
         ))}
       </div>
+    </div>
+  )
+}
+
+/** Fase 4 — platform-admin only. Every figure comes from admin_revenue_summary()
+ * (migration 0013), which computes straight from credit_ledger (fase 1) plus
+ * the current credit_packs/subscription_plans catalog. See that migration's
+ * header comment for the exact formulas and the simplifications they rely on
+ * (packs/subscriptions are matched to a ledger row by credit amount against
+ * TODAY's catalog — no purchase ever recorded which product or price was
+ * actually paid). */
+function RevenueSection({ model, showToast }: { model: PricingModel; showToast: (m: string) => void }) {
+  const [summary, setSummary] = useState<RevenueSummary | null>(null)
+  const [loadError, setLoadError] = useState("")
+
+  useEffect(() => {
+    fetchRevenueSummary()
+      .then(setSummary)
+      .catch((err) => setLoadError(err.message || "Kon omzetcijfers niet laden."))
+  }, [])
+
+  if (loadError) return <p className="text-red-400 text-sm">{loadError}</p>
+  if (!summary) return <p className="text-text2 text-sm">Laden…</p>
+
+  const euroPerCredit = model.settings.euroPerCredit
+  const totalRevenueCents = summary.packRevenueCents + summary.subscriptionRevenueCents
+  const arpuCents = summary.payingUsers > 0 ? totalRevenueCents / summary.payingUsers : 0
+  const breakagePercent = summary.soldCredits > 0 ? ((summary.soldCredits - summary.redeemedCredits) / summary.soldCredits) * 100 : 0
+  const unmatchedCredits = summary.packUnmatchedCredits + summary.subscriptionUnmatchedCredits
+
+  return (
+    <div>
+      <h1 className="font-playfair text-3xl font-bold mb-1">Omzet</h1>
+      <p className="text-text2 text-sm mb-6">
+        Alles hieronder komt uit de credit-ledger en de huidige packs/abonnementen-catalogus — zie de code-comments in migratie 0013 voor de exacte
+        aannames (bv. dat een aankoop wordt teruggekoppeld aan een product via het aantal credits, niet via een opgeslagen prijs-op-dat-moment).
+      </p>
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <StatCard label="MRR" value={formatEuros(summary.mrrCents)} sub={`${summary.activeSubscriptions} actief`} />
+        <StatCard label="ARPU" value={formatEuros(arpuCents)} sub={`${summary.payingUsers} betalend`} />
+        <StatCard label="Omzet packs" value={formatEuros(summary.packRevenueCents)} />
+        <StatCard label="Omzet abonnementen" value={formatEuros(summary.subscriptionRevenueCents)} />
+      </div>
+
+      <div className="border border-border rounded-2xl p-5 bg-surface2 mb-6">
+        <h3 className="font-bold text-sm mb-4">Verkochte vs. verzilverde credits</h3>
+        <div className="grid grid-cols-3 gap-4 mb-3">
+          <div>
+            <div className="text-[10px] uppercase tracking-wider text-text3 font-bold mb-1">Verkocht</div>
+            <div className="font-mono text-xl font-bold text-text">{Math.round(summary.soldCredits)} cr</div>
+          </div>
+          <div>
+            <div className="text-[10px] uppercase tracking-wider text-text3 font-bold mb-1">Verzilverd</div>
+            <div className="font-mono text-xl font-bold text-text">{Math.round(summary.redeemedCredits)} cr</div>
+          </div>
+          <div>
+            <div className="text-[10px] uppercase tracking-wider text-text3 font-bold mb-1">Breakage</div>
+            <div className="font-mono text-xl font-bold text-lime">{breakagePercent.toFixed(1)}%</div>
+          </div>
+        </div>
+        <p className="text-[10px] text-text3">
+          Breakage = (verkocht − verzilverd) / verkocht — credits die zijn betaald maar (nog) niet besteed. Waarvan {Math.round(summary.rolloverExpiredCredits)}{" "}
+          cr definitief vervallen door de 2× maandelijkse rollover-cap; de rest staat nog als saldo bij klanten (zie hieronder).
+        </p>
+      </div>
+
+      <div className="border border-border rounded-2xl p-5 bg-surface2 mb-6">
+        <h3 className="font-bold text-sm mb-1">Uitstaande creditverplichting</h3>
+        <p className="text-[10px] text-text3 mb-3">Som van credits_balance over alle gebruikers — credits die al betaald zijn maar nog geleverd moeten worden.</p>
+        <p className="font-mono text-2xl font-bold text-text">
+          {Math.round(summary.outstandingCredits)} <span className="text-sm text-text2 font-normal">credits</span>
+        </p>
+        <p className="text-xs text-text3 mt-1">≈ {formatEuros(summary.outstandingCredits * euroPerCredit * 100)} tegen de huidige koers (€{euroPerCredit}/credit)</p>
+      </div>
+
+      {unmatchedCredits > 0 && (
+        <div className="border border-yellow-500/30 rounded-2xl p-4 bg-yellow-500/5 text-sm">
+          <p className="text-yellow-400 font-semibold mb-1">Niet gekoppeld aan een product</p>
+          <p className="text-text2 text-xs">
+            {Math.round(unmatchedCredits)} credits uit topups/abonnementstoekenningen komen niet overeen met een credit-aantal in de huidige
+            packs/abonnementen-catalogus (bv. een pack dat later is aangepast of verwijderd) — deze credits tellen wel mee bij &ldquo;Verkocht&rdquo;
+            hierboven, maar niet bij de omzet-in-euro&apos;s cijfers, omdat er geen prijs aan te koppelen valt.
+          </p>
+        </div>
+      )}
     </div>
   )
 }

@@ -258,6 +258,44 @@ export async function adminSimulateRenewal(subscriptionId: string): Promise<numb
   return Number(data)
 }
 
+export interface RevenueSummary {
+  soldCredits: number
+  redeemedCredits: number
+  rolloverExpiredCredits: number
+  outstandingCredits: number
+  packRevenueCents: number
+  packUnmatchedCredits: number
+  subscriptionRevenueCents: number
+  subscriptionUnmatchedCredits: number
+  mrrCents: number
+  activeSubscriptions: number
+  payingUsers: number
+}
+
+/** Platform-admin only: every figure the "Omzet" dashboard needs, computed
+ * server-side from credit_ledger (fase 1) plus the current packs/plans
+ * catalog — see migration 0013 for the exact formulas and the
+ * simplifications they rely on (packs/subscriptions are matched to a
+ * ledger row by credit amount against TODAY's catalog, since no purchase
+ * ever recorded which product or price was actually paid). */
+export async function fetchRevenueSummary(): Promise<RevenueSummary> {
+  const { data, error } = await supabase.rpc("admin_revenue_summary")
+  if (error) throw error
+  return {
+    soldCredits: Number(data.soldCredits),
+    redeemedCredits: Number(data.redeemedCredits),
+    rolloverExpiredCredits: Number(data.rolloverExpiredCredits),
+    outstandingCredits: Number(data.outstandingCredits),
+    packRevenueCents: Number(data.packRevenueCents),
+    packUnmatchedCredits: Number(data.packUnmatchedCredits),
+    subscriptionRevenueCents: Number(data.subscriptionRevenueCents),
+    subscriptionUnmatchedCredits: Number(data.subscriptionUnmatchedCredits),
+    mrrCents: Number(data.mrrCents),
+    activeSubscriptions: Number(data.activeSubscriptions),
+    payingUsers: Number(data.payingUsers),
+  }
+}
+
 /* ================= Pending subscription purchase (sandbox-only) =================
  * Same pattern as savePendingCreditPurchase in lib/booking.ts: no payment
  * webhook exists, so /betalen records the plan about to be bought right
