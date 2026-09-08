@@ -38,7 +38,11 @@ function FlyToSelected({ clubs, selectedClubId }: { clubs: Club[]; selectedClubI
 
 export default function BookingMap({ clubs, selectedClubId, onSelectClub }: BookingMapProps) {
   return (
-    <div className="h-full w-full">
+    // isolate: Leaflet's own CSS gives its panes/controls z-index values up to
+    // 1000 (see .leaflet-top/.leaflet-bottom in leaflet.css). Without this,
+    // those values aren't scoped to the map and leak out to outrank the site's
+    // own fixed nav/mobile-menu (z-40/z-50) whenever this map is on screen.
+    <div className="h-full w-full isolate">
       <MapContainer
         center={[52.365, 4.89]}
         zoom={12}
