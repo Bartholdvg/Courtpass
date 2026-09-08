@@ -609,6 +609,38 @@ export interface Profile {
   isPlatformAdmin: boolean
 }
 
+/** Optional contact details — never provided by Google sign-in, so these
+ * always start null and are filled in later (at registration for an
+ * email/password account, or any time via the dashboard). */
+export interface ProfileDetails {
+  phone: string | null
+  address: string | null
+  postcode: string | null
+  city: string | null
+}
+
+export async function fetchMyProfileDetails(): Promise<ProfileDetails | null> {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return null
+  const { data, error } = await supabase.from("profiles").select("phone, address, postcode, city").eq("id", user.id).maybeSingle()
+  if (error) throw error
+  return data ? { phone: data.phone, address: data.address, postcode: data.postcode, city: data.city } : null
+}
+
+/** Only phone/address/postcode/city may be set this way — see migration
+ * 0015 for why every other profiles column is deliberately not grantable
+ * through a plain client-side update. */
+export async function updateMyProfileDetails(details: Partial<ProfileDetails>): Promise<void> {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) throw new Error("Je moet ingelogd zijn.")
+  const { error } = await supabase.from("profiles").update(details).eq("id", user.id)
+  if (error) throw error
+}
+
 export async function fetchMyProfile(): Promise<Profile | null> {
   const {
     data: { user },
