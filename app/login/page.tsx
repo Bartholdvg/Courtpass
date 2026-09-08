@@ -3,7 +3,17 @@
 import { Suspense, useEffect, useState } from "react"
 import Link from "next/link"
 import { motion } from "framer-motion"
-import { getCurrentUser, getRecoveryParamsFromLocation, loadStoredUser, requestPasswordReset, signIn, signUp, storeAuthUser, supabase } from "@/lib/supabase"
+import {
+  getCurrentUser,
+  getRecoveryParamsFromLocation,
+  loadStoredUser,
+  requestPasswordReset,
+  signIn,
+  signInWithGoogle,
+  signUp,
+  storeAuthUser,
+  supabase,
+} from "@/lib/supabase"
 import { useRouter, useSearchParams } from "next/navigation"
 
 function LoginForm() {
@@ -23,7 +33,24 @@ function LoginForm() {
   const [newPassword, setNewPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
   const [passwordLoading, setPasswordLoading] = useState(false)
+  const [googleLoading, setGoogleLoading] = useState(false)
   const router = useRouter()
+
+  function goToRedirectOrDashboard() {
+    const redirect = searchParams?.get("redirect")
+    if (redirect) {
+      const extraParams = new URLSearchParams(searchParams?.toString())
+      extraParams.delete("redirect")
+      // Strip one-time auth params so a consumed OAuth/recovery code never
+      // leaks into the destination URL.
+      extraParams.delete("code")
+      extraParams.delete("type")
+      const qs = extraParams.toString()
+      router.push(qs ? `${redirect}?${qs}` : redirect)
+    } else {
+      router.push("/dashboard")
+    }
+  }
 
   useEffect(() => {
     const initRecovery = async () => {
@@ -32,19 +59,62 @@ function LoginForm() {
       if (type === "recovery" && accessToken && refreshToken) {
         setRecoveryMode(true)
         await supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken }).catch(() => undefined)
+        setRecoveryReady(true)
       } else if (type === "recovery" && tokenHash) {
         setRecoveryMode(true)
         await supabase.auth.verifyOtp({ token_hash: tokenHash, type: "recovery" }).catch(() => undefined)
+        setRecoveryReady(true)
       } else if (type === "recovery" && code) {
         setRecoveryMode(true)
         await supabase.auth.exchangeCodeForSession(code).catch(() => undefined)
+        setRecoveryReady(true)
+      } else if (code) {
+        // Not a recovery link, but a ?code= is present — this is Google (or
+        // another OAuth provider) redirecting back after signInWithOAuth.
+        // detectSessionInUrl is off (see lib/supabase.ts), so exchange it
+        // ourselves, same as the recovery branches above.
+        try {
+          const { data, error } = await supabase.auth.exchangeCodeForSession(code)
+          if (error) throw error
+          const user = data.user
+          const existing = loadStoredUser()
+          storeAuthUser({
+            email: user.email || existing?.email || "",
+            name: user.user_metadata?.full_name || user.user_metadata?.name || existing?.name || user.email?.split("@")[0] || "Speler",
+            points: existing?.points ?? 120,
+            level: existing?.level ?? "Intermediate",
+            location: existing?.location ?? "Amsterdam",
+            credits: existing?.credits ?? 8,
+            plan: existing?.plan ?? "Pro",
+          })
+          goToRedirectOrDashboard()
+          return
+        } catch (err: any) {
+          setError(err.message || "Inloggen met Google is mislukt.")
+        }
+        setRecoveryReady(true)
+      } else {
+        setRecoveryReady(true)
       }
-
-      setRecoveryReady(true)
     }
 
     initRecovery()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  async function handleGoogleLogin() {
+    setGoogleLoading(true)
+    setError("")
+    try {
+      // Keep the current query string (incl. ?redirect=...) so it survives
+      // the round trip to Google and back — Supabase appends its own ?code=
+      // to whatever redirectTo we pass.
+      await signInWithGoogle(window.location.origin + window.location.pathname + window.location.search)
+    } catch (err: any) {
+      setError(err.message || "Inloggen met Google is mislukt.")
+      setGoogleLoading(false)
+    }
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -78,15 +148,7 @@ function LoginForm() {
         plan: "Pro",
       })
 
-      const redirect = searchParams?.get("redirect")
-      if (redirect) {
-        const extraParams = new URLSearchParams(searchParams?.toString())
-        extraParams.delete("redirect")
-        const qs = extraParams.toString()
-        router.push(qs ? `${redirect}?${qs}` : redirect)
-      } else {
-        router.push("/dashboard")
-      }
+      goToRedirectOrDashboard()
     } catch (err: any) {
       setError(err.message || "Er ging iets mis")
     } finally {
@@ -189,6 +251,30 @@ function LoginForm() {
               >
                 Registreren
               </button>
+            </div>
+          )}
+
+          {!recoveryMode && recoveryReady && (
+            <div className="mb-6">
+              <button
+                type="button"
+                onClick={handleGoogleLogin}
+                disabled={googleLoading}
+                className="w-full flex items-center justify-center gap-2.5 border border-border rounded-lg py-3 text-sm font-semibold text-text hover:border-text2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true">
+                  <path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.92c1.7-1.57 2.68-3.88 2.68-6.62z" />
+                  <path fill="#34A853" d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.92-2.26c-.81.54-1.84.86-3.04.86-2.34 0-4.32-1.58-5.03-3.7H.95v2.33A9 9 0 0 0 9 18z" />
+                  <path fill="#FBBC05" d="M3.97 10.72A5.4 5.4 0 0 1 3.68 9c0-.6.1-1.18.29-1.72V4.95H.95A9 9 0 0 0 0 9c0 1.45.35 2.83.95 4.05l3.02-2.33z" />
+                  <path fill="#EA4335" d="M9 3.58c1.32 0 2.51.46 3.44 1.35l2.59-2.59C13.46.89 11.43 0 9 0A9 9 0 0 0 .95 4.95l3.02 2.33C4.68 5.16 6.66 3.58 9 3.58z" />
+                </svg>
+                {googleLoading ? "Bezig…" : "Inloggen met Google"}
+              </button>
+              <div className="flex items-center gap-3 my-5">
+                <div className="flex-1 h-px bg-border" />
+                <span className="text-xs text-text3">of met e-mail</span>
+                <div className="flex-1 h-px bg-border" />
+              </div>
             </div>
           )}
 
