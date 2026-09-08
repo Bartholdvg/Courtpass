@@ -154,6 +154,37 @@ export async function fetchClubs(): Promise<Club[]> {
   return (data ?? []).map(mapClubRow)
 }
 
+/** My favorited club ids, or an empty set for a signed-out visitor —
+ * favoriting requires an account, but browsing/favoriting-state should
+ * never throw for someone just looking around. */
+export async function fetchMyFavoriteClubIds(): Promise<Set<string>> {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) return new Set()
+  const { data, error } = await supabase.from("favorite_clubs").select("club_id").eq("user_id", user.id)
+  if (error) throw error
+  return new Set((data ?? []).map((r: any) => r.club_id))
+}
+
+export async function addFavoriteClub(clubId: string): Promise<void> {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) throw new Error("Je moet ingelogd zijn om een club te favorieten.")
+  const { error } = await supabase.from("favorite_clubs").insert({ user_id: user.id, club_id: clubId })
+  if (error) throw error
+}
+
+export async function removeFavoriteClub(clubId: string): Promise<void> {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) throw new Error("Je moet ingelogd zijn om een club te favorieten.")
+  const { error } = await supabase.from("favorite_clubs").delete().eq("user_id", user.id).eq("club_id", clubId)
+  if (error) throw error
+}
+
 export async function fetchClub(id: string): Promise<Club | null> {
   const { data, error } = await supabase.from("clubs").select("*, courts(*)").eq("id", id).maybeSingle()
   if (error) throw error
