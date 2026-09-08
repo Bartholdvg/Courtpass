@@ -1208,6 +1208,7 @@ function BookingsSection({
                                 }`}
                               >
                                 <div className="text-[11px] font-bold text-lime">{Math.round(b.priceCredits)} cr</div>
+                                <div className="text-[10px] text-text3 truncate">{bookerEmails[b.userId] || b.userId}</div>
                                 <div className="text-[10px] text-text3 font-mono truncate">{b.bookingCode}</div>
                               </button>
                             ) : (
