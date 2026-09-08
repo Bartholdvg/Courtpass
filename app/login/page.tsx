@@ -131,7 +131,17 @@ function LoginForm() {
       if (tab === "login") {
         await signIn(email, password)
       } else {
-        await signUp(email, password, fullName)
+        const signUpData = await signUp(email, password, fullName)
+        if (!signUpData.session) {
+          // Email confirmation is required — Supabase doesn't hand back a
+          // session until the link is clicked, so there's no one to save
+          // profile details for yet. They can fill those in later via the
+          // dashboard once they've confirmed and logged in.
+          setSuccessMessage("Bijna klaar! Check je e-mail en klik op de bevestigingslink om in te loggen.")
+          setTab("login")
+          setLoading(false)
+          return
+        }
         const details = {
           ...(phone.trim() && { phone: phone.trim() }),
           ...(address.trim() && { address: address.trim() }),
@@ -232,7 +242,7 @@ function LoginForm() {
           {/* Header */}
           <div className="mb-8">
             <h1 className="font-playfair text-3xl font-bold mb-2">
-              {recoveryMode ? "Nieuw wachtwoord" : (tab === "login" ? "Welkom terug" : "Maak account")}
+              {recoveryMode ? "Nieuw wachtwoord" : (tab === "login" ? "Inloggen" : "Maak account")}
             </h1>
             <p className="text-text2 text-sm">
               {recoveryMode
