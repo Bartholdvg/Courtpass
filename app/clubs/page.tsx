@@ -21,6 +21,9 @@ import {
   createBooking,
   BookingUnavailableError,
   InsufficientCreditsError,
+  fetchMyFavoriteClubIds,
+  addFavoriteClub,
+  removeFavoriteClub,
 } from "@/lib/booking"
 import { fetchForecast, getRainBucket, isForecastLive } from "@/lib/weather"
 import { haversineKm, type PricingModel } from "@/lib/pricing"
@@ -122,6 +125,60 @@ export default function ClubsPage() {
       window.removeEventListener(AUTH_CHANGED_EVENT, checkAuth)
     }
   }, [])
+
+  const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set())
+  useEffect(() => {
+    let cancelled = false
+    const loadFavorites = () => {
+      fetchMyFavoriteClubIds()
+        .then((ids) => {
+          if (!cancelled) setFavoriteIds(ids)
+        })
+        .catch(() => {})
+    }
+    loadFavorites()
+    window.addEventListener(AUTH_CHANGED_EVENT, loadFavorites)
+    return () => {
+      cancelled = true
+      window.removeEventListener(AUTH_CHANGED_EVENT, loadFavorites)
+    }
+  }, [])
+
+  async function toggleFavorite(clubId: string, e: React.MouseEvent) {
+    e.stopPropagation()
+    const currentUser = await getCurrentUser()
+    if (!currentUser) {
+      router.push("/login?redirect=/clubs")
+      return
+    }
+    const isFavorite = favoriteIds.has(clubId)
+    // Optimistic: favoriting is low-stakes and this keeps the heart snappy.
+    setFavoriteIds((prev) => {
+      const next = new Set(prev)
+      if (isFavorite) next.delete(clubId)
+      else next.add(clubId)
+      return next
+    })
+    try {
+      if (isFavorite) await removeFavoriteClub(clubId)
+      else await addFavoriteClub(clubId)
+    } catch {
+      setFavoriteIds((prev) => {
+        const next = new Set(prev)
+        if (isFavorite) next.add(clubId)
+        else next.delete(clubId)
+        return next
+      })
+    }
+  }
+
+  const sortedClubs = useMemo(() => {
+    return [...clubs].sort((a, b) => {
+      const af = favoriteIds.has(a.id) ? 0 : 1
+      const bf = favoriteIds.has(b.id) ? 0 : 1
+      return af !== bf ? af - bf : a.name.localeCompare(b.name)
+    })
+  }, [clubs, favoriteIds])
 
   const selectedClub = clubs.find((c) => c.id === selectedClubId) || null
   const selectedCourt: Court | null = selectedClub?.courts.find((c) => c.id === selectedCourtId) || null
@@ -359,22 +416,32 @@ export default function ClubsPage() {
                 <p className="text-xs text-text3 uppercase tracking-wider font-bold mb-1">Vind een baan</p>
                 <h1 className="font-playfair text-2xl font-bold mb-4">{clubs.length} clubs</h1>
                 <div className="space-y-2">
-                  {clubs.map((c) => (
-                    <button
+                  {sortedClubs.map((c) => (
+                    <div
                       key={c.id}
                       onClick={() => selectClub(c.id)}
-                      className="w-full flex items-center gap-3 border border-border rounded-xl p-3 bg-surface2 hover:border-lime/50 transition-colors text-left"
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(e) => e.key === "Enter" && selectClub(c.id)}
+                      className="w-full flex items-center gap-3 border border-border rounded-xl p-3 bg-surface2 hover:border-lime/50 transition-colors text-left cursor-pointer"
                     >
                       <span className="w-9 h-9 flex-none rounded-lg bg-dark border border-border flex items-center justify-center font-mono text-lime text-sm">
                         {c.tier.replace("Tier ", "")}
                       </span>
-                      <span className="min-w-0">
+                      <span className="min-w-0 flex-1">
                         <span className="block text-sm font-semibold text-text truncate">{c.name}</span>
                         <span className="block text-xs text-text3 truncate">
                           {c.address} · {c.courts.length} banen
                         </span>
                       </span>
-                    </button>
+                      <button
+                        onClick={(e) => toggleFavorite(c.id, e)}
+                        aria-label={favoriteIds.has(c.id) ? "Verwijder favoriet" : "Favoriet maken"}
+                        className={`flex-none text-lg leading-none px-1 transition-colors ${favoriteIds.has(c.id) ? "text-lime" : "text-text3 hover:text-text2"}`}
+                      >
+                        {favoriteIds.has(c.id) ? "★" : "☆"}
+                      </button>
+                    </div>
                   ))}
                 </div>
               </>
