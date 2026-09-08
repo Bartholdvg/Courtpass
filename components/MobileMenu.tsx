@@ -75,6 +75,11 @@ export default function MobileMenu({ user, hasAdminAccess, onClose, onLogout }: 
                 Dashboard · {getUserDisplayName(user)}
               </Link>
             </motion.div>
+            <motion.div custom={4.25} variants={menuItemVariants} initial="hidden" animate="visible">
+              <Link href="/dashboard#mijn-gegevens" className="block px-5 py-3 text-text2 hover:text-text hover:bg-surface transition-colors text-sm" onClick={onClose}>
+                Mijn gegevens
+              </Link>
+            </motion.div>
             {hasAdminAccess && (
               <motion.div custom={4.5} variants={menuItemVariants} initial="hidden" animate="visible">
                 <Link href="/club-admin" className="block px-5 py-3 text-text2 hover:text-text hover:bg-surface transition-colors text-sm border-b border-border/30" onClick={onClose}>

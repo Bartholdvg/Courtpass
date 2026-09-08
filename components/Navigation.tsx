@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import MobileMenu from "./MobileMenu"
@@ -13,6 +13,8 @@ export default function Navigation() {
   const [isMounted, setIsMounted] = useState(false)
   const [user, setUser] = useState<CourtPassUser | null>(null)
   const [hasAdminAccess, setHasAdminAccess] = useState(false)
+  const [isProfileOpen, setIsProfileOpen] = useState(false)
+  const profileRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     setIsMounted(true)
@@ -50,8 +52,19 @@ export default function Navigation() {
   }, [user])
 
   useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (profileRef.current && !profileRef.current.contains(e.target as Node)) setIsProfileOpen(false)
+    }
+    document.addEventListener("mousedown", handleClickOutside)
+    return () => document.removeEventListener("mousedown", handleClickOutside)
+  }, [])
+
+  useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setIsMenuOpen(false)
+      if (e.key === "Escape") {
+        setIsMenuOpen(false)
+        setIsProfileOpen(false)
+      }
     }
 
     if (isMenuOpen) {
@@ -72,6 +85,7 @@ export default function Navigation() {
     clearStoredUser()
     setUser(null)
     setIsMenuOpen(false)
+    setIsProfileOpen(false)
     router.push("/")
   }
 
@@ -108,22 +122,54 @@ export default function Navigation() {
           </li>
           <li className="flex gap-3 items-center ml-3">
             {user ? (
-              <>
-                {hasAdminAccess && (
-                  <Link href="/club-admin" className="text-text2 hover:text-text transition-colors text-sm">
-                    Admin
-                  </Link>
-                )}
-                <Link href="/dashboard" className="border border-lime/40 text-lime px-4 py-2 rounded-full transition-all text-sm flex items-center gap-2">
+              <div className="relative" ref={profileRef}>
+                <button
+                  onClick={() => setIsProfileOpen((v) => !v)}
+                  aria-expanded={isProfileOpen}
+                  className="border border-lime/40 text-lime px-4 py-2 rounded-full transition-all text-sm flex items-center gap-2"
+                >
                   <span className="w-6 h-6 rounded-full bg-lime/15 flex items-center justify-center text-[11px] font-bold">
                     {getUserDisplayName(user).slice(0, 2).toUpperCase()}
                   </span>
                   <span>{getUserDisplayName(user)}</span>
-                </Link>
-                <button onClick={handleLogout} className="text-text2 hover:text-text text-sm">
-                  Uitloggen
+                  <span className={`text-[10px] transition-transform ${isProfileOpen ? "rotate-180" : ""}`}>▾</span>
                 </button>
-              </>
+
+                {isProfileOpen && (
+                  <div className="absolute right-0 top-full mt-2 w-56 rounded-2xl border border-border bg-surface2 shadow-2xl overflow-hidden py-1.5 z-50">
+                    <Link
+                      href="/dashboard"
+                      onClick={() => setIsProfileOpen(false)}
+                      className="block px-4 py-2.5 text-sm text-text2 hover:text-text hover:bg-surface transition-colors"
+                    >
+                      Dashboard
+                    </Link>
+                    <Link
+                      href="/dashboard#mijn-gegevens"
+                      onClick={() => setIsProfileOpen(false)}
+                      className="block px-4 py-2.5 text-sm text-text2 hover:text-text hover:bg-surface transition-colors"
+                    >
+                      Mijn gegevens
+                    </Link>
+                    {hasAdminAccess && (
+                      <Link
+                        href="/club-admin"
+                        onClick={() => setIsProfileOpen(false)}
+                        className="block px-4 py-2.5 text-sm text-text2 hover:text-text hover:bg-surface transition-colors"
+                      >
+                        Admin
+                      </Link>
+                    )}
+                    <div className="h-px bg-border/50 my-1.5" />
+                    <button
+                      onClick={handleLogout}
+                      className="block w-full text-left px-4 py-2.5 text-sm text-text2 hover:text-text hover:bg-surface transition-colors"
+                    >
+                      Uitloggen
+                    </button>
+                  </div>
+                )}
+              </div>
             ) : (
               <>
                 <Link href="/login" className="border border-muted text-text2 hover:text-text hover:border-text px-4 py-2 rounded-full transition-all text-sm">

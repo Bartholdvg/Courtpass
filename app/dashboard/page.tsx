@@ -474,7 +474,7 @@ function ProfileDetailsCard() {
   const field = "w-full bg-dark border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-lime transition-colors"
 
   return (
-    <div className="border border-border rounded-2xl p-6">
+    <div id="mijn-gegevens" className="border border-border rounded-2xl p-6 scroll-mt-24">
       <h2 className="font-bold text-lg mb-1">Mijn gegevens</h2>
       <p className="text-xs text-text3 mb-4">Optioneel — telefoonnummer en adres, handig als je met Google bent ingelogd.</p>
       <div className="space-y-3">
