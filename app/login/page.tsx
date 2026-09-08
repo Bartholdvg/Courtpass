@@ -14,14 +14,19 @@ import {
   storeAuthUser,
   supabase,
 } from "@/lib/supabase"
+import { updateMyProfileDetails } from "@/lib/booking"
 import { useRouter, useSearchParams } from "next/navigation"
 
 function LoginForm() {
   const searchParams = useSearchParams()
-  const [tab, setTab] = useState("login")
+  const [tab, setTab] = useState(() => (searchParams?.get("tab") === "register" ? "register" : "login"))
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [fullName, setFullName] = useState("")
+  const [phone, setPhone] = useState("")
+  const [address, setAddress] = useState("")
+  const [postcode, setPostcode] = useState("")
+  const [city, setCity] = useState("")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
   const [successMessage, setSuccessMessage] = useState("")
@@ -127,6 +132,15 @@ function LoginForm() {
         await signIn(email, password)
       } else {
         await signUp(email, password, fullName)
+        const details = {
+          ...(phone.trim() && { phone: phone.trim() }),
+          ...(address.trim() && { address: address.trim() }),
+          ...(postcode.trim() && { postcode: postcode.trim() }),
+          ...(city.trim() && { city: city.trim() }),
+        }
+        if (Object.keys(details).length > 0) {
+          await updateMyProfileDetails(details).catch(() => undefined)
+        }
       }
 
       const user = await getCurrentUser().catch(() => null)
@@ -376,6 +390,54 @@ function LoginForm() {
                 minLength={6}
               />
             </div>
+
+            {tab === "register" && (
+              <div className="space-y-4">
+                <p className="text-xs text-text3">Optioneel — kun je ook later nog invullen via je dashboard.</p>
+                <div>
+                  <label className="block text-sm text-text2 mb-2">Telefoonnummer</label>
+                  <input
+                    type="tel"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    className="w-full bg-dark border border-border rounded-lg px-4 py-3 text-text focus:outline-none focus:border-lime transition-colors"
+                    placeholder="06 12345678"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm text-text2 mb-2">Adres</label>
+                  <input
+                    type="text"
+                    value={address}
+                    onChange={(e) => setAddress(e.target.value)}
+                    className="w-full bg-dark border border-border rounded-lg px-4 py-3 text-text focus:outline-none focus:border-lime transition-colors"
+                    placeholder="Straatnaam 1"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-sm text-text2 mb-2">Postcode</label>
+                    <input
+                      type="text"
+                      value={postcode}
+                      onChange={(e) => setPostcode(e.target.value)}
+                      className="w-full bg-dark border border-border rounded-lg px-4 py-3 text-text focus:outline-none focus:border-lime transition-colors"
+                      placeholder="1234 AB"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-text2 mb-2">Stad</label>
+                    <input
+                      type="text"
+                      value={city}
+                      onChange={(e) => setCity(e.target.value)}
+                      className="w-full bg-dark border border-border rounded-lg px-4 py-3 text-text focus:outline-none focus:border-lime transition-colors"
+                      placeholder="Amsterdam"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
 
             {tab === "login" && !showForgotPassword && (
               <button

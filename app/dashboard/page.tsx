@@ -5,7 +5,18 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import ScrollObserver from "@/components/ScrollObserver"
 import { getCurrentUser, getRankFromPoints, getUserDisplayName, loadStoredUser } from "@/lib/supabase"
-import { fetchMyBookings, fetchMyCreditsBalance, fetchMyLedger, fetchProfileEmails, cancelBooking, type Booking, type LedgerEntry } from "@/lib/booking"
+import {
+  fetchMyBookings,
+  fetchMyCreditsBalance,
+  fetchMyLedger,
+  fetchProfileEmails,
+  fetchMyProfileDetails,
+  updateMyProfileDetails,
+  cancelBooking,
+  type Booking,
+  type LedgerEntry,
+  type ProfileDetails,
+} from "@/lib/booking"
 import { fetchBookingsImPlayingIn, fetchMyOwedSplits, fetchSplitsForBookings, payMySplitShare, type BookingSplit, type OwedSplit } from "@/lib/splits"
 
 const LEDGER_LABELS: Record<string, string> = {
@@ -376,6 +387,12 @@ export default function DashboardPage() {
               </div>
             </ScrollObserver>
 
+            <ScrollObserver delay={0.22}>
+              <div className="mt-6">
+                <ProfileDetailsCard />
+              </div>
+            </ScrollObserver>
+
             <ScrollObserver delay={0.25}>
               <div className="border border-border rounded-2xl p-6 mt-6">
                 <h2 className="font-bold text-lg mb-4">Credits geschiedenis</h2>
@@ -403,5 +420,78 @@ export default function DashboardPage() {
         </div>
       </section>
     </main>
+  )
+}
+
+/** Phone/address/postcode/city — always empty for a Google sign-in (Google
+ * never provides them), so this is the only place those users can ever
+ * fill them in. Self-contained: fetches and saves its own state rather
+ * than threading through the page's load(). */
+function ProfileDetailsCard() {
+  const [details, setDetails] = useState<ProfileDetails | null>(null)
+  const [phone, setPhone] = useState("")
+  const [address, setAddress] = useState("")
+  const [postcode, setPostcode] = useState("")
+  const [city, setCity] = useState("")
+  const [saving, setSaving] = useState(false)
+  const [saved, setSaved] = useState(false)
+  const [loadError, setLoadError] = useState(false)
+
+  useEffect(() => {
+    fetchMyProfileDetails()
+      .then((d) => {
+        setDetails(d)
+        setPhone(d?.phone || "")
+        setAddress(d?.address || "")
+        setPostcode(d?.postcode || "")
+        setCity(d?.city || "")
+      })
+      .catch(() => setLoadError(true))
+  }, [])
+
+  async function handleSave() {
+    setSaving(true)
+    setSaved(false)
+    try {
+      await updateMyProfileDetails({
+        phone: phone.trim() || null,
+        address: address.trim() || null,
+        postcode: postcode.trim() || null,
+        city: city.trim() || null,
+      })
+      setSaved(true)
+      setTimeout(() => setSaved(false), 2500)
+    } catch {
+      // silent — the field values stay as typed so the user can just retry
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  if (loadError) return null
+  if (!details) return null
+
+  const field = "w-full bg-dark border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-lime transition-colors"
+
+  return (
+    <div className="border border-border rounded-2xl p-6">
+      <h2 className="font-bold text-lg mb-1">Mijn gegevens</h2>
+      <p className="text-xs text-text3 mb-4">Optioneel — telefoonnummer en adres, handig als je met Google bent ingelogd.</p>
+      <div className="space-y-3">
+        <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Telefoonnummer" className={field} />
+        <input type="text" value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Adres" className={field} />
+        <div className="grid grid-cols-2 gap-3">
+          <input type="text" value={postcode} onChange={(e) => setPostcode(e.target.value)} placeholder="Postcode" className={field} />
+          <input type="text" value={city} onChange={(e) => setCity(e.target.value)} placeholder="Stad" className={field} />
+        </div>
+        <button
+          onClick={handleSave}
+          disabled={saving}
+          className="w-full bg-lime text-dark py-2 rounded-lg font-bold text-sm hover:opacity-90 transition-opacity disabled:opacity-50"
+        >
+          {saving ? "Bezig…" : saved ? "Opgeslagen ✓" : "Opslaan"}
+        </button>
+      </div>
+    </div>
   )
 }
