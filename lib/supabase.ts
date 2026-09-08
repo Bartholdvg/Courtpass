@@ -163,6 +163,15 @@ export const requestPasswordReset = async (email: string) => {
   return data
 }
 
+/** Starts the Google OAuth redirect. Since the client has
+ * detectSessionInUrl disabled (to not clash with the password-recovery
+ * link parsing on the login page), the caller is responsible for
+ * exchanging the ?code= that comes back — see login/page.tsx. */
+export const signInWithGoogle = async (redirectTo: string) => {
+  const { error } = await supabase.auth.signInWithOAuth({ provider: "google", options: { redirectTo } })
+  if (error) throw error
+}
+
 export const signOut = async () => {
   const { error } = await supabase.auth.signOut()
   if (error) throw error
