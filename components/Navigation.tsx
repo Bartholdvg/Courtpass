@@ -151,6 +151,13 @@ export default function Navigation() {
                     >
                       Mijn gegevens
                     </Link>
+                    <Link
+                      href="/dashboard#eerdere-boekingen"
+                      onClick={() => setIsProfileOpen(false)}
+                      className="block px-4 py-2.5 text-sm text-text2 hover:text-text hover:bg-surface transition-colors"
+                    >
+                      Eerdere boekingen
+                    </Link>
                     {hasAdminAccess && (
                       <Link
                         href="/club-admin"
