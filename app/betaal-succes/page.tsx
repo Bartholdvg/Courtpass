@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import { motion } from "framer-motion"
+import Icon from "@/components/Icon"
 import { adjustMyCredits, consumePendingCreditPurchase } from "@/lib/booking"
 import { consumePendingSubscriptionPurchase, subscribeToPlan } from "@/lib/billing"
 
@@ -41,7 +42,9 @@ export default function BetaaldPage() {
         transition={{ duration: 0.5 }}
         className="text-center"
       >
-        <div className="text-6xl mb-6">✅</div>
+        <div className="w-20 h-20 rounded-full bg-lime/10 flex items-center justify-center mx-auto mb-6">
+          <Icon name="check-circle" size={40} className="text-lime" />
+        </div>
         <h1 className="font-playfair text-4xl font-bold mb-2">Betaling gelukt!</h1>
         {status === "credited" ? (
           <p className="text-text2 mb-2 max-w-md mx-auto">

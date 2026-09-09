@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import { Html5Qrcode } from "html5-qrcode"
+import Icon, { type IconName } from "@/components/Icon"
 import {
   type Club,
   type Booking,
@@ -203,16 +204,16 @@ export default function ClubAdminPage() {
     )
   }
 
-  const sections: { id: Section; label: string; adminOnly?: boolean }[] = [
-    { id: "overzicht", label: "📊 Overzicht" },
-    { id: "clubs", label: "🎾 Clubs & banen" },
-    { id: "prijsmodel", label: "⚙️ Prijsmodel", adminOnly: true },
-    { id: "simulator", label: "🧮 Simulator", adminOnly: true },
-    { id: "boekingen", label: "📅 Boekingen" },
-    { id: "wallets", label: "💳 Wallets", adminOnly: true },
-    { id: "producten", label: "🏷️ Producten", adminOnly: true },
-    { id: "omzet", label: "💰 Omzet", adminOnly: true },
-    { id: "leads", label: "📬 Leads", adminOnly: true },
+  const sections: { id: Section; label: string; icon: IconName; adminOnly?: boolean }[] = [
+    { id: "overzicht", label: "Overzicht", icon: "overview" },
+    { id: "clubs", label: "Clubs & banen", icon: "tennis" },
+    { id: "prijsmodel", label: "Prijsmodel", icon: "settings", adminOnly: true },
+    { id: "simulator", label: "Simulator", icon: "calculator", adminOnly: true },
+    { id: "boekingen", label: "Boekingen", icon: "calendar" },
+    { id: "wallets", label: "Wallets", icon: "wallet", adminOnly: true },
+    { id: "producten", label: "Producten", icon: "tag", adminOnly: true },
+    { id: "omzet", label: "Omzet", icon: "trending-up", adminOnly: true },
+    { id: "leads", label: "Leads", icon: "inbox", adminOnly: true },
   ]
 
   const scopedClubs = activeClubId ? clubs.filter((c) => c.id === activeClubId) : clubs
@@ -245,10 +246,11 @@ export default function ClubAdminPage() {
               <button
                 key={s.id}
                 onClick={() => setSection(s.id)}
-                className={`text-left px-3 py-2 rounded-lg text-sm whitespace-nowrap font-medium transition-colors ${
+                className={`flex items-center gap-2 text-left px-3 py-2 rounded-lg text-sm whitespace-nowrap font-medium transition-colors ${
                   section === s.id ? "bg-lime/10 text-lime" : "text-text2 hover:text-text hover:bg-surface2"
                 }`}
               >
+                <Icon name={s.icon} />
                 {s.label}
               </button>
             ))}
@@ -1151,8 +1153,9 @@ function BookingsSection({
         {hasQrClub && (
           <button
             onClick={() => setScannerOpen(true)}
-            className="ml-auto text-sm px-4 py-2 rounded-lg font-semibold border border-lime/40 text-lime hover:bg-lime/10"
+            className="ml-auto flex items-center gap-2 text-sm px-4 py-2 rounded-lg font-semibold border border-lime/40 text-lime hover:bg-lime/10"
           >
+            <Icon name="camera" />
             QR check-in scannen
           </button>
         )}
@@ -1390,10 +1393,15 @@ function CheckInScannerModal({ onClose }: { onClose: () => void }) {
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 p-4" onClick={onClose}>
       <div className="w-full max-w-sm rounded-2xl border border-border bg-surface2 p-6" onClick={(e) => e.stopPropagation()}>
-        <h3 className="font-bold text-lg mb-3">QR check-in scannen</h3>
+        <div className="flex flex-col items-center mb-3">
+          <div className="w-14 h-14 rounded-full bg-lime/10 flex items-center justify-center mb-2">
+            <Icon name="camera" size={28} className="text-lime" />
+          </div>
+          <h3 className="font-bold text-lg">QR check-in scannen</h3>
+        </div>
 
         <div id="qr-scanner-region" className={cameraError ? "hidden" : "rounded-xl overflow-hidden bg-dark mb-3"} />
-        {cameraError && <p className="text-xs text-yellow-400 mb-3">{cameraError}</p>}
+        {cameraError && <p className="text-xs text-yellow-400 mb-3 text-center">{cameraError}</p>}
 
         <div className="flex gap-2 mb-3">
           <input

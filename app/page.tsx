@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import Link from "next/link"
 import { motion } from "framer-motion"
 import ScrollObserver from "@/components/ScrollObserver"
+import Icon from "@/components/Icon"
 import { effectivePriceCents, fetchActiveSubscriptionPlans, formatEuros, type SubscriptionPlan } from "@/lib/billing"
 import { useLanguage } from "@/lib/i18n"
 
@@ -225,15 +226,17 @@ export default function Home() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 border-t border-border">
             {[
-              { num: "01", icon: "📋", title: t("home.step1Title"), desc: t("home.step1Desc") },
-              { num: "02", icon: "🔍", title: t("home.step2Title"), desc: t("home.step2Desc") },
-              { num: "03", icon: "📅", title: t("home.step3Title"), desc: t("home.step3Desc") },
-              { num: "04", icon: "🎾", title: t("home.step4Title"), desc: t("home.step4Desc") },
+              { num: "01", icon: "account" as const, title: t("home.step1Title"), desc: t("home.step1Desc") },
+              { num: "02", icon: "search" as const, title: t("home.step2Title"), desc: t("home.step2Desc") },
+              { num: "03", icon: "calendar" as const, title: t("home.step3Title"), desc: t("home.step3Desc") },
+              { num: "04", icon: "tennis" as const, title: t("home.step4Title"), desc: t("home.step4Desc") },
             ].map((step, i) => (
               <ScrollObserver key={i} delay={i * 0.1}>
                 <div className="py-8 md:py-12 border-r border-border last:border-r-0 hover:bg-surface/20 transition-colors px-4">
                   <div className="text-4xl font-playfair font-black text-border mb-4">{step.num}</div>
-                  <div className="text-xl mb-3 text-2xl">{step.icon}</div>
+                  <div className="w-14 h-14 rounded-full bg-lime/10 flex items-center justify-center mb-3">
+                    <Icon name={step.icon} size={28} className="text-lime" />
+                  </div>
                   <h3 className="text-lg font-medium text-text mb-2">{step.title}</h3>
                   <p className="text-sm text-text2 leading-relaxed font-light">{step.desc}</p>
                 </div>

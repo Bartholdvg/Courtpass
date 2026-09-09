@@ -25,6 +25,7 @@ import {
   addFavoriteClub,
   removeFavoriteClub,
 } from "@/lib/booking"
+import Icon from "@/components/Icon"
 import { fetchForecast, getRainBucket, isForecastLive } from "@/lib/weather"
 import { haversineKm, type PricingModel } from "@/lib/pricing"
 import { AUTH_CHANGED_EVENT, CLUBS_NAV_RESET_EVENT, getCurrentUser } from "@/lib/supabase"
@@ -462,9 +463,9 @@ export default function ClubsPage() {
                       <button
                         onClick={(e) => toggleFavorite(c.id, e)}
                         aria-label={favoriteIds.has(c.id) ? "Verwijder favoriet" : "Favoriet maken"}
-                        className={`flex-none text-lg leading-none px-1 transition-colors ${favoriteIds.has(c.id) ? "text-lime" : "text-text3 hover:text-text2"}`}
+                        className={`flex-none px-1 transition-colors ${favoriteIds.has(c.id) ? "text-lime" : "text-text3 hover:text-text2"}`}
                       >
-                        {favoriteIds.has(c.id) ? "★" : "☆"}
+                        <Icon name={favoriteIds.has(c.id) ? "star-filled" : "star"} />
                       </button>
                     </div>
                   ))}
