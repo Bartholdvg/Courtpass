@@ -15,6 +15,7 @@ import {
   cancelBooking,
   fetchQrEnabledClubIds,
   encodeQrCheckinPayload,
+  selfCheckInBooking,
   type Booking,
   type LedgerEntry,
   type ProfileDetails,
@@ -56,6 +57,8 @@ export default function DashboardPage() {
   const [myUserId, setMyUserId] = useState<string | null>(null)
   const [qrEnabledClubIds, setQrEnabledClubIds] = useState<Set<string>>(new Set())
   const [qrBooking, setQrBooking] = useState<Booking | null>(null)
+  const [geoChecking, setGeoChecking] = useState<string | null>(null)
+  const [geoResult, setGeoResult] = useState<Record<string, string>>({})
   const storedUser = loadStoredUser()
   const displayName = getUserDisplayName(storedUser)
   const rank = storedUser?.rank || getRankFromPoints(storedUser?.points ?? 0)
@@ -142,6 +145,41 @@ export default function DashboardPage() {
     load()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  function handleGeoCheckIn(booking: Booking) {
+    if (!navigator.geolocation) {
+      setGeoResult((prev) => ({ ...prev, [booking.id]: "Locatie wordt niet ondersteund door je browser." }))
+      return
+    }
+    setGeoChecking(booking.id)
+    setGeoResult((prev) => ({ ...prev, [booking.id]: "" }))
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        try {
+          const r = await selfCheckInBooking(booking.id, pos.coords.latitude, pos.coords.longitude)
+          if (r.checkedIn) {
+            setGeoResult((prev) => ({ ...prev, [booking.id]: r.alreadyCheckedIn ? "Was al ingecheckt." : "Ingecheckt ✓" }))
+            await load()
+          } else if (!r.withinRange) {
+            setGeoResult((prev) => ({ ...prev, [booking.id]: `Je bent nog ${Math.round(r.distanceKm * 1000)}m van de club verwijderd.` }))
+          } else if (!r.withinTimeWindow) {
+            setGeoResult((prev) => ({ ...prev, [booking.id]: "Inchecken kan pas vanaf 2 uur voor je starttijd." }))
+          } else {
+            setGeoResult((prev) => ({ ...prev, [booking.id]: "Inchecken niet gelukt." }))
+          }
+        } catch (err: any) {
+          setGeoResult((prev) => ({ ...prev, [booking.id]: err.message || "Inchecken mislukt." }))
+        } finally {
+          setGeoChecking(null)
+        }
+      },
+      () => {
+        setGeoResult((prev) => ({ ...prev, [booking.id]: "Locatietoegang geweigerd." }))
+        setGeoChecking(null)
+      },
+      { enableHighAccuracy: true, timeout: 10000 },
+    )
+  }
 
   async function handleCancel(id: string) {
     if (!confirm("Deze boeking annuleren?")) return
@@ -286,6 +324,7 @@ export default function DashboardPage() {
                                 </p>
                               )}
                               {isBooker && !canCancel && <p className="text-xs text-yellow-400 mt-0.5">Annuleren kan niet meer (binnen 12 uur voor starttijd)</p>}
+                              {geoResult[b.id] && <p className="text-xs text-text2 mt-0.5">{geoResult[b.id]}</p>}
                             </div>
                             <div className="ml-auto flex items-center gap-3 flex-none">
                               <span className="font-mono font-bold text-lime">{Math.round(b.priceCredits)} cr</span>
@@ -295,6 +334,15 @@ export default function DashboardPage() {
                                   className="text-xs border border-lime/40 text-lime rounded-full px-3 py-1.5 hover:bg-lime/10"
                                 >
                                   Toon QR
+                                </button>
+                              )}
+                              {isBooker && qrEnabledClubIds.has(b.clubId) && !b.checkedInAt && (
+                                <button
+                                  onClick={() => handleGeoCheckIn(b)}
+                                  disabled={geoChecking === b.id}
+                                  className="text-xs border border-lime/40 text-lime rounded-full px-3 py-1.5 hover:bg-lime/10 disabled:opacity-50"
+                                >
+                                  {geoChecking === b.id ? "Bezig…" : "Check in via locatie"}
                                 </button>
                               )}
                               {canCancel && (
@@ -357,6 +405,9 @@ export default function DashboardPage() {
                   </Link>
                   <Link href="/betalen" className="block w-full border border-border text-text2 hover:text-text py-2 rounded-lg font-bold text-center transition-colors text-sm">
                     Abonnement beheren
+                  </Link>
+                  <Link href="/aansluiten?tab=referral" className="block w-full border border-border text-text2 hover:text-text py-2 rounded-lg font-bold text-center transition-colors text-sm">
+                    Stel een club voor
                   </Link>
                 </div>
               </div>
