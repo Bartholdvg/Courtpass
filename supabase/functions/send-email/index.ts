@@ -15,24 +15,40 @@
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY")
 const FROM_EMAIL = Deno.env.get("RESEND_FROM_EMAIL") || "CourtPass <onboarding@resend.dev>"
 
+// The browser sends a CORS preflight (OPTIONS) before the real POST, since
+// this call carries a JSON content-type and an Authorization header across
+// origins. Without an explicit 2xx + Access-Control-Allow-* response to
+// that preflight, the browser aborts before ever sending the real request
+// — supabase.functions.invoke() then just throws, which every call site
+// here swallows via .catch(() => undefined), so this failed completely
+// silently until checked via the function's logs.
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+}
+
 Deno.serve(async (req: Request) => {
+  if (req.method === "OPTIONS") {
+    return new Response(null, { status: 204, headers: corsHeaders })
+  }
   if (req.method !== "POST") {
-    return new Response(JSON.stringify({ error: "Method not allowed" }), { status: 405 })
+    return new Response(JSON.stringify({ error: "Method not allowed" }), { status: 405, headers: corsHeaders })
   }
   if (!RESEND_API_KEY) {
-    return new Response(JSON.stringify({ error: "RESEND_API_KEY is not configured" }), { status: 500 })
+    return new Response(JSON.stringify({ error: "RESEND_API_KEY is not configured" }), { status: 500, headers: corsHeaders })
   }
 
   let body: { to?: string; subject?: string; html?: string }
   try {
     body = await req.json()
   } catch {
-    return new Response(JSON.stringify({ error: "Invalid JSON body" }), { status: 400 })
+    return new Response(JSON.stringify({ error: "Invalid JSON body" }), { status: 400, headers: corsHeaders })
   }
 
   const { to, subject, html } = body
   if (!to || !subject || !html) {
-    return new Response(JSON.stringify({ error: "Missing required fields: to, subject, html" }), { status: 400 })
+    return new Response(JSON.stringify({ error: "Missing required fields: to, subject, html" }), { status: 400, headers: corsHeaders })
   }
 
   const resendRes = await fetch("https://api.resend.com/emails", {
@@ -46,8 +62,8 @@ Deno.serve(async (req: Request) => {
 
   if (!resendRes.ok) {
     const errText = await resendRes.text()
-    return new Response(JSON.stringify({ error: `Resend error: ${errText}` }), { status: 502 })
+    return new Response(JSON.stringify({ error: `Resend error: ${errText}` }), { status: 502, headers: corsHeaders })
   }
 
-  return new Response(JSON.stringify({ ok: true }), { status: 200, headers: { "Content-Type": "application/json" } })
+  return new Response(JSON.stringify({ ok: true }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } })
 })
