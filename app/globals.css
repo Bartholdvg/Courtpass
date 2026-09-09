@@ -101,6 +101,13 @@ a {
   background: #F8FAFC !important;
 }
 
+/* Darkens the plain (keyless) OpenStreetMap tiles to match the site's dark
+   theme, instead of relying on a provider's own "free" dark-styled tiles
+   (CARTO's dark_all tiles started requiring an API key). */
+.map-dark-tiles .leaflet-tile-pane {
+  filter: invert(1) hue-rotate(180deg) brightness(0.95) contrast(0.9);
+}
+
 .leaflet-popup-content-wrapper {
   background: white !important;
   color: black !important;

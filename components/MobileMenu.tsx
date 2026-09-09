@@ -61,10 +61,43 @@ export default function MobileMenu({ user, hasAdminAccess, onClose, onLogout }: 
       </div>
 
       <div className="py-2">
+        {/* Logged in: your own stuff (dashboard/profile/bookings) comes
+            first — that's what you open the menu for most — with the
+            general site links below it, Clubs leading that second group
+            since it's the main booking entry point. Logged out, there's
+            no account section, so the general links lead. */}
+        {user && (
+          <>
+            <motion.div custom={0} variants={menuItemVariants} initial="hidden" animate="visible">
+              <Link href="/dashboard" className="block px-5 py-3 text-text2 hover:text-text hover:bg-surface transition-colors text-sm" onClick={onClose}>
+                Dashboard · {getUserDisplayName(user)}
+              </Link>
+            </motion.div>
+            <motion.div custom={0.25} variants={menuItemVariants} initial="hidden" animate="visible">
+              <Link href="/dashboard#mijn-gegevens" className="block px-5 py-3 text-text2 hover:text-text hover:bg-surface transition-colors text-sm" onClick={onClose}>
+                {t("nav.myDetails")}
+              </Link>
+            </motion.div>
+            <motion.div custom={0.4} variants={menuItemVariants} initial="hidden" animate="visible">
+              <Link href="/dashboard#eerdere-boekingen" className="block px-5 py-3 text-text2 hover:text-text hover:bg-surface transition-colors text-sm" onClick={onClose}>
+                {t("nav.previousBookings")}
+              </Link>
+            </motion.div>
+            {hasAdminAccess && (
+              <motion.div custom={0.5} variants={menuItemVariants} initial="hidden" animate="visible">
+                <Link href="/club-admin" className="block px-5 py-3 text-text2 hover:text-text hover:bg-surface transition-colors text-sm" onClick={onClose}>
+                  {t("nav.admin")}
+                </Link>
+              </motion.div>
+            )}
+            <div className="h-px bg-border/30 my-2" />
+          </>
+        )}
+
         {(
           [
-            { href: "/#hoe-het-werkt", label: t("nav.howItWorks") },
             { href: "/clubs", label: t("nav.clubs"), icon: "tennis" as const },
+            { href: "/#hoe-het-werkt", label: t("nav.howItWorks") },
             { href: "/#abonnementen", label: t("nav.subscriptions") },
             { href: "/aansluiten", label: "Sluit je club aan" },
             { href: "/#contact", label: t("nav.contact") },
@@ -73,7 +106,7 @@ export default function MobileMenu({ user, hasAdminAccess, onClose, onLogout }: 
             { href: "/privacy", label: "Privacy" },
           ]
         ).map((item, i) => (
-          <motion.div key={item.href} custom={i} variants={menuItemVariants} initial="hidden" animate="visible">
+          <motion.div key={item.href} custom={i + 1} variants={menuItemVariants} initial="hidden" animate="visible">
             <Link
               href={item.href}
               className="flex items-center gap-2 px-5 py-3 text-text2 hover:text-text hover:bg-surface transition-colors text-sm border-b border-border/30 last:border-b-0"
@@ -91,43 +124,19 @@ export default function MobileMenu({ user, hasAdminAccess, onClose, onLogout }: 
         <div className="h-px bg-border/30 my-2" />
 
         {user ? (
-          <>
-            <motion.div custom={4} variants={menuItemVariants} initial="hidden" animate="visible">
-              <Link href="/dashboard" className="block px-5 py-3 text-text2 hover:text-text hover:bg-surface transition-colors text-sm" onClick={onClose}>
-                Dashboard · {getUserDisplayName(user)}
-              </Link>
-            </motion.div>
-            <motion.div custom={4.25} variants={menuItemVariants} initial="hidden" animate="visible">
-              <Link href="/dashboard#mijn-gegevens" className="block px-5 py-3 text-text2 hover:text-text hover:bg-surface transition-colors text-sm" onClick={onClose}>
-                {t("nav.myDetails")}
-              </Link>
-            </motion.div>
-            <motion.div custom={4.4} variants={menuItemVariants} initial="hidden" animate="visible">
-              <Link href="/dashboard#eerdere-boekingen" className="block px-5 py-3 text-text2 hover:text-text hover:bg-surface transition-colors text-sm" onClick={onClose}>
-                {t("nav.previousBookings")}
-              </Link>
-            </motion.div>
-            {hasAdminAccess && (
-              <motion.div custom={4.5} variants={menuItemVariants} initial="hidden" animate="visible">
-                <Link href="/club-admin" className="block px-5 py-3 text-text2 hover:text-text hover:bg-surface transition-colors text-sm border-b border-border/30" onClick={onClose}>
-                  {t("nav.admin")}
-                </Link>
-              </motion.div>
-            )}
-            <motion.div custom={5} variants={menuItemVariants} initial="hidden" animate="visible" className="px-3 py-2">
-              <button onClick={onLogout} className="block w-full border border-border text-text2 py-3 rounded-xl text-sm">
-                {t("nav.logout")}
-              </button>
-            </motion.div>
-          </>
+          <motion.div custom={9} variants={menuItemVariants} initial="hidden" animate="visible" className="px-3 py-2">
+            <button onClick={onLogout} className="block w-full border border-border text-text2 py-3 rounded-xl text-sm">
+              {t("nav.logout")}
+            </button>
+          </motion.div>
         ) : (
           <>
-            <motion.div custom={4} variants={menuItemVariants} initial="hidden" animate="visible">
+            <motion.div custom={9} variants={menuItemVariants} initial="hidden" animate="visible">
               <Link href="/login" className="block px-5 py-3 text-text2 hover:text-text hover:bg-surface transition-colors text-sm" onClick={onClose}>
                 {t("nav.login")}
               </Link>
             </motion.div>
-            <motion.div custom={5} variants={menuItemVariants} initial="hidden" animate="visible" className="px-3 py-2">
+            <motion.div custom={9.5} variants={menuItemVariants} initial="hidden" animate="visible" className="px-3 py-2">
               <Link href="/login?tab=register" className="block w-full bg-lime text-dark text-center py-3 rounded-xl font-medium hover:opacity-90 transition-opacity text-sm" onClick={onClose}>
                 {t("nav.tryFree")} →
               </Link>

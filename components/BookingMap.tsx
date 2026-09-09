@@ -42,16 +42,21 @@ export default function BookingMap({ clubs, selectedClubId, onSelectClub }: Book
     // 1000 (see .leaflet-top/.leaflet-bottom in leaflet.css). Without this,
     // those values aren't scoped to the map and leak out to outrank the site's
     // own fixed nav/mobile-menu (z-40/z-50) whenever this map is on screen.
-    <div className="h-full w-full isolate">
+    <div className="h-full w-full isolate map-dark-tiles">
       <MapContainer
         center={[52.365, 4.89]}
         zoom={12}
         style={{ height: "100%", width: "100%", background: "#0A140C" }}
         className="leaflet-container"
       >
+        {/* CARTO's free dark_all tiles started requiring an API key (the tiles
+            rendered a literal "API KEY REQUIRED" watermark instead of a map),
+            so this uses the plain, keyless OpenStreetMap tile server and
+            darkens it with a CSS filter (see .map-dark-tiles below) instead
+            of depending on a specific provider's free dark-styled tiles. */}
         <TileLayer
-          url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         />
         {clubs.map((club) => (
           <Marker
