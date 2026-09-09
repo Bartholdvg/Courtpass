@@ -172,6 +172,16 @@ export const signInWithGoogle = async (redirectTo: string) => {
   if (error) throw error
 }
 
+/** "azure" is Supabase's provider id for Microsoft/Outlook accounts — same
+ * OAuth code-exchange path as Google, see the login page's shared ?code=
+ * handling. Requires an Azure AD app registration configured as the
+ * "Azure" provider in the Supabase dashboard (free tier is enough for
+ * basic sign-in), same manual step Google needed. */
+export const signInWithMicrosoft = async (redirectTo: string) => {
+  const { error } = await supabase.auth.signInWithOAuth({ provider: "azure", options: { redirectTo, scopes: "email" } })
+  if (error) throw error
+}
+
 export const signOut = async () => {
   const { error } = await supabase.auth.signOut()
   if (error) throw error

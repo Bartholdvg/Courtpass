@@ -10,6 +10,7 @@ import {
   requestPasswordReset,
   signIn,
   signInWithGoogle,
+  signInWithMicrosoft,
   signUp,
   storeAuthUser,
   supabase,
@@ -39,6 +40,7 @@ function LoginForm() {
   const [confirmPassword, setConfirmPassword] = useState("")
   const [passwordLoading, setPasswordLoading] = useState(false)
   const [googleLoading, setGoogleLoading] = useState(false)
+  const [microsoftLoading, setMicrosoftLoading] = useState(false)
   const router = useRouter()
 
   function goToRedirectOrDashboard() {
@@ -74,8 +76,9 @@ function LoginForm() {
         await supabase.auth.exchangeCodeForSession(code).catch(() => undefined)
         setRecoveryReady(true)
       } else if (code) {
-        // Not a recovery link, but a ?code= is present — this is Google (or
-        // another OAuth provider) redirecting back after signInWithOAuth.
+        // Not a recovery link, but a ?code= is present — this is Google,
+        // Microsoft, or another OAuth provider redirecting back after
+        // signInWithOAuth.
         // detectSessionInUrl is off (see lib/supabase.ts), so exchange it
         // ourselves, same as the recovery branches above.
         try {
@@ -95,7 +98,7 @@ function LoginForm() {
           goToRedirectOrDashboard()
           return
         } catch (err: any) {
-          setError(err.message || "Inloggen met Google is mislukt.")
+          setError(err.message || "Inloggen is mislukt.")
         }
         setRecoveryReady(true)
       } else {
@@ -118,6 +121,17 @@ function LoginForm() {
     } catch (err: any) {
       setError(err.message || "Inloggen met Google is mislukt.")
       setGoogleLoading(false)
+    }
+  }
+
+  async function handleMicrosoftLogin() {
+    setMicrosoftLoading(true)
+    setError("")
+    try {
+      await signInWithMicrosoft(window.location.origin + window.location.pathname + window.location.search)
+    } catch (err: any) {
+      setError(err.message || "Inloggen met Microsoft is mislukt.")
+      setMicrosoftLoading(false)
     }
   }
 
@@ -293,6 +307,20 @@ function LoginForm() {
                   <path fill="#EA4335" d="M9 3.58c1.32 0 2.51.46 3.44 1.35l2.59-2.59C13.46.89 11.43 0 9 0A9 9 0 0 0 .95 4.95l3.02 2.33C4.68 5.16 6.66 3.58 9 3.58z" />
                 </svg>
                 {googleLoading ? "Bezig…" : "Inloggen met Google"}
+              </button>
+              <button
+                type="button"
+                onClick={handleMicrosoftLogin}
+                disabled={microsoftLoading}
+                className="w-full flex items-center justify-center gap-2.5 border border-border rounded-lg py-3 text-sm font-semibold text-text hover:border-text2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed mt-3"
+              >
+                <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true">
+                  <rect x="0" y="0" width="8.5" height="8.5" fill="#F25022" />
+                  <rect x="9.5" y="0" width="8.5" height="8.5" fill="#7FBA00" />
+                  <rect x="0" y="9.5" width="8.5" height="8.5" fill="#00A4EF" />
+                  <rect x="9.5" y="9.5" width="8.5" height="8.5" fill="#FFB900" />
+                </svg>
+                {microsoftLoading ? "Bezig…" : "Inloggen met Microsoft"}
               </button>
               <div className="flex items-center gap-3 my-5">
                 <div className="flex-1 h-px bg-border" />
