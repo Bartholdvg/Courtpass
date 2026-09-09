@@ -29,6 +29,7 @@ import { fetchForecast, getRainBucket, isForecastLive } from "@/lib/weather"
 import { haversineKm, type PricingModel } from "@/lib/pricing"
 import { AUTH_CHANGED_EVENT, getCurrentUser } from "@/lib/supabase"
 import { createBookingSplit, resolveUserIdByEmail } from "@/lib/splits"
+import { sendSplitInviteEmail } from "@/lib/email"
 
 interface ParticipantInput {
   mode: "email" | "guest"
@@ -313,6 +314,22 @@ export default function ClubsPage() {
             resolvedParticipants.map((p) => ({ userId: p.userId, guestName: p.guestName, credits: p.credits })),
           )
           setSplitSummary(resolvedParticipants.map((p) => ({ credits: p.credits, label: p.label })))
+
+          // Only participants with an account (label is their email, set
+          // above at resolveUserIdByEmail time) — not the booker themselves,
+          // and not guests, who have no account/email to send to.
+          const invitedByEmail = resolvedParticipants.filter((p) => p.userId && p.userId !== currentUser.id)
+          for (const p of invitedByEmail) {
+            sendSplitInviteEmail(p.label, {
+              clubName: selectedClub.name,
+              courtName: selectedCourt.name,
+              date: selectedDate,
+              startTime: selectedTime,
+              endTime: result.endTime,
+              creditsOwed: p.credits,
+              bookerEmail: currentUser.email || "",
+            }).catch(() => undefined)
+          }
         } catch (splitErr: any) {
           setSplitError(
             "De boeking is gelukt, maar het splitsen van de kosten is mislukt: " + (splitErr.message || "onbekende fout") +
