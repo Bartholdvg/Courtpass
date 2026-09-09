@@ -1,0 +1,37 @@
+-- ============================================================
+-- CourtPass — close a direct-write hole on bookings
+--
+-- Run this ONCE in Supabase Dashboard -> SQL Editor -> New query -> Run,
+-- after 0001-0015. Safe to re-run (idempotent).
+--
+-- What this does:
+--   Found during a security review: the "customers or club owners cancel
+--   bookings" UPDATE policy (added back in fase 1/0009) lets the row's own
+--   customer, or staff of that club, update a bookings row directly.
+--   Nothing in the app actually uses this — cancellation goes entirely
+--   through cancel_my_booking(), a SECURITY DEFINER function that
+--   bypasses RLS/grants and does the status flip + refund atomically.
+--
+--   The policy's USING/CHECK only ever validated ROW OWNERSHIP
+--   (auth.uid() = user_id), never which columns were being changed or to
+--   what values — and Supabase's project defaults already grant
+--   `authenticated` UPDATE on every column of every table (the same
+--   pattern fixed for profiles in migration 0015). Combined, any
+--   customer could PATCH their own confirmed booking directly via the
+--   REST API to:
+--     - inflate price_credits, then call cancel_my_booking() (which
+--       reads price_credits fresh off the row) for a refund far larger
+--       than what was actually paid,
+--     - move an already-paid booking to a different court/date/time/
+--       club for free, bypassing pricing and availability entirely, or
+--     - flip status back to 'confirmed' on a booking that was already
+--       cancelled and refunded, reclaiming the court slot for free.
+--
+--   Fixed by revoking UPDATE on bookings entirely for `authenticated`
+--   (nothing legitimate needs it) and dropping the now-pointless policy.
+--   INSERT (customers creating their own booking) is untouched — that's
+--   real, used functionality, unrelated to this hole.
+-- ============================================================
+
+revoke update on bookings from authenticated;
+drop policy if exists "customers or club owners cancel bookings" on bookings;
