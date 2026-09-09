@@ -1,7 +1,8 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
+import { Html5Qrcode } from "html5-qrcode"
 import {
   type Club,
   type Booking,
@@ -29,8 +30,11 @@ import {
   fetchAllWalletsSummary,
   fetchUserLedger,
   adminAdjustCredits,
+  checkInBooking,
+  decodeQrCheckinPayload,
   type WalletSummary,
   type LedgerEntry,
+  type CheckInResult,
 } from "@/lib/booking"
 import { calculatePrice, type PricingModel, type PricingInputs } from "@/lib/pricing"
 import {
@@ -84,6 +88,7 @@ function draftFromClub(club: Club): ClubDraft {
     openTo: club.openTo,
     demand: club.demand,
     histOccupancy: club.histOccupancy,
+    qrCheckinEnabled: club.qrCheckinEnabled,
     courts: club.courts.map((c) => ({ id: c.id, name: c.name, indoor: c.indoor, surface: c.surface, active: c.active })),
   }
 }
@@ -99,6 +104,7 @@ function emptyDraft(): ClubDraft {
     openTo: "22:00",
     demand: "Normaal",
     histOccupancy: "50-70%",
+    qrCheckinEnabled: false,
     courts: [{ name: "Court 1", indoor: false, surface: "Hard court", active: true }],
   }
 }
@@ -440,6 +446,7 @@ function ClubsSection({
         openTo: draft.openTo,
         demand: draft.demand,
         histOccupancy: draft.histOccupancy,
+        qrCheckinEnabled: draft.qrCheckinEnabled,
       }
 
       let clubId = expandedId
@@ -647,6 +654,18 @@ function ClubEditForm({
               <option key={h}>{h}</option>
             ))}
           </select>
+        </div>
+        <div className="col-span-2 flex items-center gap-2 pt-1">
+          <input
+            type="checkbox"
+            id="qr-checkin-enabled"
+            checked={draft.qrCheckinEnabled}
+            onChange={(e) => setDraft({ ...draft, qrCheckinEnabled: e.target.checked })}
+            className="w-4 h-4 accent-lime"
+          />
+          <label htmlFor="qr-checkin-enabled" className="text-sm text-text2">
+            QR check-in aan de balie <span className="text-text3">— spelers tonen een QR-code, jullie scannen die bij binnenkomst</span>
+          </label>
         </div>
       </div>
 
@@ -1071,6 +1090,7 @@ function BookingsSection({
   const [gridClubId, setGridClubId] = useState<string>(clubs[0]?.id || "")
   const [gridDate, setGridDate] = useState<string>(todayISO())
   const [bookerEmails, setBookerEmails] = useState<Record<string, string>>({})
+  const [scannerOpen, setScannerOpen] = useState(false)
 
   useEffect(() => {
     const userIds = bookings.map((b) => b.userId)
@@ -1080,6 +1100,7 @@ function BookingsSection({
       .catch(() => {})
   }, [bookings])
 
+  const hasQrClub = clubs.some((c) => c.qrCheckinEnabled)
   const gridClub = clubs.find((c) => c.id === gridClubId) || clubs[0] || null
   const timeSlots = gridClub ? getTimeSlots(gridClub, model) : []
   const dayBookings = bookings.filter((b) => b.clubId === (gridClub?.id ?? "__none__") && b.date === gridDate && b.status === "confirmed")
@@ -1123,7 +1144,17 @@ function BookingsSection({
         >
           Lijst
         </button>
+        {hasQrClub && (
+          <button
+            onClick={() => setScannerOpen(true)}
+            className="ml-auto text-sm px-4 py-2 rounded-lg font-semibold border border-lime/40 text-lime hover:bg-lime/10"
+          >
+            QR check-in scannen
+          </button>
+        )}
       </div>
+
+      {scannerOpen && <CheckInScannerModal onClose={() => setScannerOpen(false)} />}
 
       {view === "rooster" ? (
         !gridClub ? (
@@ -1168,6 +1199,7 @@ function BookingsSection({
                   </span>
                   <span className="text-text3 text-xs">
                     Geboekt door {bookerEmails[openBooking.userId] || openBooking.userId} · <span className="font-mono">{openBooking.bookingCode}</span>
+                    {openBooking.checkedInAt && <span className="ml-2 text-lime">· Ingecheckt ✓</span>}
                   </span>
                   <span className="ml-auto font-mono text-lime">{Math.round(openBooking.priceCredits)} cr</span>
                   <button onClick={() => handleCancel(openBooking)} className="text-xs border border-red-500/30 text-red-400 rounded-lg px-3 py-1.5 hover:bg-red-500/10">
@@ -1242,6 +1274,7 @@ function BookingsSection({
                 </span>
                 <span className="text-text3 text-xs">
                   {bookerEmails[b.userId] || b.userId} · <span className="font-mono">{b.bookingCode}</span>
+                  {b.checkedInAt && <span className="ml-2 text-lime">· Ingecheckt ✓</span>}
                 </span>
                 <span className="ml-auto font-mono text-lime">{Math.round(b.priceCredits)} cr</span>
                 <button onClick={() => setOpenId(openId === b.id ? null : b.id)} className="text-xs border border-border rounded-lg px-3 py-1.5 hover:border-lime/50">
@@ -1263,6 +1296,143 @@ function BookingsSection({
           ))}
         </div>
       )}
+    </div>
+  )
+}
+
+/** Camera-based QR scanner for the counter, with a manual code fallback for
+ * when there's no camera (or a customer just reads their code aloud). The
+ * actual verification (does the code exist, does it belong to a club this
+ * staff member manages, does the date/email on the QR match) all happens
+ * server-side in check_in_booking — this only decodes the QR text and
+ * shows whatever the server comes back with. */
+function CheckInScannerModal({ onClose }: { onClose: () => void }) {
+  const scannerRef = useRef<Html5Qrcode | null>(null)
+  const [cameraError, setCameraError] = useState("")
+  const [manualCode, setManualCode] = useState("")
+  const [checking, setChecking] = useState(false)
+  const [result, setResult] = useState<CheckInResult | null>(null)
+  const [resultError, setResultError] = useState("")
+
+  async function runCheckIn(code: string, date?: string, email?: string) {
+    setChecking(true)
+    setResultError("")
+    setResult(null)
+    try {
+      const r = await checkInBooking(code, date, email)
+      setResult(r)
+    } catch (err: any) {
+      setResultError(err.message || "Boekingscode niet gevonden")
+    } finally {
+      setChecking(false)
+    }
+  }
+
+  useEffect(() => {
+    const scanner = new Html5Qrcode("qr-scanner-region")
+    scannerRef.current = scanner
+    let cancelled = false
+    let started = false
+
+    Html5Qrcode.getCameras()
+      .then((cameras) => {
+        if (cancelled) return
+        if (!cameras.length) {
+          setCameraError("Geen camera gevonden — gebruik de code hieronder.")
+          return
+        }
+        const camera = cameras.find((c) => /back|rear|environment/i.test(c.label)) ?? cameras[cameras.length - 1]!
+        return scanner
+          .start(
+            camera.id,
+            { fps: 10, qrbox: 220 },
+            (decodedText) => {
+              const payload = decodeQrCheckinPayload(decodedText)
+              if (payload) runCheckIn(payload.code, payload.date, payload.email)
+              else runCheckIn(decodedText.trim())
+            },
+            () => {},
+          )
+          .then(() => {
+            started = true
+          })
+      })
+      .catch(() => {
+        if (!cancelled) setCameraError("Geen camera-toegang — gebruik de code hieronder.")
+      })
+
+    return () => {
+      cancelled = true
+      // .stop() throws synchronously (not a rejected promise) when the
+      // scanner never actually started — e.g. no camera available — so a
+      // bare .catch() doesn't save it and it was crashing this component
+      // via React's error boundary on close.
+      if (started) {
+        try {
+          scanner
+            .stop()
+            .then(() => scanner.clear())
+            .catch(() => {})
+        } catch {
+          // ignore — same "not running" case, just thrown synchronously
+        }
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const fullMatch = result && result.matchDate && result.matchEmail
+
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 p-4" onClick={onClose}>
+      <div className="w-full max-w-sm rounded-2xl border border-border bg-surface2 p-6" onClick={(e) => e.stopPropagation()}>
+        <h3 className="font-bold text-lg mb-3">QR check-in scannen</h3>
+
+        <div id="qr-scanner-region" className={cameraError ? "hidden" : "rounded-xl overflow-hidden bg-dark mb-3"} />
+        {cameraError && <p className="text-xs text-yellow-400 mb-3">{cameraError}</p>}
+
+        <div className="flex gap-2 mb-3">
+          <input
+            value={manualCode}
+            onChange={(e) => setManualCode(e.target.value)}
+            placeholder="Boekingscode"
+            className="flex-1 bg-dark border border-border rounded-lg px-3 py-2 text-sm font-mono focus:border-lime focus:outline-none"
+          />
+          <button
+            onClick={() => manualCode.trim() && runCheckIn(manualCode.trim())}
+            disabled={checking || !manualCode.trim()}
+            className="bg-lime text-dark px-4 rounded-lg font-bold text-sm disabled:opacity-50"
+          >
+            Check-in
+          </button>
+        </div>
+
+        {resultError && <p className="text-sm text-red-400 mb-3">{resultError}</p>}
+
+        {result && (
+          <div className={`rounded-xl border p-3 text-sm mb-3 ${fullMatch ? "border-lime/40 bg-lime/5" : "border-yellow-500/40 bg-yellow-500/5"}`}>
+            <p className="font-semibold">
+              {result.clubName} · {result.courtName}
+            </p>
+            <p className="text-text2 text-xs">
+              {result.date} · {result.startTime}–{result.endTime} · {result.bookerEmail}
+            </p>
+            {!result.matchDate && <p className="text-yellow-400 text-xs mt-1">Let op: datum op de QR komt niet overeen met de boeking.</p>}
+            {!result.matchEmail && <p className="text-yellow-400 text-xs mt-1">Let op: e-mailadres op de QR komt niet overeen met de boeker.</p>}
+            {result.alreadyCheckedIn ? (
+              <p className="text-text3 text-xs mt-1">Was al eerder ingecheckt.</p>
+            ) : result.checkedIn ? (
+              <p className="text-lime text-xs mt-1 font-bold">Ingecheckt ✓</p>
+            ) : (
+              <p className="text-yellow-400 text-xs mt-1 font-bold">Niet ingecheckt — controleer de gegevens.</p>
+            )}
+          </div>
+        )}
+
+        <button onClick={onClose} className="w-full border border-border text-text2 hover:text-text py-2 rounded-lg font-bold text-sm transition-colors">
+          Sluiten
+        </button>
+      </div>
     </div>
   )
 }
