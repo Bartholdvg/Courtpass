@@ -93,6 +93,8 @@ export default function ClubsPage() {
   const [splitError, setSplitError] = useState("")
   const [splitSummary, setSplitSummary] = useState<{ credits: number; label: string }[] | null>(null)
   const timeStepRef = useRef<HTMLDivElement>(null)
+  const courtsStepRef = useRef<HTMLDivElement>(null)
+  const bookingSummaryRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -595,6 +597,7 @@ export default function ClubsPage() {
                             onClick={() => {
                               setSelectedTime(t)
                               setSelectedCourtId(null)
+                              requestAnimationFrame(() => courtsStepRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }))
                             }}
                             className={`rounded-lg border p-2 text-center text-sm transition-colors
                               ${t === selectedTime ? "bg-lime border-lime text-dark" : "border-border bg-surface2 text-text"}
@@ -615,7 +618,7 @@ export default function ClubsPage() {
                 )}
 
                 {selectedDate && selectedTime && model && (
-                  <>
+                  <div ref={courtsStepRef} className="scroll-mt-24">
                     <h3 className="text-sm font-bold mt-5 mb-2">3 · Beschikbare banen</h3>
                     {(() => {
                       const courts = getAvailableCourts(selectedClub, daySlots, selectedDate, selectedTime)
@@ -626,7 +629,10 @@ export default function ClubsPage() {
                         return (
                           <button
                             key={court.id}
-                            onClick={() => setSelectedCourtId(court.id)}
+                            onClick={() => {
+                              setSelectedCourtId(court.id)
+                              requestAnimationFrame(() => bookingSummaryRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }))
+                            }}
                             className={`w-full flex items-center gap-3 border rounded-xl p-3 mb-2 text-left transition-colors
                               ${court.id === selectedCourtId ? "border-lime bg-lime/10" : "border-border bg-surface2 hover:border-lime/50"}`}
                           >
@@ -644,11 +650,11 @@ export default function ClubsPage() {
                         )
                       })
                     })()}
-                  </>
+                  </div>
                 )}
 
                 {selectedCourt && selectedDate && selectedTime && model && (
-                  <div className="bg-dark border border-border rounded-xl p-4 mt-5">
+                  <div ref={bookingSummaryRef} className="bg-dark border border-border rounded-xl p-4 mt-5 scroll-mt-24">
                     <h4 className="text-sm font-bold mb-3">Jouw boeking</h4>
                     <div className="text-xs space-y-1.5 text-text2 mb-3">
                       <div className="flex justify-between">

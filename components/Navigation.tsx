@@ -210,7 +210,7 @@ export default function Navigation() {
                       {t("nav.myDetails")}
                     </Link>
                     <Link
-                      href="/dashboard#eerdere-boekingen"
+                      href="/dashboard/geschiedenis"
                       onClick={() => setIsProfileOpen(false)}
                       className="block px-4 py-2.5 text-sm text-text2 hover:text-text hover:bg-surface transition-colors"
                     >

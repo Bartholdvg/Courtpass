@@ -79,7 +79,7 @@ export default function MobileMenu({ user, hasAdminAccess, onClose, onLogout }: 
               </Link>
             </motion.div>
             <motion.div custom={0.4} variants={menuItemVariants} initial="hidden" animate="visible">
-              <Link href="/dashboard#eerdere-boekingen" className="block px-5 py-3 text-text2 hover:text-text hover:bg-surface transition-colors text-sm" onClick={onClose}>
+              <Link href="/dashboard/geschiedenis" className="block px-5 py-3 text-text2 hover:text-text hover:bg-surface transition-colors text-sm" onClick={onClose}>
                 {t("nav.previousBookings")}
               </Link>
             </motion.div>
