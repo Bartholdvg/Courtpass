@@ -64,7 +64,11 @@ export default function MobileMenu({ user, hasAdminAccess, onClose, onLogout }: 
           { href: "/#hoe-het-werkt", label: t("nav.howItWorks") },
           { href: "/clubs", label: t("nav.clubs") },
           { href: "/#abonnementen", label: t("nav.subscriptions") },
+          { href: "/aansluiten", label: "Sluit je club aan" },
           { href: "/#contact", label: t("nav.contact") },
+          { href: "/faq", label: "FAQ" },
+          { href: "/voorwaarden", label: "Voorwaarden" },
+          { href: "/privacy", label: "Privacy" },
         ].map((item, i) => (
           <motion.div key={item.href} custom={i} variants={menuItemVariants} initial="hidden" animate="visible">
             <Link
