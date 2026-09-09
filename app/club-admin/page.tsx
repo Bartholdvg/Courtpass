@@ -124,6 +124,7 @@ export default function ClubAdminPage() {
   const [section, setSection] = useState<Section>("overzicht")
   const [toast, setToast] = useState("")
   const [activeClubId, setActiveClubId] = useState<string>("")
+  const [scannerOpen, setScannerOpen] = useState(false)
 
   function showToast(msg: string) {
     setToast(msg)
@@ -243,16 +244,27 @@ export default function ClubAdminPage() {
           {sections
             .filter((s) => !s.adminOnly || profile.isPlatformAdmin)
             .map((s) => (
-              <button
-                key={s.id}
-                onClick={() => setSection(s.id)}
-                className={`flex items-center gap-2 text-left px-3 py-2 rounded-lg text-sm whitespace-nowrap font-medium transition-colors ${
-                  section === s.id ? "bg-lime/10 text-lime" : "text-text2 hover:text-text hover:bg-surface2"
-                }`}
-              >
-                <Icon name={s.icon} />
-                {s.label}
-              </button>
+              <div key={s.id} className="flex items-center gap-1">
+                <button
+                  onClick={() => setSection(s.id)}
+                  className={`flex-1 flex items-center gap-2 text-left px-3 py-2 rounded-lg text-sm whitespace-nowrap font-medium transition-colors ${
+                    section === s.id ? "bg-lime/10 text-lime" : "text-text2 hover:text-text hover:bg-surface2"
+                  }`}
+                >
+                  <Icon name={s.icon} />
+                  {s.label}
+                </button>
+                {s.id === "boekingen" && clubs.some((c) => c.qrCheckinEnabled) && (
+                  <button
+                    onClick={() => setScannerOpen(true)}
+                    aria-label="QR check-in scannen"
+                    title="QR check-in scannen"
+                    className="flex-none p-2 rounded-lg text-lime hover:bg-lime/10 transition-colors"
+                  >
+                    <Icon name="camera" />
+                  </button>
+                )}
+              </div>
             ))}
         </nav>
 
@@ -285,6 +297,7 @@ export default function ClubAdminPage() {
           {toast}
         </div>
       )}
+      {scannerOpen && <CheckInScannerModal onClose={() => setScannerOpen(false)} />}
     </main>
   )
 }

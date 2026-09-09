@@ -27,8 +27,8 @@ export type IconName =
 const PATHS: Record<IconName, React.ReactNode> = {
   tennis: (
     <>
-      <circle cx="12" cy="12" r="9" />
-      <path d="M4.5 7.5c2 2.5 2 9.5 0 12M19.5 7.5c-2 2.5-2 9.5 0 12" />
+      <circle cx="12" cy="12" r="9" fill="currentColor" stroke="none" />
+      <path d="M4.5 7.5c2 2.5 2 9.5 0 12M19.5 7.5c-2 2.5-2 9.5 0 12" stroke="#0D1A0F" strokeWidth="1.6" fill="none" />
     </>
   ),
   account: (
