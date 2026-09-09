@@ -32,9 +32,11 @@ import {
   adminAdjustCredits,
   checkInBooking,
   decodeQrCheckinPayload,
+  fetchClubLeads,
   type WalletSummary,
   type LedgerEntry,
   type CheckInResult,
+  type ClubLead,
 } from "@/lib/booking"
 import { calculatePrice, type PricingModel, type PricingInputs } from "@/lib/pricing"
 import {
@@ -60,7 +62,7 @@ import {
 } from "@/lib/billing"
 import { adminForceCaptureSplit, fetchBookingSplits, type BookingSplit } from "@/lib/splits"
 
-type Section = "overzicht" | "clubs" | "prijsmodel" | "simulator" | "boekingen" | "wallets" | "producten" | "omzet"
+type Section = "overzicht" | "clubs" | "prijsmodel" | "simulator" | "boekingen" | "wallets" | "producten" | "omzet" | "leads"
 const SURFACES = ["Clay", "Hard court", "Grass", "Carpet", "Artificial grass"]
 
 interface CourtDraft extends CourtInput {
@@ -210,6 +212,7 @@ export default function ClubAdminPage() {
     { id: "wallets", label: "💳 Wallets", adminOnly: true },
     { id: "producten", label: "🏷️ Producten", adminOnly: true },
     { id: "omzet", label: "💰 Omzet", adminOnly: true },
+    { id: "leads", label: "📬 Leads", adminOnly: true },
   ]
 
   const scopedClubs = activeClubId ? clubs.filter((c) => c.id === activeClubId) : clubs
@@ -271,6 +274,7 @@ export default function ClubAdminPage() {
           {section === "wallets" && profile.isPlatformAdmin && <WalletsSection showToast={showToast} />}
           {section === "producten" && profile.isPlatformAdmin && <ProductsSection showToast={showToast} />}
           {section === "omzet" && profile.isPlatformAdmin && <RevenueSection model={model} showToast={showToast} />}
+          {section === "leads" && profile.isPlatformAdmin && <LeadsSection />}
         </div>
       </div>
 
@@ -1433,6 +1437,52 @@ function CheckInScannerModal({ onClose }: { onClose: () => void }) {
           Sluiten
         </button>
       </div>
+    </div>
+  )
+}
+
+function LeadsSection() {
+  const [leads, setLeads] = useState<ClubLead[] | null>(null)
+  const [loadError, setLoadError] = useState("")
+
+  useEffect(() => {
+    fetchClubLeads()
+      .then(setLeads)
+      .catch((err) => setLoadError(err.message || "Kon leads niet laden."))
+  }, [])
+
+  return (
+    <div>
+      <h1 className="font-playfair text-3xl font-bold mb-1">Leads</h1>
+      <p className="text-text2 text-sm mb-6">Clubs die willen aansluiten, en clubs die klanten aan ons hebben voorgesteld.</p>
+
+      {loadError && <p className="text-sm text-red-400">{loadError}</p>}
+      {!loadError && !leads && <p className="text-sm text-text3">Laden…</p>}
+      {leads && leads.length === 0 && <p className="text-sm text-text3">Nog geen leads binnengekomen.</p>}
+
+      {leads && leads.length > 0 && (
+        <div className="space-y-2">
+          {leads.map((lead) => (
+            <div key={lead.id} className="border border-border rounded-xl bg-surface2 p-4">
+              <div className="flex flex-wrap items-center gap-2 mb-1">
+                <span
+                  className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded-full ${
+                    lead.type === "club_interest" ? "bg-lime/10 text-lime" : "bg-yellow-500/10 text-yellow-400"
+                  }`}
+                >
+                  {lead.type === "club_interest" ? "Club wil aansluiten" : "Voorstel van klant"}
+                </span>
+                <span className="text-text3 text-xs">{new Date(lead.createdAt).toLocaleDateString("nl-NL", { day: "numeric", month: "short", year: "numeric" })}</span>
+              </div>
+              <p className="font-semibold text-sm">{lead.clubName || "(geen clubnaam)"} {lead.city && <span className="text-text3 font-normal">· {lead.city}</span>}</p>
+              <p className="text-text2 text-sm">
+                {lead.name} · <a href={`mailto:${lead.email}`} className="text-lime hover:underline">{lead.email}</a>
+              </p>
+              {lead.message && <p className="text-text3 text-sm mt-1">{lead.message}</p>}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }

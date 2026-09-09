@@ -440,6 +440,11 @@ export default function Home() {
                     Clubs
                   </Link>
                 </li>
+                <li>
+                  <Link href="/aansluiten" className="hover:text-text transition-colors">
+                    Sluit je club aan
+                  </Link>
+                </li>
               </ul>
             </div>
             <div>
@@ -466,9 +471,9 @@ export default function Home() {
                   </a>
                 </li>
                 <li>
-                  <a href="#" className="hover:text-text transition-colors">
+                  <Link href="/voorwaarden" className="hover:text-text transition-colors">
                     Terms
-                  </a>
+                  </Link>
                 </li>
               </ul>
             </div>

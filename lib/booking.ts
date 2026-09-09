@@ -701,6 +701,93 @@ export async function checkInBooking(code: string, date?: string, email?: string
   }
 }
 
+export interface SelfCheckInResult {
+  distanceKm: number
+  withinRange: boolean
+  withinTimeWindow: boolean
+  alreadyCheckedIn: boolean
+  checkedIn: boolean
+}
+
+/** Self-service alternative to the QR/staff-scan flow — the booker
+ * confirms their own device GPS position instead of anyone scanning
+ * anything. Only works for a club that opted into digital check-in
+ * (same clubs.qr_checkin_enabled flag as the QR flow) and only for the
+ * booking's own user; see self_check_in_booking in the DB for the
+ * distance/time-window rules. */
+export async function selfCheckInBooking(bookingId: string, lat: number, lng: number): Promise<SelfCheckInResult> {
+  const { data, error } = await supabase.rpc("self_check_in_booking", { p_booking_id: bookingId, p_lat: lat, p_lng: lng })
+  if (error) throw error
+  const row = Array.isArray(data) ? data[0] : data
+  if (!row) throw new Error("Onbekende fout bij inchecken.")
+  return {
+    distanceKm: Number(row.distance_km),
+    withinRange: row.within_range,
+    withinTimeWindow: row.within_time_window,
+    alreadyCheckedIn: row.already_checked_in,
+    checkedIn: row.checked_in,
+  }
+}
+
+/* ================= Club / referral leads ================= */
+
+export interface ClubLeadInput {
+  type: "club_interest" | "referral"
+  name: string
+  email: string
+  clubName?: string
+  city?: string
+  message?: string
+}
+
+/** Public — no login required (a club owner filling this in almost
+ * certainly isn't a CourtPass user yet). user_id is attached when the
+ * submitter happens to be signed in, purely for context; it's never
+ * required. */
+export async function submitClubLead(input: ClubLeadInput): Promise<void> {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  const { error } = await supabase.from("club_leads").insert({
+    type: input.type,
+    name: input.name,
+    email: input.email,
+    club_name: input.clubName || null,
+    city: input.city || null,
+    message: input.message || null,
+    user_id: user?.id || null,
+  })
+  if (error) throw error
+}
+
+export interface ClubLead {
+  id: string
+  type: "club_interest" | "referral"
+  name: string
+  email: string
+  clubName: string | null
+  city: string | null
+  message: string | null
+  createdAt: string
+}
+
+/** Platform-admin only (RLS restricts SELECT on club_leads to
+ * is_platform_admin). */
+export async function fetchClubLeads(): Promise<ClubLead[]> {
+  const { data, error } = await supabase.from("club_leads").select("*").order("created_at", { ascending: false })
+  if (error) throw error
+  return (data ?? []).map((row: any) => ({
+    id: row.id,
+    type: row.type,
+    name: row.name,
+    email: row.email,
+    clubName: row.club_name,
+    city: row.city,
+    message: row.message,
+    createdAt: row.created_at,
+  }))
+}
+
 /* ================= Admin: profile / access ================= */
 
 export interface Profile {
