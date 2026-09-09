@@ -399,9 +399,6 @@ export default function DashboardPage() {
                   <Link href="/betalen" className="block w-full border border-border text-text2 hover:text-text py-2 rounded-lg font-bold text-center transition-colors text-sm">
                     Abonnement beheren
                   </Link>
-                  <Link href="/aansluiten?tab=referral" className="block w-full border border-border text-text2 hover:text-text py-2 rounded-lg font-bold text-center transition-colors text-sm">
-                    Stel een club voor
-                  </Link>
                 </div>
               </div>
             </ScrollObserver>
@@ -617,12 +614,12 @@ function ProfileDetailsCard({ email }: { email?: string }) {
       <div className="flex items-center justify-between mb-1">
         <h2 className="font-bold text-lg">Mijn gegevens</h2>
         {!loadError && details && !editing && (
-          <button
-            onClick={() => setEditing(true)}
-            aria-label="Gegevens bewerken"
-            className="text-text3 hover:text-lime transition-colors text-sm"
-          >
-            ✏️
+          <button onClick={() => setEditing(true)} aria-label="Gegevens bewerken" className="flex items-center gap-1.5 group">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#BFEF45" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 20h9" />
+              <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z" />
+            </svg>
+            <span className="text-text3 group-hover:text-text2 transition-colors text-xs font-semibold">Bewerken</span>
           </button>
         )}
       </div>
