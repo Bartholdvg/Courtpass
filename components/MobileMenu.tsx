@@ -3,7 +3,7 @@
 import { motion } from "framer-motion"
 import Link from "next/link"
 import { useEffect } from "react"
-import { getUserDisplayName, type CourtPassUser } from "@/lib/supabase"
+import { CLUBS_NAV_RESET_EVENT, getUserDisplayName, type CourtPassUser } from "@/lib/supabase"
 import { useLanguage } from "@/lib/i18n"
 import LanguageToggle from "./LanguageToggle"
 
@@ -67,7 +67,14 @@ export default function MobileMenu({ user, hasAdminAccess, onClose, onLogout }: 
           { href: "/#contact", label: t("nav.contact") },
         ].map((item, i) => (
           <motion.div key={item.href} custom={i} variants={menuItemVariants} initial="hidden" animate="visible">
-            <Link href={item.href} className="block px-5 py-3 text-text2 hover:text-text hover:bg-surface transition-colors text-sm border-b border-border/30 last:border-b-0" onClick={onClose}>
+            <Link
+              href={item.href}
+              className="block px-5 py-3 text-text2 hover:text-text hover:bg-surface transition-colors text-sm border-b border-border/30 last:border-b-0"
+              onClick={() => {
+                if (item.href === "/clubs") window.dispatchEvent(new Event(CLUBS_NAV_RESET_EVENT))
+                onClose()
+              }}
+            >
               {item.label}
             </Link>
           </motion.div>

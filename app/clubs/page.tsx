@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import Link from "next/link"
 import dynamic from "next/dynamic"
 import { useRouter } from "next/navigation"
@@ -27,7 +27,7 @@ import {
 } from "@/lib/booking"
 import { fetchForecast, getRainBucket, isForecastLive } from "@/lib/weather"
 import { haversineKm, type PricingModel } from "@/lib/pricing"
-import { AUTH_CHANGED_EVENT, getCurrentUser } from "@/lib/supabase"
+import { AUTH_CHANGED_EVENT, CLUBS_NAV_RESET_EVENT, getCurrentUser } from "@/lib/supabase"
 import { createBookingSplit, resolveUserIdByEmail } from "@/lib/splits"
 import { sendSplitInviteEmail } from "@/lib/email"
 
@@ -91,6 +91,7 @@ export default function ClubsPage() {
   const [participants, setParticipants] = useState<ParticipantInput[]>([])
   const [splitError, setSplitError] = useState("")
   const [splitSummary, setSplitSummary] = useState<{ credits: number; label: string }[] | null>(null)
+  const timeStepRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -125,6 +126,13 @@ export default function ClubsPage() {
       cancelled = true
       window.removeEventListener(AUTH_CHANGED_EVENT, checkAuth)
     }
+  }, [])
+
+  useEffect(() => {
+    const handleReset = () => backToClubs()
+    window.addEventListener(CLUBS_NAV_RESET_EVENT, handleReset)
+    return () => window.removeEventListener(CLUBS_NAV_RESET_EVENT, handleReset)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set())
@@ -548,6 +556,7 @@ export default function ClubsPage() {
                                 setSelectedDate(iso)
                                 setSelectedTime(null)
                                 setSelectedCourtId(null)
+                                requestAnimationFrame(() => timeStepRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }))
                               }}
                               className={`aspect-square rounded-md text-xs flex items-center justify-center transition-colors
                                 ${disabled ? "opacity-25 line-through cursor-not-allowed text-text3" : "text-text hover:bg-dark"}
@@ -566,7 +575,7 @@ export default function ClubsPage() {
                 )}
 
                 {selectedDate && model && (
-                  <>
+                  <div ref={timeStepRef} className="scroll-mt-24">
                     <h3 className="text-sm font-bold mt-5 mb-2">2 · Kies een tijd</h3>
                     <div className="grid grid-cols-3 gap-2">
                       {getTimeSlots(selectedClub, model).map((t) => {
@@ -596,7 +605,7 @@ export default function ClubsPage() {
                       })}
                     </div>
                     <p className="text-[10px] text-text3 mt-2">Doorgestreepte tijden hebben geen vrije baan.</p>
-                  </>
+                  </div>
                 )}
 
                 {selectedDate && selectedTime && model && (
