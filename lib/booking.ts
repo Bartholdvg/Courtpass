@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase"
+import { sendBookingConfirmationEmail } from "@/lib/email"
 import {
   calculatePrice,
   dayNameFor,
@@ -589,7 +590,19 @@ export async function createBooking(
     }
     throw error
   }
-  return mapBookingRow(data)
+  const booking = mapBookingRow(data)
+  if (user.email) {
+    sendBookingConfirmationEmail(user.email, {
+      clubName: booking.clubName,
+      courtName: booking.courtName,
+      date: booking.date,
+      startTime: booking.startTime,
+      endTime: booking.endTime,
+      priceCredits: booking.priceCredits,
+      bookingCode: booking.bookingCode,
+    }).catch(() => undefined)
+  }
+  return booking
 }
 
 /** Cancels a confirmed booking and refunds its credits atomically (see
