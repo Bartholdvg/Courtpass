@@ -430,12 +430,17 @@ export default function ClubsPage() {
 
   return (
     <main className="pt-20">
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_420px] h-[70vh] lg:h-[calc(100vh-5rem)]">
+      {/* No height cap on mobile: the map keeps a fixed h-72 and everything
+          below it (the club list) flows with the page's own scroll, instead
+          of being squeezed into a leftover sliver of a 70vh box with its own
+          nested scroll — which read as "the list stops partway down" since
+          only a couple of items fit before that inner scrollbar took over. */}
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_420px] lg:h-[calc(100vh-5rem)]">
         <div className="h-72 lg:h-full">
           <BookingMap clubs={clubs} selectedClubId={selectedClubId} onSelectClub={selectClub} />
         </div>
 
-        <aside className="border-t lg:border-t-0 lg:border-l border-border bg-surface overflow-y-auto">
+        <aside className="border-t lg:border-t-0 lg:border-l border-border bg-surface lg:overflow-y-auto">
           <div className="p-5">
             {!selectedClub ? (
               <>

@@ -1,4 +1,4 @@
-import type { Metadata } from "next"
+import type { Metadata, Viewport } from "next"
 import { Playfair_Display, DM_Sans } from "next/font/google"
 import "./globals.css"
 import Navigation from "@/components/Navigation"
@@ -19,6 +19,15 @@ const dmSans = DM_Sans({
 export const metadata: Metadata = {
   title: "CourtPass — Tennis zonder binding",
   description: "Eén abonnement. Meerdere clubs. Speel wanneer en waar jij wilt — zonder vast lidmaatschap.",
+}
+
+// Without this, mobile Safari has no viewport meta tag to go on and falls
+// back to its legacy ~980px virtual viewport, rendering the whole site
+// zoomed out to fit — exactly the "looks like a shrunk desktop site on
+// iPhone" behavior reported.
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
 }
 
 export default function RootLayout({
