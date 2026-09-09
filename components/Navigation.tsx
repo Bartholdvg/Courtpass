@@ -17,7 +17,9 @@ export default function Navigation() {
   const [user, setUser] = useState<CourtPassUser | null>(null)
   const [hasAdminAccess, setHasAdminAccess] = useState(false)
   const [isProfileOpen, setIsProfileOpen] = useState(false)
+  const [isContactOpen, setIsContactOpen] = useState(false)
   const profileRef = useRef<HTMLDivElement>(null)
+  const contactRef = useRef<HTMLLIElement>(null)
 
   useEffect(() => {
     setIsMounted(true)
@@ -57,6 +59,7 @@ export default function Navigation() {
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (profileRef.current && !profileRef.current.contains(e.target as Node)) setIsProfileOpen(false)
+      if (contactRef.current && !contactRef.current.contains(e.target as Node)) setIsContactOpen(false)
     }
     document.addEventListener("mousedown", handleClickOutside)
     return () => document.removeEventListener("mousedown", handleClickOutside)
@@ -67,6 +70,7 @@ export default function Navigation() {
       if (e.key === "Escape") {
         setIsMenuOpen(false)
         setIsProfileOpen(false)
+        setIsContactOpen(false)
       }
     }
 
@@ -123,9 +127,51 @@ export default function Navigation() {
             </a>
           </li>
           <li>
-            <a href="/#contact" className="text-text2 hover:text-text transition-colors text-sm">
+            <Link href="/aansluiten" className="text-text2 hover:text-text transition-colors text-sm">
+              Sluit je club aan
+            </Link>
+          </li>
+          <li className="relative" ref={contactRef}>
+            <button
+              onClick={() => setIsContactOpen((v) => !v)}
+              aria-expanded={isContactOpen}
+              className="flex items-center gap-1 text-text2 hover:text-text transition-colors text-sm"
+            >
               {t("nav.contact")}
-            </a>
+              <span className={`text-[10px] transition-transform ${isContactOpen ? "rotate-180" : ""}`}>▾</span>
+            </button>
+            {isContactOpen && (
+              <div className="absolute left-0 top-full mt-2 w-48 rounded-2xl border border-border bg-surface2 shadow-2xl overflow-hidden py-1.5 z-50">
+                <a
+                  href="/#contact"
+                  onClick={() => setIsContactOpen(false)}
+                  className="block px-4 py-2.5 text-sm text-text2 hover:text-text hover:bg-surface transition-colors"
+                >
+                  {t("nav.contact")}
+                </a>
+                <Link
+                  href="/faq"
+                  onClick={() => setIsContactOpen(false)}
+                  className="block px-4 py-2.5 text-sm text-text2 hover:text-text hover:bg-surface transition-colors"
+                >
+                  FAQ
+                </Link>
+                <Link
+                  href="/voorwaarden"
+                  onClick={() => setIsContactOpen(false)}
+                  className="block px-4 py-2.5 text-sm text-text2 hover:text-text hover:bg-surface transition-colors"
+                >
+                  Voorwaarden
+                </Link>
+                <Link
+                  href="/privacy"
+                  onClick={() => setIsContactOpen(false)}
+                  className="block px-4 py-2.5 text-sm text-text2 hover:text-text hover:bg-surface transition-colors"
+                >
+                  Privacy
+                </Link>
+              </div>
+            )}
           </li>
           <li>
             <LanguageToggle />

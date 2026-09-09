@@ -424,9 +424,9 @@ export default function Home() {
                   </a>
                 </li>
                 <li>
-                  <a href="#" className="hover:text-text transition-colors">
+                  <Link href="/faq" className="hover:text-text transition-colors">
                     {t("home.footerFaq")}
-                  </a>
+                  </Link>
                 </li>
               </ul>
             </div>
@@ -434,9 +434,9 @@ export default function Home() {
               <h4 className="text-xs text-text2 uppercase tracking-wider font-bold mb-4">{t("home.footerLegal")}</h4>
               <ul className="space-y-2 text-sm text-text3">
                 <li>
-                  <a href="#" className="hover:text-text transition-colors">
+                  <Link href="/privacy" className="hover:text-text transition-colors">
                     {t("home.footerPrivacy")}
-                  </a>
+                  </Link>
                 </li>
                 <li>
                   <Link href="/voorwaarden" className="hover:text-text transition-colors">
