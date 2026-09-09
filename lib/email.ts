@@ -141,3 +141,35 @@ export function sendSplitInviteEmail(to: string, s: SplitInviteDetails): Promise
   `
   return sendEmail(to, `Je speelt mee — ${s.clubName}`, layout("Je bent toegevoegd aan een boeking", body))
 }
+
+// Hardcoded rather than an admin setting — there's no admin-settings UI in
+// this app yet, and one inbox is all a lead notification needs right now.
+const LEAD_NOTIFICATION_EMAIL = "bartholdvg@gmail.com"
+
+export interface ClubLeadNotification {
+  type: "club_interest" | "referral"
+  name: string
+  email: string
+  clubName?: string
+  city?: string
+  message?: string
+}
+
+export function sendClubLeadNotificationEmail(lead: ClubLeadNotification): Promise<void> {
+  const name = escapeHtml(lead.name)
+  const email = escapeHtml(lead.email)
+  const clubName = lead.clubName ? escapeHtml(lead.clubName) : null
+  const city = lead.city ? escapeHtml(lead.city) : null
+  const message = lead.message ? escapeHtml(lead.message) : null
+  const title = lead.type === "club_interest" ? "Een club wil aansluiten" : "Een klant stelt een club voor"
+  const body = `
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: ${BRAND.dark}; border: 1px solid ${BRAND.border}; border-radius: 12px; padding: 16px 20px; margin-bottom: 20px;">
+      ${detailRow("Naam", name)}
+      ${detailRow("E-mail", email)}
+      ${clubName ? detailRow("Club", clubName) : ""}
+      ${city ? detailRow("Plaats", city) : ""}
+    </table>
+    ${message ? `<p style="margin: 0;">${message}</p>` : ""}
+  `
+  return sendEmail(LEAD_NOTIFICATION_EMAIL, `${title} — ${lead.clubName || lead.name}`, layout(title, body))
+}

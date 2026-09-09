@@ -57,6 +57,7 @@ export default function DashboardPage() {
   const [myUserId, setMyUserId] = useState<string | null>(null)
   const [qrEnabledClubIds, setQrEnabledClubIds] = useState<Set<string>>(new Set())
   const [qrBooking, setQrBooking] = useState<Booking | null>(null)
+  const [checkInChoiceBooking, setCheckInChoiceBooking] = useState<Booking | null>(null)
   const [geoChecking, setGeoChecking] = useState<string | null>(null)
   const [geoResult, setGeoResult] = useState<Record<string, string>>({})
   const storedUser = loadStoredUser()
@@ -330,19 +331,11 @@ export default function DashboardPage() {
                               <span className="font-mono font-bold text-lime">{Math.round(b.priceCredits)} cr</span>
                               {isBooker && qrEnabledClubIds.has(b.clubId) && !b.checkedInAt && (
                                 <button
-                                  onClick={() => setQrBooking(b)}
-                                  className="text-xs border border-lime/40 text-lime rounded-full px-3 py-1.5 hover:bg-lime/10"
-                                >
-                                  Toon QR
-                                </button>
-                              )}
-                              {isBooker && qrEnabledClubIds.has(b.clubId) && !b.checkedInAt && (
-                                <button
-                                  onClick={() => handleGeoCheckIn(b)}
+                                  onClick={() => setCheckInChoiceBooking(b)}
                                   disabled={geoChecking === b.id}
                                   className="text-xs border border-lime/40 text-lime rounded-full px-3 py-1.5 hover:bg-lime/10 disabled:opacity-50"
                                 >
-                                  {geoChecking === b.id ? "Bezig…" : "Check in via locatie"}
+                                  {geoChecking === b.id ? "Bezig…" : "Check in"}
                                 </button>
                               )}
                               {canCancel && (
@@ -491,7 +484,46 @@ export default function DashboardPage() {
       {qrBooking && storedUser?.email && (
         <QrCodeModal booking={qrBooking} email={storedUser.email} onClose={() => setQrBooking(null)} />
       )}
+      {checkInChoiceBooking && (
+        <CheckInChoiceModal
+          onClose={() => setCheckInChoiceBooking(null)}
+          onChooseQr={() => {
+            setQrBooking(checkInChoiceBooking)
+            setCheckInChoiceBooking(null)
+          }}
+          onChooseLocation={() => {
+            handleGeoCheckIn(checkInChoiceBooking)
+            setCheckInChoiceBooking(null)
+          }}
+        />
+      )}
     </main>
+  )
+}
+
+/** One "Check in" button offers a choice between the two check-in methods
+ * rather than showing both buttons side by side on every upcoming
+ * booking — less clutter, and it reads as one feature with two ways to
+ * use it instead of two separate features. */
+function CheckInChoiceModal({ onClose, onChooseQr, onChooseLocation }: { onClose: () => void; onChooseQr: () => void; onChooseLocation: () => void }) {
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 p-4" onClick={onClose}>
+      <div className="w-full max-w-sm rounded-2xl border border-border bg-surface2 p-6" onClick={(e) => e.stopPropagation()}>
+        <h3 className="font-bold text-lg mb-1">Hoe wil je inchecken?</h3>
+        <p className="text-text2 text-sm mb-5">Kies QR om te laten scannen bij de balie, of check in via je locatie als je al bij de club bent.</p>
+        <div className="space-y-2">
+          <button onClick={onChooseQr} className="w-full bg-lime text-dark py-2.5 rounded-lg font-bold text-sm hover:opacity-90 transition-opacity">
+            Toon QR-code
+          </button>
+          <button onClick={onChooseLocation} className="w-full border border-lime/40 text-lime py-2.5 rounded-lg font-bold text-sm hover:bg-lime/10 transition-colors">
+            Check in via locatie
+          </button>
+        </div>
+        <button onClick={onClose} className="w-full mt-4 text-text2 hover:text-text py-1 text-sm transition-colors">
+          Annuleren
+        </button>
+      </div>
+    </div>
   )
 }
 
@@ -535,32 +567,40 @@ function ProfileDetailsCard({ email }: { email?: string }) {
   const [address, setAddress] = useState("")
   const [postcode, setPostcode] = useState("")
   const [city, setCity] = useState("")
+  const [editing, setEditing] = useState(false)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [loadError, setLoadError] = useState(false)
+
+  function syncFromDetails(d: ProfileDetails | null) {
+    setPhone(d?.phone || "")
+    setAddress(d?.address || "")
+    setPostcode(d?.postcode || "")
+    setCity(d?.city || "")
+  }
 
   useEffect(() => {
     fetchMyProfileDetails()
       .then((d) => {
         setDetails(d)
-        setPhone(d?.phone || "")
-        setAddress(d?.address || "")
-        setPostcode(d?.postcode || "")
-        setCity(d?.city || "")
+        syncFromDetails(d)
       })
       .catch(() => setLoadError(true))
   }, [])
+
+  function handleCancel() {
+    syncFromDetails(details)
+    setEditing(false)
+  }
 
   async function handleSave() {
     setSaving(true)
     setSaved(false)
     try {
-      await updateMyProfileDetails({
-        phone: phone.trim() || null,
-        address: address.trim() || null,
-        postcode: postcode.trim() || null,
-        city: city.trim() || null,
-      })
+      const updated = { phone: phone.trim() || null, address: address.trim() || null, postcode: postcode.trim() || null, city: city.trim() || null }
+      await updateMyProfileDetails(updated)
+      setDetails(updated)
+      setEditing(false)
       setSaved(true)
       setTimeout(() => setSaved(false), 2500)
     } catch {
@@ -574,7 +614,18 @@ function ProfileDetailsCard({ email }: { email?: string }) {
 
   return (
     <div id="mijn-gegevens" className="border border-border rounded-2xl p-6 scroll-mt-24">
-      <h2 className="font-bold text-lg mb-1">Mijn gegevens</h2>
+      <div className="flex items-center justify-between mb-1">
+        <h2 className="font-bold text-lg">Mijn gegevens</h2>
+        {!loadError && details && !editing && (
+          <button
+            onClick={() => setEditing(true)}
+            aria-label="Gegevens bewerken"
+            className="text-text3 hover:text-lime transition-colors text-sm"
+          >
+            ✏️
+          </button>
+        )}
+      </div>
       {email && (
         <div className="mb-4">
           <p className="text-[10px] uppercase tracking-wider text-text3 font-bold mb-0.5">E-mailadres</p>
@@ -583,22 +634,55 @@ function ProfileDetailsCard({ email }: { email?: string }) {
       )}
       {!loadError && details && (
         <>
-          <p className="text-xs text-text3 mb-4">Optioneel — telefoonnummer en adres, handig als je met Google bent ingelogd.</p>
-          <div className="space-y-3">
-            <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Telefoonnummer" className={field} />
-            <input type="text" value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Adres" className={field} />
-            <div className="grid grid-cols-2 gap-3">
-              <input type="text" value={postcode} onChange={(e) => setPostcode(e.target.value)} placeholder="Postcode" className={field} />
-              <input type="text" value={city} onChange={(e) => setCity(e.target.value)} placeholder="Stad" className={field} />
+          {editing ? (
+            <>
+              <p className="text-xs text-text3 mb-4">Optioneel — telefoonnummer en adres, handig als je met Google bent ingelogd.</p>
+              <div className="space-y-3">
+                <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Telefoonnummer" className={field} />
+                <input type="text" value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Adres" className={field} />
+                <div className="grid grid-cols-2 gap-3">
+                  <input type="text" value={postcode} onChange={(e) => setPostcode(e.target.value)} placeholder="Postcode" className={field} />
+                  <input type="text" value={city} onChange={(e) => setCity(e.target.value)} placeholder="Stad" className={field} />
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={handleSave}
+                    disabled={saving}
+                    className="flex-1 bg-lime text-dark py-2 rounded-lg font-bold text-sm hover:opacity-90 transition-opacity disabled:opacity-50"
+                  >
+                    {saving ? "Bezig…" : "Opslaan"}
+                  </button>
+                  <button
+                    onClick={handleCancel}
+                    disabled={saving}
+                    className="flex-1 border border-border text-text2 hover:text-text py-2 rounded-lg font-bold text-sm transition-colors disabled:opacity-50"
+                  >
+                    Annuleren
+                  </button>
+                </div>
+              </div>
+            </>
+          ) : (
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span className="text-text3">Telefoonnummer</span>
+                <span className="text-text2">{phone || "—"}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-text3">Adres</span>
+                <span className="text-text2">{address || "—"}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-text3">Postcode</span>
+                <span className="text-text2">{postcode || "—"}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-text3">Stad</span>
+                <span className="text-text2">{city || "—"}</span>
+              </div>
+              {saved && <p className="text-lime text-xs pt-1">Opgeslagen ✓</p>}
             </div>
-            <button
-              onClick={handleSave}
-              disabled={saving}
-              className="w-full bg-lime text-dark py-2 rounded-lg font-bold text-sm hover:opacity-90 transition-opacity disabled:opacity-50"
-            >
-              {saving ? "Bezig…" : saved ? "Opgeslagen ✓" : "Opslaan"}
-            </button>
-          </div>
+          )}
         </>
       )}
     </div>

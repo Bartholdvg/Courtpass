@@ -1,5 +1,5 @@
 import { supabase } from "@/lib/supabase"
-import { sendBookingConfirmationEmail } from "@/lib/email"
+import { sendBookingConfirmationEmail, sendClubLeadNotificationEmail } from "@/lib/email"
 import {
   calculatePrice,
   dayNameFor,
@@ -758,6 +758,7 @@ export async function submitClubLead(input: ClubLeadInput): Promise<void> {
     user_id: user?.id || null,
   })
   if (error) throw error
+  sendClubLeadNotificationEmail(input).catch(() => undefined)
 }
 
 export interface ClubLead {

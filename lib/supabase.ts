@@ -77,6 +77,12 @@ export const buildStoredUser = (email: string, name: string, overrides: Partial<
 
 export const AUTH_CHANGED_EVENT = "courtpass-auth-changed"
 
+/** Clicking "Clubs" in the nav while already on /clubs is a same-URL
+ * Next.js Link click, which is a client-side router no-op — it neither
+ * remounts the page nor resets its club-selection state. This event lets
+ * the nav ask the clubs page to reset back to the overview regardless. */
+export const CLUBS_NAV_RESET_EVENT = "courtpass-clubs-nav-reset"
+
 const notifyAuthChanged = () => {
   if (typeof window !== "undefined") window.dispatchEvent(new Event(AUTH_CHANGED_EVENT))
 }

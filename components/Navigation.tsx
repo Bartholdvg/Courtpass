@@ -5,7 +5,7 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import MobileMenu from "./MobileMenu"
 import LanguageToggle from "./LanguageToggle"
-import { AUTH_CHANGED_EVENT, clearStoredUser, getUserDisplayName, loadStoredUser, signOut, type CourtPassUser } from "@/lib/supabase"
+import { AUTH_CHANGED_EVENT, CLUBS_NAV_RESET_EVENT, clearStoredUser, getUserDisplayName, loadStoredUser, signOut, type CourtPassUser } from "@/lib/supabase"
 import { fetchManagedClubs, fetchMyProfile } from "@/lib/booking"
 import { useLanguage } from "@/lib/i18n"
 
@@ -109,7 +109,11 @@ export default function Navigation() {
             </a>
           </li>
           <li>
-            <Link href="/clubs" className="text-text2 hover:text-text transition-colors text-sm">
+            <Link
+              href="/clubs"
+              onClick={() => window.dispatchEvent(new Event(CLUBS_NAV_RESET_EVENT))}
+              className="text-text2 hover:text-text transition-colors text-sm"
+            >
               {t("nav.clubs")}
             </Link>
           </li>
