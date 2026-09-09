@@ -6,6 +6,7 @@ import { useEffect } from "react"
 import { CLUBS_NAV_RESET_EVENT, getUserDisplayName, type CourtPassUser } from "@/lib/supabase"
 import { useLanguage } from "@/lib/i18n"
 import LanguageToggle from "./LanguageToggle"
+import Icon from "./Icon"
 
 interface MobileMenuProps {
   user: CourtPassUser | null
@@ -60,25 +61,28 @@ export default function MobileMenu({ user, hasAdminAccess, onClose, onLogout }: 
       </div>
 
       <div className="py-2">
-        {[
-          { href: "/#hoe-het-werkt", label: t("nav.howItWorks") },
-          { href: "/clubs", label: t("nav.clubs") },
-          { href: "/#abonnementen", label: t("nav.subscriptions") },
-          { href: "/aansluiten", label: "Sluit je club aan" },
-          { href: "/#contact", label: t("nav.contact") },
-          { href: "/faq", label: "FAQ" },
-          { href: "/voorwaarden", label: "Voorwaarden" },
-          { href: "/privacy", label: "Privacy" },
-        ].map((item, i) => (
+        {(
+          [
+            { href: "/#hoe-het-werkt", label: t("nav.howItWorks") },
+            { href: "/clubs", label: t("nav.clubs"), icon: "tennis" as const },
+            { href: "/#abonnementen", label: t("nav.subscriptions") },
+            { href: "/aansluiten", label: "Sluit je club aan" },
+            { href: "/#contact", label: t("nav.contact") },
+            { href: "/faq", label: "FAQ" },
+            { href: "/voorwaarden", label: "Voorwaarden" },
+            { href: "/privacy", label: "Privacy" },
+          ]
+        ).map((item, i) => (
           <motion.div key={item.href} custom={i} variants={menuItemVariants} initial="hidden" animate="visible">
             <Link
               href={item.href}
-              className="block px-5 py-3 text-text2 hover:text-text hover:bg-surface transition-colors text-sm border-b border-border/30 last:border-b-0"
+              className="flex items-center gap-2 px-5 py-3 text-text2 hover:text-text hover:bg-surface transition-colors text-sm border-b border-border/30 last:border-b-0"
               onClick={() => {
                 if (item.href === "/clubs") window.dispatchEvent(new Event(CLUBS_NAV_RESET_EVENT))
                 onClose()
               }}
             >
+              {item.icon && <Icon name={item.icon} className="text-lime" />}
               {item.label}
             </Link>
           </motion.div>

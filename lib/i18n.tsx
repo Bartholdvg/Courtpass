@@ -15,7 +15,7 @@ const dict = {
   nl: {
     nav: {
       howItWorks: "Hoe het werkt",
-      clubs: "🎾 Clubs",
+      clubs: "Clubs",
       subscriptions: "Abonnementen",
       contact: "Contact",
       login: "Inloggen",
@@ -93,7 +93,7 @@ const dict = {
   en: {
     nav: {
       howItWorks: "How it works",
-      clubs: "🎾 Clubs",
+      clubs: "Clubs",
       subscriptions: "Plans",
       contact: "Contact",
       login: "Log in",
