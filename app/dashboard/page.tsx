@@ -13,11 +13,14 @@ import {
   fetchMyProfileDetails,
   updateMyProfileDetails,
   cancelBooking,
+  fetchQrEnabledClubIds,
+  encodeQrCheckinPayload,
   type Booking,
   type LedgerEntry,
   type ProfileDetails,
 } from "@/lib/booking"
 import { fetchBookingsImPlayingIn, fetchMyOwedSplits, fetchSplitsForBookings, payMySplitShare, type BookingSplit, type OwedSplit } from "@/lib/splits"
+import { QRCodeSVG } from "qrcode.react"
 
 const LEDGER_LABELS: Record<string, string> = {
   topup: "Credits gekocht",
@@ -51,6 +54,8 @@ export default function DashboardPage() {
   const [splitEmails, setSplitEmails] = useState<Record<string, string>>({})
   const [payingSplitId, setPayingSplitId] = useState<string | null>(null)
   const [myUserId, setMyUserId] = useState<string | null>(null)
+  const [qrEnabledClubIds, setQrEnabledClubIds] = useState<Set<string>>(new Set())
+  const [qrBooking, setQrBooking] = useState<Booking | null>(null)
   const storedUser = loadStoredUser()
   const displayName = getUserDisplayName(storedUser)
   const rank = storedUser?.rank || getRankFromPoints(storedUser?.points ?? 0)
@@ -98,6 +103,10 @@ export default function DashboardPage() {
     fetchMyLedger(8)
       .then(setLedger)
       .catch(() => setLedger([]))
+
+    fetchQrEnabledClubIds()
+      .then(setQrEnabledClubIds)
+      .catch(() => setQrEnabledClubIds(new Set()))
 
     fetchMyOwedSplits()
       .then(async (owed) => {
@@ -269,6 +278,7 @@ export default function DashboardPage() {
                               {isBooker ? (
                                 <p className="text-xs text-text3 mt-0.5">
                                   Geboekt op {new Date(b.createdAt).toLocaleDateString("nl-NL", { day: "numeric", month: "short", year: "numeric" })} · <span className="font-mono">{b.bookingCode}</span>
+                                  {b.checkedInAt && <span className="ml-2 text-lime">· Ingecheckt ✓</span>}
                                 </p>
                               ) : (
                                 <p className="text-xs text-text3 mt-0.5">
@@ -279,6 +289,14 @@ export default function DashboardPage() {
                             </div>
                             <div className="ml-auto flex items-center gap-3 flex-none">
                               <span className="font-mono font-bold text-lime">{Math.round(b.priceCredits)} cr</span>
+                              {isBooker && qrEnabledClubIds.has(b.clubId) && !b.checkedInAt && (
+                                <button
+                                  onClick={() => setQrBooking(b)}
+                                  className="text-xs border border-lime/40 text-lime rounded-full px-3 py-1.5 hover:bg-lime/10"
+                                >
+                                  Toon QR
+                                </button>
+                              )}
                               {canCancel && (
                                 <button
                                   onClick={() => handleCancel(b.id)}
@@ -419,7 +437,40 @@ export default function DashboardPage() {
           </div>
         </div>
       </section>
+      {qrBooking && storedUser?.email && (
+        <QrCodeModal booking={qrBooking} email={storedUser.email} onClose={() => setQrBooking(null)} />
+      )}
     </main>
+  )
+}
+
+/** Customer-facing check-in QR — shown at the counter for the staff to
+ * scan. Encodes the booking code, date and the booker's own email (per
+ * check_in_booking's server-side match check) so staff catch a wrong or
+ * forged code before it's treated as checked in. */
+function QrCodeModal({ booking, email, onClose }: { booking: Booking; email: string; onClose: () => void }) {
+  const payload = encodeQrCheckinPayload({ code: booking.bookingCode, date: booking.date, email })
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 p-4" onClick={onClose}>
+      <div
+        className="w-full max-w-sm rounded-2xl border border-border bg-surface2 p-6 text-center"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <p className="font-playfair text-lg font-bold mb-1">{booking.clubName}</p>
+        <p className="text-sm text-text2 mb-4">
+          {booking.courtName} ·{" "}
+          {new Date(booking.date + "T12:00:00").toLocaleDateString("nl-NL", { day: "numeric", month: "short" })} · {booking.startTime}–{booking.endTime}
+        </p>
+        <div className="inline-block rounded-2xl bg-white p-4">
+          <QRCodeSVG value={payload} size={200} bgColor="#ffffff" fgColor="#0D1A0F" />
+        </div>
+        <p className="mt-4 font-mono text-sm text-lime">{booking.bookingCode}</p>
+        <p className="text-xs text-text3 mt-1">Laat dit scannen bij de balie.</p>
+        <button onClick={onClose} className="mt-5 w-full border border-border text-text2 hover:text-text py-2 rounded-lg font-bold text-sm transition-colors">
+          Sluiten
+        </button>
+      </div>
+    </div>
   )
 }
 

@@ -36,6 +36,7 @@ export interface Club {
   demand: string
   histOccupancy: string
   dynamicPricing: boolean
+  qrCheckinEnabled: boolean
   courts: Court[]
 }
 
@@ -78,6 +79,7 @@ export interface Booking {
   pricingSnapshot: PricingSnapshot
   status: "confirmed" | "cancelled"
   createdAt: string
+  checkedInAt: string | null
 }
 
 /* ================= Reads ================= */
@@ -138,6 +140,7 @@ function mapClubRow(row: any): Club {
     demand: row.demand,
     histOccupancy: row.hist_occupancy,
     dynamicPricing: row.dynamic_pricing,
+    qrCheckinEnabled: row.qr_checkin_enabled,
     courts: (row.courts ?? []).map((c: any) => ({
       id: c.id,
       clubId: c.club_id,
@@ -184,6 +187,15 @@ export async function removeFavoriteClub(clubId: string): Promise<void> {
   if (!user) throw new Error("Je moet ingelogd zijn om een club te favorieten.")
   const { error } = await supabase.from("favorite_clubs").delete().eq("user_id", user.id).eq("club_id", clubId)
   if (error) throw error
+}
+
+/** Just the club ids with QR check-in switched on — used to decide whether
+ * to offer a "Toon QR" button on a booking, without pulling every club's
+ * full courts/pricing data along with it. */
+export async function fetchQrEnabledClubIds(): Promise<Set<string>> {
+  const { data, error } = await supabase.from("clubs").select("id").eq("qr_checkin_enabled", true)
+  if (error) throw error
+  return new Set((data ?? []).map((r: any) => r.id))
 }
 
 export async function fetchClub(id: string): Promise<Club | null> {
@@ -248,6 +260,7 @@ export function mapBookingRow(row: any): Booking {
     pricingSnapshot: row.pricing_snapshot,
     status: row.status,
     createdAt: row.created_at,
+    checkedInAt: row.checked_in_at,
   }
 }
 
@@ -615,6 +628,79 @@ export async function cancelBooking(id: string, refund: boolean = true): Promise
   if (error) throw error
 }
 
+/* ================= QR check-in ================= */
+
+export interface QrCheckinPayload {
+  code: string
+  date: string
+  email: string
+}
+
+/** Encoded into the customer-facing QR — the club-admin scanner decodes
+ * this and passes the pieces to checkInBooking() for server-side
+ * verification. Not a secret: the server never trusts these values by
+ * themselves, only as something to compare against the real record. */
+export function encodeQrCheckinPayload(p: QrCheckinPayload): string {
+  return JSON.stringify(p)
+}
+
+export function decodeQrCheckinPayload(raw: string): QrCheckinPayload | null {
+  try {
+    const parsed = JSON.parse(raw)
+    if (typeof parsed?.code === "string" && typeof parsed?.date === "string" && typeof parsed?.email === "string") return parsed
+    return null
+  } catch {
+    return null
+  }
+}
+
+export interface CheckInResult {
+  bookingId: string
+  clubId: string
+  clubName: string
+  courtName: string
+  date: string
+  startTime: string
+  endTime: string
+  bookerEmail: string
+  status: string
+  matchDate: boolean
+  matchEmail: boolean
+  alreadyCheckedIn: boolean
+  checkedIn: boolean
+}
+
+/** Staff-only (enforced server-side by check_in_booking's own
+ * authorization check, not by anything client-side). date/email are
+ * optional — omit them for a manual code-only check-in when there's no
+ * QR to scan; a scanned QR should always pass both so a mismatch is
+ * visible before trusting it. */
+export async function checkInBooking(code: string, date?: string, email?: string): Promise<CheckInResult> {
+  const { data, error } = await supabase.rpc("check_in_booking", {
+    p_booking_code: code,
+    p_date: date ?? null,
+    p_email: email ?? null,
+  })
+  if (error) throw error
+  const row = Array.isArray(data) ? data[0] : data
+  if (!row) throw new Error("Boeking niet gevonden.")
+  return {
+    bookingId: row.booking_id,
+    clubId: row.club_id,
+    clubName: row.club_name,
+    courtName: row.court_name,
+    date: row.date,
+    startTime: row.start_time,
+    endTime: row.end_time,
+    bookerEmail: row.booker_email,
+    status: row.status,
+    matchDate: row.match_date,
+    matchEmail: row.match_email,
+    alreadyCheckedIn: row.already_checked_in,
+    checkedIn: row.checked_in,
+  }
+}
+
 /* ================= Admin: profile / access ================= */
 
 export interface Profile {
@@ -775,6 +861,7 @@ export interface ClubInput {
   openTo: string
   demand: string
   histOccupancy: string
+  qrCheckinEnabled: boolean
 }
 
 function clubInputToRow(input: ClubInput) {
@@ -788,6 +875,7 @@ function clubInputToRow(input: ClubInput) {
     open_to: input.openTo,
     demand: input.demand,
     hist_occupancy: input.histOccupancy,
+    qr_checkin_enabled: input.qrCheckinEnabled,
   }
 }
 
