@@ -5,6 +5,7 @@ import Link from "next/link"
 import { motion } from "framer-motion"
 import ScrollObserver from "@/components/ScrollObserver"
 import { effectivePriceCents, fetchActiveSubscriptionPlans, formatEuros, type SubscriptionPlan } from "@/lib/billing"
+import { useLanguage } from "@/lib/i18n"
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -27,6 +28,7 @@ const itemVariants = {
 }
 
 export default function Home() {
+  const { t } = useLanguage()
   const [plans, setPlans] = useState<SubscriptionPlan[]>([])
 
   useEffect(() => {
@@ -48,7 +50,7 @@ export default function Home() {
           >
             <div className="inline-flex items-center gap-2 bg-surface px-3 py-2 rounded-full mb-6">
               <span className="w-1.5 h-1.5 bg-lime rounded-full animate-pulse-subtle" />
-              <span className="text-xs text-lime font-medium tracking-wider">NU BESCHIKBAAR IN AMSTERDAM</span>
+              <span className="text-xs text-lime font-medium tracking-wider">{t("home.badge")}</span>
             </div>
           </motion.div>
 
@@ -60,16 +62,14 @@ export default function Home() {
               transition={{ duration: 0.7, delay: 0.2 }}
             >
               <h1 className="font-playfair text-4xl md:text-5xl lg:text-6xl font-black leading-tight mb-6">
-                Tennis op jouw
+                {t("home.heroLine1")}
                 <br />
-                <em className="text-lime not-italic">tempo.</em>
+                <em className="text-lime not-italic">{t("home.heroEm")}</em>
                 <br />
-                Zonder binding.
+                {t("home.heroLine3")}
               </h1>
 
-              <p className="text-text2 text-lg md:text-base leading-relaxed mb-8 max-w-md font-light">
-                Eén abonnement. Meerdere clubs. Speel wanneer en waar jij wilt — zonder vast lidmaatschap.
-              </p>
+              <p className="text-text2 text-lg md:text-base leading-relaxed mb-8 max-w-md font-light">{t("home.heroSubtitle")}</p>
 
               <motion.div
                 variants={containerVariants}
@@ -82,7 +82,7 @@ export default function Home() {
                     href="/login?tab=register"
                     className="inline-block bg-lime text-dark px-6 py-3 rounded-full font-medium hover:opacity-90 transition-opacity"
                   >
-                    Start voor €49/maand
+                    {t("home.ctaStart")}
                   </Link>
                 </motion.div>
                 <motion.div variants={itemVariants}>
@@ -90,7 +90,7 @@ export default function Home() {
                     href="/clubs"
                     className="inline-block border border-muted text-text2 hover:text-text hover:border-text px-6 py-3 rounded-full transition-all"
                   >
-                    Bekijk clubs →
+                    {t("home.ctaViewClubs")}
                   </Link>
                 </motion.div>
               </motion.div>
@@ -102,7 +102,7 @@ export default function Home() {
                 className="text-sm text-text3"
               >
                 <a href="#hoe-het-werkt" className="hover:text-text2 transition-colors">
-                  Hoe het werkt ↓
+                  {t("home.howItWorksLink")}
                 </a>
               </motion.div>
 
@@ -123,7 +123,7 @@ export default function Home() {
                       </div>
                     ))}
                   </div>
-                  <span className="text-sm text-text2">Al 200+ spelers gingen je voor</span>
+                  <span className="text-sm text-text2">{t("home.socialProof")}</span>
                 </div>
               </motion.div>
             </motion.div>
@@ -186,25 +186,23 @@ export default function Home() {
                 </svg>
                 <div className="p-6">
                   <div className="flex items-center justify-between gap-3 mb-3">
-                    <h3 className="font-playfair text-xl font-bold text-text">CourtPass — Tennis zonder binding</h3>
-                    <span className="rounded-full bg-lime/10 px-3 py-1 text-xs font-semibold text-lime">Flexibel</span>
+                    <h3 className="font-playfair text-xl font-bold text-text">{t("home.cardTitle")}</h3>
+                    <span className="rounded-full bg-lime/10 px-3 py-1 text-xs font-semibold text-lime">{t("home.cardBadge")}</span>
                   </div>
-                  <p className="text-sm text-text2 leading-relaxed">
-                    Reserveer eenvoudig bij meerdere clubs, betaal met credits en speel wanneer het jou uitkomt.
-                  </p>
+                  <p className="text-sm text-text2 leading-relaxed">{t("home.cardDesc")}</p>
 
                   <div className="mt-5 grid grid-cols-3 gap-3 text-sm">
                     <div className="rounded-2xl border border-border bg-surface2/60 p-3 text-center">
                       <div className="font-playfair text-lg font-bold text-lime">12+</div>
-                      <div className="text-[11px] uppercase tracking-wider text-text3 mt-1">Clubs</div>
+                      <div className="text-[11px] uppercase tracking-wider text-text3 mt-1">{t("home.statClubs")}</div>
                     </div>
                     <div className="rounded-2xl border border-border bg-surface2/60 p-3 text-center">
                       <div className="font-playfair text-lg font-bold text-lime">48u</div>
-                      <div className="text-[11px] uppercase tracking-wider text-text3 mt-1">Vooruit</div>
+                      <div className="text-[11px] uppercase tracking-wider text-text3 mt-1">{t("home.statAhead")}</div>
                     </div>
                     <div className="rounded-2xl border border-border bg-surface2/60 p-3 text-center">
                       <div className="font-playfair text-lg font-bold text-lime">€</div>
-                      <div className="text-[11px] uppercase tracking-wider text-text3 mt-1">Credits</div>
+                      <div className="text-[11px] uppercase tracking-wider text-text3 mt-1">{t("home.statCredits")}</div>
                     </div>
                   </div>
                 </div>
@@ -219,42 +217,18 @@ export default function Home() {
         <div className="container-max px-4 md:px-6">
           <ScrollObserver delay={0}>
             <div className="mb-12">
-              <span className="text-xs text-lime font-medium tracking-wider uppercase">STAP VOOR STAP</span>
-              <h2 className="font-playfair text-3xl md:text-4xl lg:text-5xl font-bold mt-4 mb-6">
-                Hoe CourtPass werkt
-              </h2>
-              <p className="text-text2 text-lg max-w-xl font-light">
-                Van inschrijven tot je eerste wedstrijd in vier simpele stappen.
-              </p>
+              <span className="text-xs text-lime font-medium tracking-wider uppercase">{t("home.howEyebrow")}</span>
+              <h2 className="font-playfair text-3xl md:text-4xl lg:text-5xl font-bold mt-4 mb-6">{t("home.howTitle")}</h2>
+              <p className="text-text2 text-lg max-w-xl font-light">{t("home.howSubtitle")}</p>
             </div>
           </ScrollObserver>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 border-t border-border">
             {[
-              {
-                num: "01",
-                icon: "📋",
-                title: "Account aanmaken",
-                desc: "Registreer met je e-mailadres en kies je abonnement.",
-              },
-              {
-                num: "02",
-                icon: "🔍",
-                title: "Clubs ontdekken",
-                desc: "Bekijk alle beschikbare clubs in jouw buurt.",
-              },
-              {
-                num: "03",
-                icon: "📅",
-                title: "Baan reserveren",
-                desc: "Reserveer je baantijd voor wanneer jij wilt.",
-              },
-              {
-                num: "04",
-                icon: "🎾",
-                title: "Spelen!",
-                desc: "Show up en geniet van tennis zonder binding.",
-              },
+              { num: "01", icon: "📋", title: t("home.step1Title"), desc: t("home.step1Desc") },
+              { num: "02", icon: "🔍", title: t("home.step2Title"), desc: t("home.step2Desc") },
+              { num: "03", icon: "📅", title: t("home.step3Title"), desc: t("home.step3Desc") },
+              { num: "04", icon: "🎾", title: t("home.step4Title"), desc: t("home.step4Desc") },
             ].map((step, i) => (
               <ScrollObserver key={i} delay={i * 0.1}>
                 <div className="py-8 md:py-12 border-r border-border last:border-r-0 hover:bg-surface/20 transition-colors px-4">
@@ -274,18 +248,14 @@ export default function Home() {
         <div className="container-max px-4 md:px-6">
           <ScrollObserver delay={0}>
             <div className="text-center mb-12">
-              <span className="text-xs text-lime font-medium tracking-wider uppercase">KIES JE PLAN</span>
-              <h2 className="font-playfair text-3xl md:text-4xl lg:text-5xl font-bold mt-4">
-                Transparante prijzen
-              </h2>
-              <p className="text-text2 text-lg max-w-2xl mx-auto mt-6 font-light">
-                Geen verborgen kosten. Geen contracts. Zeg op elk moment op.
-              </p>
+              <span className="text-xs text-lime font-medium tracking-wider uppercase">{t("home.pricingEyebrow")}</span>
+              <h2 className="font-playfair text-3xl md:text-4xl lg:text-5xl font-bold mt-4">{t("home.pricingTitle")}</h2>
+              <p className="text-text2 text-lg max-w-2xl mx-auto mt-6 font-light">{t("home.pricingSubtitle")}</p>
             </div>
           </ScrollObserver>
 
           {plans.length === 0 ? (
-            <p className="text-center text-text2 text-sm">Laden…</p>
+            <p className="text-center text-text2 text-sm">{t("home.loading")}</p>
           ) : (
             <div className="grid md:grid-cols-3 lg:grid-cols-5 gap-6 max-w-6xl mx-auto">
               {plans.map((plan, i) => {
@@ -302,17 +272,17 @@ export default function Home() {
                     >
                       {plan.mostChosen && (
                         <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-lime text-dark px-3 py-1 rounded-full text-xs font-bold uppercase">
-                          POPULAIR
+                          {t("home.popular")}
                         </div>
                       )}
                       <h3 className="text-xs text-text3 uppercase tracking-widest font-bold mb-4">{plan.name}</h3>
                       <div className="mb-2">
                         {onSale && <span className="text-text3 line-through text-sm mr-2">{formatEuros(plan.priceCents)}</span>}
-                        <span className="font-playfair text-3xl font-bold text-text">{price === 0 ? "Gratis" : formatEuros(price)}</span>
-                        {price > 0 && <span className="text-text2 text-sm">/maand</span>}
+                        <span className="font-playfair text-3xl font-bold text-text">{price === 0 ? t("home.free") : formatEuros(price)}</span>
+                        {price > 0 && <span className="text-text2 text-sm">{t("home.perMonth")}</span>}
                       </div>
                       <div className="text-lime font-bold mb-6 text-sm flex-1">
-                        {plan.creditsPerMonth > 0 ? `${plan.creditsPerMonth} credits per maand` : "Geen maandelijkse credits"}
+                        {plan.creditsPerMonth > 0 ? `${plan.creditsPerMonth} ${t("home.creditsPerMonth")}` : t("home.noMonthlyCredits")}
                       </div>
                       <Link
                         href="/betalen"
@@ -322,7 +292,7 @@ export default function Home() {
                             : "border border-muted text-text2 hover:text-text hover:border-text"
                         }`}
                       >
-                        Kies plan
+                        {t("home.choosePlan")}
                       </Link>
                     </div>
                   </ScrollObserver>
@@ -343,14 +313,12 @@ export default function Home() {
             transition={{ duration: 0.6 }}
             className="text-center"
           >
-            <h2 className="font-playfair text-3xl md:text-4xl font-bold mb-6">
-              Klaar om zonder binding te spelen?
-            </h2>
+            <h2 className="font-playfair text-3xl md:text-4xl font-bold mb-6">{t("home.ctaBannerTitle")}</h2>
             <Link
               href="/login?tab=register"
               className="inline-block bg-lime text-dark px-8 py-4 rounded-full font-bold text-lg hover:opacity-90 transition-opacity"
             >
-              Start gratis proefperiode
+              {t("home.ctaBannerButton")}
             </Link>
           </motion.div>
         </div>
@@ -361,18 +329,18 @@ export default function Home() {
         <div className="container-max px-4 md:px-6 max-w-3xl mx-auto">
           <ScrollObserver delay={0}>
             <div className="text-center mb-12">
-              <h2 className="font-playfair text-3xl md:text-4xl font-bold">Contact opnemen</h2>
-              <p className="text-text2 mt-4">Vragen? Laat het ons weten.</p>
+              <h2 className="font-playfair text-3xl md:text-4xl font-bold">{t("home.contactTitle")}</h2>
+              <p className="text-text2 mt-4">{t("home.contactSubtitle")}</p>
             </div>
           </ScrollObserver>
 
           <form className="space-y-6">
             <ScrollObserver delay={0.1}>
               <div>
-                <label className="block text-sm text-text2 mb-2">Naam</label>
+                <label className="block text-sm text-text2 mb-2">{t("home.formName")}</label>
                 <input
                   type="text"
-                  placeholder="Jouw naam"
+                  placeholder={t("home.formNamePlaceholder")}
                   className="w-full bg-surface border border-border rounded-xl px-4 py-3 text-text placeholder:text-text3 focus:outline-none focus:border-lime transition-colors"
                 />
               </div>
@@ -380,7 +348,7 @@ export default function Home() {
 
             <ScrollObserver delay={0.15}>
               <div>
-                <label className="block text-sm text-text2 mb-2">Email</label>
+                <label className="block text-sm text-text2 mb-2">{t("home.formEmail")}</label>
                 <input
                   type="email"
                   placeholder="jouw@email.com"
@@ -391,9 +359,9 @@ export default function Home() {
 
             <ScrollObserver delay={0.2}>
               <div>
-                <label className="block text-sm text-text2 mb-2">Bericht</label>
+                <label className="block text-sm text-text2 mb-2">{t("home.formMessage")}</label>
                 <textarea
-                  placeholder="Jouw bericht..."
+                  placeholder={t("home.formMessagePlaceholder")}
                   rows={5}
                   className="w-full bg-surface border border-border rounded-xl px-4 py-3 text-text placeholder:text-text3 focus:outline-none focus:border-lime transition-colors resize-none"
                 />
@@ -405,7 +373,7 @@ export default function Home() {
                 type="submit"
                 className="w-full bg-lime text-dark py-3 rounded-xl font-bold hover:opacity-90 transition-opacity"
               >
-                Verstuur bericht
+                {t("home.formSubmit")}
               </button>
             </ScrollObserver>
           </form>
@@ -420,59 +388,59 @@ export default function Home() {
               <Link href="/" className="font-playfair font-bold text-lg block mb-4">
                 Court<span className="text-lime">Pass</span>
               </Link>
-              <p className="text-sm text-text3 font-light">Tennis zonder binding.</p>
+              <p className="text-sm text-text3 font-light">{t("home.footerTagline")}</p>
             </div>
             <div>
-              <h4 className="text-xs text-text2 uppercase tracking-wider font-bold mb-4">Product</h4>
+              <h4 className="text-xs text-text2 uppercase tracking-wider font-bold mb-4">{t("home.footerProduct")}</h4>
               <ul className="space-y-2 text-sm text-text3">
                 <li>
                   <a href="#hoe-het-werkt" className="hover:text-text transition-colors">
-                    Hoe het werkt
+                    {t("home.footerHowItWorks")}
                   </a>
                 </li>
                 <li>
                   <a href="#abonnementen" className="hover:text-text transition-colors">
-                    Prijzen
+                    {t("home.footerPricing")}
                   </a>
                 </li>
                 <li>
                   <Link href="/clubs" className="hover:text-text transition-colors">
-                    Clubs
+                    {t("home.footerClubs")}
                   </Link>
                 </li>
                 <li>
                   <Link href="/aansluiten" className="hover:text-text transition-colors">
-                    Sluit je club aan
+                    {t("home.footerJoinClub")}
                   </Link>
                 </li>
               </ul>
             </div>
             <div>
-              <h4 className="text-xs text-text2 uppercase tracking-wider font-bold mb-4">Support</h4>
+              <h4 className="text-xs text-text2 uppercase tracking-wider font-bold mb-4">{t("home.footerSupport")}</h4>
               <ul className="space-y-2 text-sm text-text3">
                 <li>
                   <a href="#contact" className="hover:text-text transition-colors">
-                    Contact
+                    {t("home.footerContact")}
                   </a>
                 </li>
                 <li>
                   <a href="#" className="hover:text-text transition-colors">
-                    FAQ
+                    {t("home.footerFaq")}
                   </a>
                 </li>
               </ul>
             </div>
             <div>
-              <h4 className="text-xs text-text2 uppercase tracking-wider font-bold mb-4">Legal</h4>
+              <h4 className="text-xs text-text2 uppercase tracking-wider font-bold mb-4">{t("home.footerLegal")}</h4>
               <ul className="space-y-2 text-sm text-text3">
                 <li>
                   <a href="#" className="hover:text-text transition-colors">
-                    Privacy
+                    {t("home.footerPrivacy")}
                   </a>
                 </li>
                 <li>
                   <Link href="/voorwaarden" className="hover:text-text transition-colors">
-                    Terms
+                    {t("home.footerTerms")}
                   </Link>
                 </li>
               </ul>
@@ -480,8 +448,8 @@ export default function Home() {
           </div>
 
           <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-text3">
-            <p>© 2024 CourtPass. Alle rechten voorbehouden.</p>
-            <p>Made with ❤️ for tennis players</p>
+            <p>{t("home.footerRights")}</p>
+            <p>{t("home.footerMadeWith")}</p>
           </div>
         </div>
       </footer>
