@@ -325,49 +325,6 @@ export default function DashboardPage() {
                   )}
                 </div>
               </ScrollObserver>
-
-              <ScrollObserver delay={0.15}>
-                <div className="border border-border rounded-2xl p-6">
-                  <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
-                    <h2 className="font-bold text-lg">Eerdere boekingen</h2>
-                    {history.length > 0 && (
-                      <div className="flex items-center gap-1.5 text-xs">
-                        <span className="text-text3">Sorteer op</span>
-                        <button
-                          onClick={() => setHistorySort("playDate")}
-                          className={`px-2.5 py-1 rounded-full font-medium transition-colors ${historySort === "playDate" ? "bg-lime text-dark" : "border border-border text-text2 hover:text-text"}`}
-                        >
-                          Speeldatum
-                        </button>
-                        <button
-                          onClick={() => setHistorySort("bookedDate")}
-                          className={`px-2.5 py-1 rounded-full font-medium transition-colors ${historySort === "bookedDate" ? "bg-lime text-dark" : "border border-border text-text2 hover:text-text"}`}
-                        >
-                          Boekingsdatum
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                  {history.length === 0 ? (
-                    <p className="text-sm text-text2">Nog geen geschiedenis.</p>
-                  ) : (
-                    <div className="space-y-2">
-                      {history.map((b) => (
-                        <div key={b.id} className="flex flex-wrap items-center gap-3 rounded-xl border border-border/50 px-4 py-3 text-sm">
-                          <span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded-full flex-none ${b.status === "cancelled" ? "bg-red-500/10 text-red-400" : "bg-surface2 text-text3"}`}>
-                            {b.status === "cancelled" ? "Geannuleerd" : "Gespeeld"}
-                          </span>
-                          <span className="text-text2 min-w-0 truncate">
-                            {b.clubName} · {b.courtName} · {b.date}
-                            <span className="text-text3"> · geboekt op {new Date(b.createdAt).toLocaleDateString("nl-NL", { day: "numeric", month: "short", year: "numeric" })}</span>
-                          </span>
-                          <span className="ml-auto font-mono text-text3 flex-none">{Math.round(b.priceCredits)} cr</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </ScrollObserver>
             </div>
 
             <ScrollObserver delay={0.2}>
@@ -389,7 +346,50 @@ export default function DashboardPage() {
 
             <ScrollObserver delay={0.22}>
               <div className="mt-6">
-                <ProfileDetailsCard />
+                <ProfileDetailsCard email={storedUser?.email} />
+              </div>
+            </ScrollObserver>
+
+            <ScrollObserver delay={0.24}>
+              <div id="eerdere-boekingen" className="border border-border rounded-2xl p-6 mt-6 scroll-mt-24">
+                <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
+                  <h2 className="font-bold text-lg">Eerdere boekingen</h2>
+                  {history.length > 0 && (
+                    <div className="flex items-center gap-1.5 text-xs">
+                      <span className="text-text3">Sorteer op</span>
+                      <button
+                        onClick={() => setHistorySort("playDate")}
+                        className={`px-2.5 py-1 rounded-full font-medium transition-colors ${historySort === "playDate" ? "bg-lime text-dark" : "border border-border text-text2 hover:text-text"}`}
+                      >
+                        Speeldatum
+                      </button>
+                      <button
+                        onClick={() => setHistorySort("bookedDate")}
+                        className={`px-2.5 py-1 rounded-full font-medium transition-colors ${historySort === "bookedDate" ? "bg-lime text-dark" : "border border-border text-text2 hover:text-text"}`}
+                      >
+                        Boekingsdatum
+                      </button>
+                    </div>
+                  )}
+                </div>
+                {history.length === 0 ? (
+                  <p className="text-sm text-text2">Nog geen geschiedenis.</p>
+                ) : (
+                  <div className="space-y-2">
+                    {history.map((b) => (
+                      <div key={b.id} className="flex flex-wrap items-center gap-3 rounded-xl border border-border/50 px-4 py-3 text-sm">
+                        <span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded-full flex-none ${b.status === "cancelled" ? "bg-red-500/10 text-red-400" : "bg-surface2 text-text3"}`}>
+                          {b.status === "cancelled" ? "Geannuleerd" : "Gespeeld"}
+                        </span>
+                        <span className="text-text2 min-w-0 truncate">
+                          {b.clubName} · {b.courtName} · {b.date}
+                          <span className="text-text3"> · geboekt op {new Date(b.createdAt).toLocaleDateString("nl-NL", { day: "numeric", month: "short", year: "numeric" })}</span>
+                        </span>
+                        <span className="ml-auto font-mono text-text3 flex-none">{Math.round(b.priceCredits)} cr</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </ScrollObserver>
 
@@ -427,7 +427,7 @@ export default function DashboardPage() {
  * never provides them), so this is the only place those users can ever
  * fill them in. Self-contained: fetches and saves its own state rather
  * than threading through the page's load(). */
-function ProfileDetailsCard() {
+function ProfileDetailsCard({ email }: { email?: string }) {
   const [details, setDetails] = useState<ProfileDetails | null>(null)
   const [phone, setPhone] = useState("")
   const [address, setAddress] = useState("")
@@ -468,30 +468,37 @@ function ProfileDetailsCard() {
     }
   }
 
-  if (loadError) return null
-  if (!details) return null
-
   const field = "w-full bg-dark border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-lime transition-colors"
 
   return (
     <div id="mijn-gegevens" className="border border-border rounded-2xl p-6 scroll-mt-24">
       <h2 className="font-bold text-lg mb-1">Mijn gegevens</h2>
-      <p className="text-xs text-text3 mb-4">Optioneel — telefoonnummer en adres, handig als je met Google bent ingelogd.</p>
-      <div className="space-y-3">
-        <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Telefoonnummer" className={field} />
-        <input type="text" value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Adres" className={field} />
-        <div className="grid grid-cols-2 gap-3">
-          <input type="text" value={postcode} onChange={(e) => setPostcode(e.target.value)} placeholder="Postcode" className={field} />
-          <input type="text" value={city} onChange={(e) => setCity(e.target.value)} placeholder="Stad" className={field} />
+      {email && (
+        <div className="mb-4">
+          <p className="text-[10px] uppercase tracking-wider text-text3 font-bold mb-0.5">E-mailadres</p>
+          <p className="text-sm text-text2">{email}</p>
         </div>
-        <button
-          onClick={handleSave}
-          disabled={saving}
-          className="w-full bg-lime text-dark py-2 rounded-lg font-bold text-sm hover:opacity-90 transition-opacity disabled:opacity-50"
-        >
-          {saving ? "Bezig…" : saved ? "Opgeslagen ✓" : "Opslaan"}
-        </button>
-      </div>
+      )}
+      {!loadError && details && (
+        <>
+          <p className="text-xs text-text3 mb-4">Optioneel — telefoonnummer en adres, handig als je met Google bent ingelogd.</p>
+          <div className="space-y-3">
+            <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Telefoonnummer" className={field} />
+            <input type="text" value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Adres" className={field} />
+            <div className="grid grid-cols-2 gap-3">
+              <input type="text" value={postcode} onChange={(e) => setPostcode(e.target.value)} placeholder="Postcode" className={field} />
+              <input type="text" value={city} onChange={(e) => setCity(e.target.value)} placeholder="Stad" className={field} />
+            </div>
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              className="w-full bg-lime text-dark py-2 rounded-lg font-bold text-sm hover:opacity-90 transition-opacity disabled:opacity-50"
+            >
+              {saving ? "Bezig…" : saved ? "Opgeslagen ✓" : "Opslaan"}
+            </button>
+          </div>
+        </>
+      )}
     </div>
   )
 }
