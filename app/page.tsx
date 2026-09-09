@@ -232,7 +232,7 @@ export default function Home() {
               { num: "04", icon: "tennis" as const, title: t("home.step4Title"), desc: t("home.step4Desc") },
             ].map((step, i) => (
               <ScrollObserver key={i} delay={i * 0.1}>
-                <div className="py-8 md:py-12 border-r border-border last:border-r-0 hover:bg-surface/20 transition-colors px-4">
+                <div className="flex flex-col items-center text-center py-8 md:py-12 border-r border-border last:border-r-0 hover:bg-surface/20 transition-colors px-4">
                   <div className="text-4xl font-playfair font-black text-border mb-4">{step.num}</div>
                   <div className="w-14 h-14 rounded-full bg-lime/10 flex items-center justify-center mb-3">
                     <Icon name={step.icon} size={28} className="text-lime" />
