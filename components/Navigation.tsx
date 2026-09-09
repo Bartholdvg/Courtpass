@@ -4,11 +4,14 @@ import { useState, useEffect, useRef } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import MobileMenu from "./MobileMenu"
+import LanguageToggle from "./LanguageToggle"
 import { AUTH_CHANGED_EVENT, clearStoredUser, getUserDisplayName, loadStoredUser, signOut, type CourtPassUser } from "@/lib/supabase"
 import { fetchManagedClubs, fetchMyProfile } from "@/lib/booking"
+import { useLanguage } from "@/lib/i18n"
 
 export default function Navigation() {
   const router = useRouter()
+  const { t } = useLanguage()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isMounted, setIsMounted] = useState(false)
   const [user, setUser] = useState<CourtPassUser | null>(null)
@@ -102,23 +105,26 @@ export default function Navigation() {
         <ul className="hidden md:flex gap-6 list-none items-center">
           <li>
             <a href="/#hoe-het-werkt" className="text-text2 hover:text-text transition-colors text-sm">
-              Hoe het werkt
+              {t("nav.howItWorks")}
             </a>
           </li>
           <li>
             <Link href="/clubs" className="text-text2 hover:text-text transition-colors text-sm">
-              🎾 Clubs
+              {t("nav.clubs")}
             </Link>
           </li>
           <li>
             <a href="/#abonnementen" className="text-text2 hover:text-text transition-colors text-sm">
-              Abonnementen
+              {t("nav.subscriptions")}
             </a>
           </li>
           <li>
             <a href="/#contact" className="text-text2 hover:text-text transition-colors text-sm">
-              Contact
+              {t("nav.contact")}
             </a>
+          </li>
+          <li>
+            <LanguageToggle />
           </li>
           <li className="flex gap-3 items-center ml-3">
             {user ? (
@@ -142,21 +148,21 @@ export default function Navigation() {
                       onClick={() => setIsProfileOpen(false)}
                       className="block px-4 py-2.5 text-sm text-text2 hover:text-text hover:bg-surface transition-colors"
                     >
-                      Dashboard
+                      {t("nav.dashboard")}
                     </Link>
                     <Link
                       href="/dashboard#mijn-gegevens"
                       onClick={() => setIsProfileOpen(false)}
                       className="block px-4 py-2.5 text-sm text-text2 hover:text-text hover:bg-surface transition-colors"
                     >
-                      Mijn gegevens
+                      {t("nav.myDetails")}
                     </Link>
                     <Link
                       href="/dashboard#eerdere-boekingen"
                       onClick={() => setIsProfileOpen(false)}
                       className="block px-4 py-2.5 text-sm text-text2 hover:text-text hover:bg-surface transition-colors"
                     >
-                      Eerdere boekingen
+                      {t("nav.previousBookings")}
                     </Link>
                     {hasAdminAccess && (
                       <Link
@@ -164,7 +170,7 @@ export default function Navigation() {
                         onClick={() => setIsProfileOpen(false)}
                         className="block px-4 py-2.5 text-sm text-text2 hover:text-text hover:bg-surface transition-colors"
                       >
-                        Admin
+                        {t("nav.admin")}
                       </Link>
                     )}
                     <div className="h-px bg-border/50 my-1.5" />
@@ -172,7 +178,7 @@ export default function Navigation() {
                       onClick={handleLogout}
                       className="block w-full text-left px-4 py-2.5 text-sm text-text2 hover:text-text hover:bg-surface transition-colors"
                     >
-                      Uitloggen
+                      {t("nav.logout")}
                     </button>
                   </div>
                 )}
@@ -180,10 +186,10 @@ export default function Navigation() {
             ) : (
               <>
                 <Link href="/login" className="border border-muted text-text2 hover:text-text hover:border-text px-4 py-2 rounded-full transition-all text-sm">
-                  Inloggen
+                  {t("nav.login")}
                 </Link>
                 <Link href="/login?tab=register" className="bg-lime text-dark px-4 py-2 rounded-full font-medium hover:opacity-90 transition-opacity text-sm">
-                  Probeer gratis
+                  {t("nav.tryFree")}
                 </Link>
               </>
             )}

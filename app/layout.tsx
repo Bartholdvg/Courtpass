@@ -2,6 +2,7 @@ import type { Metadata } from "next"
 import { Playfair_Display, DM_Sans } from "next/font/google"
 import "./globals.css"
 import Navigation from "@/components/Navigation"
+import { LanguageProvider } from "@/lib/i18n"
 
 const playfair = Playfair_Display({
   subsets: ["latin"],
@@ -28,8 +29,10 @@ export default function RootLayout({
   return (
     <html lang="nl" className={`${playfair.variable} ${dmSans.variable}`}>
       <body className="bg-dark text-text font-dm-sans font-normal leading-relaxed overflow-x-hidden">
-        <Navigation />
-        {children}
+        <LanguageProvider>
+          <Navigation />
+          {children}
+        </LanguageProvider>
       </body>
     </html>
   )
